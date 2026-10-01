@@ -15,6 +15,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
   function detectCurrentScreen() {
     if (typeof window === 'undefined') return 'landing';
     var segments = window.location.pathname.split('/').filter(Boolean);
+    if (segments.indexOf('article') !== -1) return 'article';
     var path = (segments.pop() || '').toLowerCase();
     if (!path || path === 'index.html' || path === '') return 'landing';
     var name = path.replace('.html', '');
