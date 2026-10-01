@@ -12,6 +12,32 @@
    ============================================================ */
 
 window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
+  function detectCurrentScreen() {
+    if (typeof window === 'undefined') return 'landing';
+    var path = (window.location.pathname.split('/').pop() || '').toLowerCase();
+    if (!path || path === 'index.html' || path === '') return 'landing';
+    var name = path.replace('.html', '');
+    var known = ['landing', 'library', 'article', 'quiz', 'result', 'leaderboard', 'signup', 'profile', 'terms', 'memes'];
+    return known.indexOf(name) !== -1 ? name : 'landing';
+  }
+
+  function getStoredLoggedIn() {
+    try {
+      return typeof window !== 'undefined' && window.localStorage && localStorage.getItem('coven_logged_in') === 'true';
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function getStoredQuizCorrect() {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        return parseInt(sessionStorage.getItem('coven_quiz_correct') || '0', 10);
+      }
+    } catch (e) {}
+    return 0;
+  }
+
   return class Component extends DCLogic {
 
   // ══════════════════════════════════════════════════════════════════
@@ -29,31 +55,92 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
   // ══════════════════════════════════════════════════════════════════
   //  STATE
   // ══════════════════════════════════════════════════════════════════
-  state = { screen: 'landing', qIndex: 0, selected: null, answered: false, correct: 0, loggedIn: false };
+  state = {
+    screen: detectCurrentScreen(),
+    qIndex: 0,
+    selected: null,
+    answered: false,
+    correct: getStoredQuizCorrect(),
+    loggedIn: getStoredLoggedIn()
+  };
 
   // ══════════════════════════════════════════════════════════════════
   //  NAVIGATION
   // ══════════════════════════════════════════════════════════════════
-  go(s)          { this.setState({ screen: s }); if (typeof window !== 'undefined') window.scrollTo(0, 0); }
-  login()        { this.setState({ loggedIn: true, screen: 'profile' }); if (typeof window !== 'undefined') window.scrollTo(0, 0); }
-  openProfile()  { if (this.state.loggedIn) this.go('profile'); else this.go('signup'); }
+  go(s) {
+    var target = (s === 'landing' ? 'index.html' : s + '.html');
+    if (typeof window !== 'undefined') {
+      var currentFile = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
+      if (currentFile === target) {
+        this.setState({ screen: s });
+        window.scrollTo(0, 0);
+      } else {
+        window.location.href = target;
+      }
+    } else {
+      this.setState({ screen: s });
+    }
+  }
+
+  login() {
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('coven_logged_in', 'true');
+      }
+    } catch (e) {}
+    this.setState({ loggedIn: true });
+    this.go('profile');
+  }
+
+  openProfile() {
+    var isLogged = this.state.loggedIn || getStoredLoggedIn();
+    if (isLogged) this.go('profile');
+    else this.go('signup');
+  }
 
   // ══════════════════════════════════════════════════════════════════
   //  QUIZ LOGIC
   // ══════════════════════════════════════════════════════════════════
-  startTrial()    { this.setState({ screen: 'quiz', qIndex: 0, selected: null, answered: false, correct: 0 }); if (typeof window !== 'undefined') window.scrollTo(0, 0); }
-  selectOption(i) { if (!this.state.answered) this.setState({ selected: i }); }
+  startTrial() {
+    try {
+      if (typeof window !== 'undefined' && window.sessionStorage) {
+        sessionStorage.removeItem('coven_quiz_correct');
+      }
+    } catch (e) {}
+    var current = detectCurrentScreen();
+    if (current === 'quiz') {
+      this.setState({ screen: 'quiz', qIndex: 0, selected: null, answered: false, correct: 0 });
+      if (typeof window !== 'undefined') window.scrollTo(0, 0);
+    } else {
+      this.go('quiz');
+    }
+  }
+
+  selectOption(i) {
+    if (!this.state.answered) this.setState({ selected: i });
+  }
+
   primary() {
     const { answered, selected, qIndex } = this.state;
     if (!answered) {
       if (selected == null) return;
       const isC = this.questions[qIndex].options[selected].correct;
-      this.setState({ answered: true, correct: this.state.correct + (isC ? 1 : 0) });
+      const newCorrect = this.state.correct + (isC ? 1 : 0);
+      try {
+        if (typeof window !== 'undefined' && window.sessionStorage) {
+          sessionStorage.setItem('coven_quiz_correct', newCorrect);
+        }
+      } catch (e) {}
+      this.setState({ answered: true, correct: newCorrect });
       return;
     }
     const last = this.questions.length - 1;
-    if (qIndex >= last) { this.setState({ screen: 'result' }); if (typeof window !== 'undefined') window.scrollTo(0, 0); }
-    else { this.setState({ qIndex: qIndex + 1, selected: null, answered: false }); if (typeof window !== 'undefined') window.scrollTo(0, 0); }
+    if (qIndex >= last) {
+      this.go('result');
+    } else {
+      this.setState({ qIndex: qIndex + 1, selected: null, answered: false });
+      if (typeof window !== 'undefined') window.scrollTo(0, 0);
+    }
   }
 
   // ══════════════════════════════════════════════════════════════════

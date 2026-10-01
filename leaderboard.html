@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coven of Technology — Leaderboard</title>
+
+<!-- Google Fonts prefetch (matches original) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+
+<!-- Fonts, base reset & keyframes -->
+<link rel="stylesheet" href="styles.css">
+
+<!-- Design Component runtime (framework - do not edit) -->
+<script src="assets/support.js"></script>
+<!-- Site content data (edit copy/labels/data here) -->
+<script src="content.js"></script>
+<!-- Application logic (state, navigation, quiz, render) -->
+<script src="app.js"></script>
+</head>
+<body>
+<x-dc>
+
+<div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif">
+
+<!-- ═══════════════════════════════════════════════════════════════
+  LEADERBOARD
+  Podium: edit in CONTENT.leaderboard.podium
+  Rows: edit in CONTENT.leaderboard.rows  (isUser:true highlights you)
+════════════════════════════════════════════════════════════════ -->
+<sc-if value="{{ isLeaderboard }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;overflow:hidden;background:radial-gradient(1100px 660px at 50% -12%,rgba(124,77,196,.42),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.24),transparent 62%),#08060e">
+  <div style="position:absolute;top:64px;left:0;right:0;height:240px;z-index:0;pointer-events:none">
+    <div style="position:absolute;top:40px;left:30%;width:3px;height:3px;border-radius:50%;background:#c9b8ff;box-shadow:0 0 10px 2px rgba(201,184,255,.7);animation:covTwinkle 4s infinite"></div>
+    <div style="position:absolute;top:96px;left:16%;width:2px;height:2px;border-radius:50%;background:#e8cf95;box-shadow:0 0 8px 2px rgba(232,207,149,.5);animation:covTwinkle 3.4s .6s infinite"></div>
+    <div style="position:absolute;top:130px;right:40%;width:3px;height:3px;border-radius:50%;background:#d6d0ec;box-shadow:0 0 9px 2px rgba(214,208,236,.6);animation:covTwinkle 5s .3s infinite"></div>
+  </div>
+  <header style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:2">
+    <div onclick="{{ toLanding }}" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e">✶</div>
+      <div style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
+    </div>
+    <nav style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
+      <span onclick="{{ toLibrary }}" style="cursor:pointer">Spell Book</span>
+      <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
+      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer">About Me</span></sc-if>
+      <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
+    </nav>
+    <div onclick="{{ toProfile }}" style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px;cursor:pointer">{{ profileInitial }}</div>
+  </header>
+
+  <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:44px 48px 18px;position:relative;z-index:1">
+    <div>
+      <div style="font-family:'EB Garamond',serif;letter-spacing:4px;text-transform:uppercase;font-size:12px;color:#b98fd8;margin-bottom:10px">✦ The Coven</div>
+      <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:42px;color:#f3ecdf;margin:0">Leaderboard</h1>
+    </div>
+    <div style="display:flex;border:1px solid rgba(216,181,107,.24);border-radius:24px;overflow:hidden;font-family:'EB Garamond',serif;font-size:14px">
+      <span style="padding:9px 20px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;cursor:pointer">This moon</span>
+      <span style="padding:9px 20px;color:#c5b9a8;cursor:pointer">All time</span>
+    </div>
+  </div>
+
+  <!-- Podium — edit CONTENT.leaderboard.podium (order: 2nd · 1st · 3rd) -->
+  <div style="display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;align-items:end;padding:24px 48px 18px;position:relative;z-index:1">
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.16);border-radius:8px;padding:26px 20px;text-align:center">
+      <div style="font-family:Cinzel,serif;font-size:22px;color:#c0c0c8;margin-bottom:12px">{{ pod2.position }}</div>
+      <div style="width:60px;height:60px;border-radius:50%;margin:0 auto 12px;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(192,192,200,.5);display:flex;align-items:center;justify-content:center;color:#d6d6de;font-family:Cinzel,serif;font-size:22px">{{ pod2.initial }}</div>
+      <div style="font-family:Cinzel,serif;font-size:17px;color:#ece6dd;margin-bottom:4px">{{ pod2.name }}</div>
+      <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;margin-bottom:10px">{{ pod2.rankLabel }}</div>
+      <div style="font-family:Cinzel,serif;font-size:22px;color:#d8b56b">{{ pod2.aether }}</div>
+    </div>
+    <div style="background:radial-gradient(400px 200px at 50% 0%,rgba(216,181,107,.18),transparent 65%),#181320;border:1px solid rgba(216,181,107,.4);border-radius:8px;padding:32px 20px;text-align:center;box-shadow:0 0 40px rgba(216,181,107,.18)">
+      <div style="font-size:24px;margin-bottom:6px">♛</div>
+      <div style="font-family:Cinzel,serif;font-size:24px;color:#e8cf95;margin-bottom:12px">{{ pod1.position }}</div>
+      <div style="width:74px;height:74px;border-radius:50%;margin:0 auto 12px;background:radial-gradient(circle,#4a3568,#1a1326);border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:26px;box-shadow:0 0 26px rgba(216,181,107,.4)">{{ pod1.initial }}</div>
+      <div style="font-family:Cinzel,serif;font-size:19px;color:#f3ecdf;margin-bottom:4px">{{ pod1.name }}</div>
+      <div style="font-family:'EB Garamond',serif;font-size:13px;color:#c9a45f;margin-bottom:10px">{{ pod1.rankLabel }}</div>
+      <div style="font-family:Cinzel,serif;font-size:26px;color:#d8b56b">{{ pod1.aether }}</div>
+    </div>
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.16);border-radius:8px;padding:26px 20px;text-align:center">
+      <div style="font-family:Cinzel,serif;font-size:22px;color:#c08a52;margin-bottom:12px">{{ pod3.position }}</div>
+      <div style="width:60px;height:60px;border-radius:50%;margin:0 auto 12px;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(192,138,82,.5);display:flex;align-items:center;justify-content:center;color:#d8a878;font-family:Cinzel,serif;font-size:22px">{{ pod3.initial }}</div>
+      <div style="font-family:Cinzel,serif;font-size:17px;color:#ece6dd;margin-bottom:4px">{{ pod3.name }}</div>
+      <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;margin-bottom:10px">{{ pod3.rankLabel }}</div>
+      <div style="font-family:Cinzel,serif;font-size:22px;color:#d8b56b">{{ pod3.aether }}</div>
+    </div>
+  </div>
+
+  <!-- Rows — edit CONTENT.leaderboard.rows -->
+  <div style="padding:18px 48px 8px;position:relative;z-index:1">
+    <div style="display:grid;grid-template-columns:60px 1fr 160px 110px 130px;gap:16px;padding:0 22px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;color:#8f857a;text-transform:uppercase">
+      <span>Rank</span><span>Witch</span><span>Role</span><span>Accuracy</span><span style="text-align:right">Aether</span>
+    </div>
+    <sc-for list="{{ leaderboardRows }}" as="row" hint-placeholder-count="4">
+      <div style="{{ row.rowStyle }}">
+        <span style="{{ row.rankNumStyle }}">{{ row.rankNum }}</span>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="{{ row.avatarStyle }}">{{ row.initial }}</div>
+          <span style="{{ row.nameStyle }}">{{ row.name }}</span>
+        </div>
+        <span style="{{ row.roleStyle }}">{{ row.role }}</span>
+        <span style="{{ row.accuracyStyle }}">{{ row.accuracy }}</span>
+        <span style="{{ row.aetherStyle }}">{{ row.aether }}</span>
+      </div>
+    </sc-for>
+    <div style="text-align:center;padding:16px 0 36px;font-family:'EB Garamond',serif;font-size:14px;color:#8f857a">Read more scrolls and pass their trials to climb the ranks ↑</div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script="">
+// The runtime evaluates this block with DCLogic, StreamableLogic and React
+// injected as locals. app.js exposes the component class through a factory
+// that receives them; we build the class and expose it as Component so the
+// runtime can pick it up.
+const Component = window.CovenComponentFactory(DCLogic, StreamableLogic, React);
+</script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coven of Technology — Profile</title>
+
+<!-- Google Fonts prefetch (matches original) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+
+<!-- Fonts, base reset & keyframes -->
+<link rel="stylesheet" href="styles.css">
+
+<!-- Design Component runtime (framework - do not edit) -->
+<script src="assets/support.js"></script>
+<!-- Site content data (edit copy/labels/data here) -->
+<script src="content.js"></script>
+<!-- Application logic (state, navigation, quiz, render) -->
+<script src="app.js"></script>
+</head>
+<body>
+<x-dc>
+
+<div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif">
+
+<!-- ═══════════════════════════════════════════════════════════════
+  PROFILE
+  Stats: CONTENT.profile.stats
+  Activity: CONTENT.profile.recentActivity
+  Rank progress: computed from CONTENT.ranks + CONTENT.profile.rankIndex
+  Roles & sigils: edit directly below (static)
+════════════════════════════════════════════════════════════════ -->
+<sc-if value="{{ isProfile }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;overflow:hidden;background:radial-gradient(1100px 680px at 50% -12%,rgba(124,77,196,.42),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.24),transparent 62%),#08060e">
+  <div style="position:absolute;top:64px;left:0;right:0;height:300px;z-index:0;pointer-events:none">
+    <div style="position:absolute;top:40px;left:30%;width:3px;height:3px;border-radius:50%;background:#c9b8ff;box-shadow:0 0 10px 2px rgba(201,184,255,.7);animation:covTwinkle 4s infinite"></div>
+    <div style="position:absolute;top:120px;left:14%;width:2px;height:2px;border-radius:50%;background:#e8cf95;box-shadow:0 0 8px 2px rgba(232,207,149,.5);animation:covTwinkle 3.4s .6s infinite"></div>
+    <div style="position:absolute;top:170px;right:18%;width:3px;height:3px;border-radius:50%;background:#d6d0ec;box-shadow:0 0 9px 2px rgba(214,208,236,.6);animation:covTwinkle 5s .3s infinite"></div>
+  </div>
+  <header style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:2">
+    <div onclick="{{ toLanding }}" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
+      <div style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
+    </div>
+    <nav style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
+      <span onclick="{{ toLibrary }}" style="cursor:pointer">Spell Book</span>
+      <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
+      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="color:#e8cf95;cursor:pointer">About Me</span></sc-if>
+      <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
+    </nav>
+    <div style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#4a3568,#1a1326);border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px">{{ profileInitial }}</div>
+  </header>
+
+  <!-- User card — edit in CONTENT.profile -->
+  <section style="display:flex;align-items:center;gap:30px;padding:48px 48px 38px;position:relative;z-index:1">
+    <div style="width:104px;height:104px;border-radius:50%;background:radial-gradient(circle,#4a3568,#1a1326);border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:42px;box-shadow:0 0 40px rgba(216,181,107,.3),inset 0 0 20px rgba(139,92,196,.4);flex-shrink:0">{{ profileInitial }}</div>
+    <div style="flex:1">
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px">
+        <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:38px;color:#f3ecdf;margin:0;text-shadow:0 0 36px rgba(139,92,196,.3)">{{ profileName }}</h1>
+        <span style="display:inline-flex;align-items:center;gap:7px;font-family:Cinzel,serif;font-size:13px;letter-spacing:1px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);padding:6px 14px;border-radius:20px;box-shadow:0 0 20px rgba(216,181,107,.3)">{{ profileRankBadge }}</span>
+      </div>
+      <p style="font-family:'EB Garamond',serif;font-size:16px;color:#b3a99d;margin:0">{{ profilePath }}</p>
+    </div>
+    <div style="width:280px;flex-shrink:0;border-left:1px solid rgba(216,181,107,.14);padding-left:30px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px">
+        <span style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;letter-spacing:1px;text-transform:uppercase">Aether</span>
+        <span style="font-family:Cinzel,serif;font-size:30px;color:#d8b56b">{{ profileAether }}</span>
+      </div>
+      <div style="height:7px;border-radius:4px;background:rgba(216,181,107,.14);margin-bottom:8px">
+        <div style="{{ aetherBarStyle }}"></div>
+      </div>
+      <div style="font-family:'EB Garamond',serif;font-size:13px;color:#9b9189">{{ profileAetherNext }}</div>
+    </div>
+  </section>
+
+  <!-- Stats — edit in CONTENT.profile.stats -->
+  <section style="display:grid;grid-template-columns:repeat(5,1fr);gap:16px;padding:0 48px 38px;position:relative;z-index:1">
+    <sc-for list="{{ profileStats }}" as="stat" hint-placeholder-count="5">
+      <div onclick="{{ stat.onClick }}" style="{{ stat.wrapStyle }}" style-hover="{{ stat.wrapHover }}">
+        <div style="{{ stat.valueStyle }}">{{ stat.value }}</div>
+        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;letter-spacing:1px;margin-top:4px">{{ stat.label }}</div>
+      </div>
+    </sc-for>
+  </section>
+
+  <!-- Rank progression — driven by CONTENT.ranks + CONTENT.profile.rankIndex -->
+  <section style="padding:8px 48px 38px;position:relative;z-index:1">
+    <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:22px;color:#ece6dd;margin:0 0 26px">Your path through the coven</h2>
+    <div style="position:relative;display:flex;justify-content:space-between;gap:4px">
+      <div style="position:absolute;left:6%;right:6%;top:25px;height:1px;background:rgba(216,181,107,.16);z-index:0"></div>
+      <div style="{{ profileRankTrailStyle }}"></div>
+      <sc-for list="{{ profileRanks }}" as="rank" hint-placeholder-count="7">
+        <div style="flex:1;text-align:center;position:relative;z-index:1">
+          <div style="{{ rank.circleStyle }}">{{ rank.glyph }}</div>
+          <div style="{{ rank.nameStyle }}">{{ rank.name }}</div>
+          <div style="{{ rank.subtextStyle }}">{{ rank.subtext }}</div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display:grid;grid-template-columns:1.4fr 1fr;gap:24px;padding:0 48px 40px;position:relative;z-index:1">
+    <!-- Recent activity — edit in CONTENT.profile.recentActivity -->
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:8px;padding:28px 30px">
+      <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;color:#ece6dd;margin:0 0 22px">Recent castings</h3>
+      <div style="display:flex;flex-direction:column;gap:20px">
+        <sc-for list="{{ recentActivity }}" as="act" hint-placeholder-count="4">
+          <div style="display:flex;gap:16px;align-items:flex-start">
+            <div style="width:34px;height:34px;border-radius:50%;border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:14px;flex-shrink:0;background:radial-gradient(circle,rgba(139,92,196,.2),transparent)">{{ act.glyph }}</div>
+            <div style="flex:1">
+              <div style="font-family:'EB Garamond',serif;font-size:16px;color:#ece6dd">{{ act.text }} <strong style="color:#f3ecdf">{{ act.bold }}</strong></div>
+              <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;margin-top:2px">{{ act.when }}</div>
+            </div>
+            <span style="{{ act.badgeStyle }}">{{ act.badge }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:24px">
+      <!-- Roles — edit directly below -->
+      <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:8px;padding:28px 30px">
+        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;color:#ece6dd;margin:0 0 20px">Roles &amp; titles</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:10px">
+          <span style="font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);padding:7px 15px;border-radius:20px">✦ Shaper</span>
+          <span style="font-family:'EB Garamond',serif;font-size:14px;color:#e8cf95;border:1px solid rgba(216,181,107,.32);padding:7px 15px;border-radius:20px">Mentor's Apprentice</span>
+          <span style="font-family:'EB Garamond',serif;font-size:14px;color:#e8cf95;border:1px solid rgba(216,181,107,.32);padding:7px 15px;border-radius:20px">Trial Streaker</span>
+          <span style="font-family:'EB Garamond',serif;font-size:14px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);padding:7px 15px;border-radius:20px">Apex Initiate</span>
+        </div>
+      </div>
+      <!-- Sigils — edit directly below -->
+      <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:8px;padding:28px 30px">
+        <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:20px">
+          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;color:#ece6dd;margin:0">Sigils</h3>
+          <span style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">5 of 24 earned</span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px">
+          <div style="aspect-ratio:1;border-radius:8px;border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:20px;background:radial-gradient(circle,rgba(139,92,196,.2),#100d16);box-shadow:0 0 16px rgba(216,181,107,.14)">✦</div>
+          <div style="aspect-ratio:1;border-radius:8px;border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:20px;background:radial-gradient(circle,rgba(139,92,196,.2),#100d16);box-shadow:0 0 16px rgba(216,181,107,.14)">☽</div>
+          <div style="aspect-ratio:1;border-radius:8px;border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:20px;background:radial-gradient(circle,rgba(139,92,196,.2),#100d16);box-shadow:0 0 16px rgba(216,181,107,.14)">✷</div>
+          <div style="aspect-ratio:1;border-radius:8px;border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:20px;background:radial-gradient(circle,rgba(139,92,196,.2),#100d16);box-shadow:0 0 16px rgba(216,181,107,.14)">⚙</div>
+          <div style="aspect-ratio:1;border-radius:8px;border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:20px;background:radial-gradient(circle,rgba(139,92,196,.2),#100d16);box-shadow:0 0 16px rgba(216,181,107,.14)">✧</div>
+          <div style="aspect-ratio:1;border-radius:8px;border:1px dashed rgba(216,181,107,.18);display:flex;align-items:center;justify-content:center;color:#5f574b;font-size:18px;background:#0e0b13">⚿</div>
+          <div style="aspect-ratio:1;border-radius:8px;border:1px dashed rgba(216,181,107,.18);display:flex;align-items:center;justify-content:center;color:#5f574b;font-size:18px;background:#0e0b13">⚿</div>
+          <div style="aspect-ratio:1;border-radius:8px;border:1px dashed rgba(216,181,107,.18);display:flex;align-items:center;justify-content:center;color:#5f574b;font-size:18px;background:#0e0b13">⚿</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Continue studying — auto-pulls in-progress scrolls from CONTENT.libraryScrolls -->
+  <section style="padding:0 48px 52px;position:relative;z-index:1">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:22px">
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:22px;color:#ece6dd;margin:0">Continue your studies</h2>
+      <span onclick="{{ toLibrary }}" style="font-family:'EB Garamond',serif;font-size:15px;color:#b98fd8;cursor:pointer">Open the Spell Book →</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
+      <sc-for list="{{ continueScrolls }}" as="scroll" hint-placeholder-count="2">
+        <div onclick="{{ toArticle }}" style="display:flex;gap:18px;background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:8px;padding:20px;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+          <div style="{{ scroll.thumbStyle }}"></div>
+          <div style="flex:1">
+            <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;margin-bottom:6px">{{ scroll.tag }}</div>
+            <h4 style="font-family:Cinzel,serif;font-weight:600;font-size:16px;color:#ece6dd;margin:0 0 12px">{{ scroll.title }}</h4>
+            <div style="{{ scroll.progressBgStyle }}">
+              <div style="{{ scroll.progressFillStyle }}"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">
+              <span>{{ scroll.progressPct }}</span>
+              <span style="color:#e8cf95">Continue →</span>
+            </div>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script="">
+// The runtime evaluates this block with DCLogic, StreamableLogic and React
+// injected as locals. app.js exposes the component class through a factory
+// that receives them; we build the class and expose it as Component so the
+// runtime can pick it up.
+const Component = window.CovenComponentFactory(DCLogic, StreamableLogic, React);
+</script>
+</body>
+</html>

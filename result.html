@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Coven of Technology — Trial Result</title>
+
+<!-- Google Fonts prefetch (matches original) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+
+<!-- Fonts, base reset & keyframes -->
+<link rel="stylesheet" href="styles.css">
+
+<!-- Design Component runtime (framework - do not edit) -->
+<script src="assets/support.js"></script>
+<!-- Site content data (edit copy/labels/data here) -->
+<script src="content.js"></script>
+<!-- Application logic (state, navigation, quiz, render) -->
+<script src="app.js"></script>
+</head>
+<body>
+<x-dc>
+
+<div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif">
+
+<!-- ═══════════════════════════════════════════════════════════════
+  RESULT  —  computed from quiz score, no edits needed here
+════════════════════════════════════════════════════════════════ -->
+<sc-if value="{{ isResult }}" hint-placeholder-val="{{ true }}">
+<div style="position:relative;overflow:hidden;background:radial-gradient(1100px 700px at 50% -10%,rgba(124,77,196,.46),transparent 58%),radial-gradient(720px 520px at 16% 4%,rgba(86,58,150,.34),transparent 60%),#08060e;min-height:760px">
+  <header style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12)">
+    <div onclick="{{ toLanding }}" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+      <div style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e">✶</div>
+      <div style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:1.5px;color:#ece6dd">TRIAL OF APEX TRIGGERS</div>
+    </div>
+  </header>
+  <div style="max-width:680px;margin:0 auto;padding:70px 48px;text-align:center">
+    <div style="width:120px;height:120px;margin:0 auto 28px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;font-size:50px;color:#e8cf95;background:radial-gradient(circle,rgba(216,181,107,.22),#0c0916 72%);box-shadow:0 0 50px rgba(216,181,107,.35);animation:covPop .5s ease">{{ resultGlyph }}</div>
+    <div style="font-family:'EB Garamond',serif;letter-spacing:4px;text-transform:uppercase;font-size:13px;color:#b98fd8;margin-bottom:12px">{{ resultKicker }}</div>
+    <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:48px;color:#f3ecdf;margin:0 0 14px;text-shadow:0 0 40px rgba(139,92,196,.3)">{{ resultTitle }}</h1>
+    <p style="font-family:'EB Garamond',serif;font-size:19px;line-height:1.6;color:#b3a99d;margin:0 auto 36px;max-width:480px">{{ resultBlurb }}</p>
+    <div style="display:flex;gap:40px;justify-content:center;margin-bottom:38px">
+      <div><div style="font-family:Cinzel,serif;font-size:40px;color:#f3ecdf">{{ scoreLabel }}</div><div style="font-family:'EB Garamond',serif;font-size:14px;color:#8f857a;letter-spacing:1px;text-transform:uppercase">Correct</div></div>
+      <div style="width:1px;background:rgba(216,181,107,.16)"></div>
+      <div><div style="font-family:Cinzel,serif;font-size:40px;color:#d8b56b">{{ earnedLabel }}</div><div style="font-family:'EB Garamond',serif;font-size:14px;color:#8f857a;letter-spacing:1px;text-transform:uppercase">Aether earned</div></div>
+      <div style="width:1px;background:rgba(216,181,107,.16)"></div>
+      <div><div style="font-family:Cinzel,serif;font-size:40px;color:#e8cf95">{{ accuracyLabel }}</div><div style="font-family:'EB Garamond',serif;font-size:14px;color:#8f857a;letter-spacing:1px;text-transform:uppercase">Accuracy</div></div>
+    </div>
+    <div style="border:1px solid rgba(216,181,107,.16);border-radius:8px;padding:22px 26px;margin-bottom:34px;background:#100d16">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px">
+        <span style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189">Progress to Mechanic</span>
+        <span style="font-family:Cinzel,serif;font-size:15px;color:#d8b56b">{{ aetherTotalLabel }} / 1,200</span>
+      </div>
+      <div style="height:8px;border-radius:5px;background:rgba(216,181,107,.12)"><div style="{{ progressBarStyle }}"></div></div>
+    </div>
+    <div style="display:flex;gap:14px;justify-content:center">
+      <div onclick="{{ toLibrary }}" style="padding:14px 28px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.34);cursor:pointer">RETURN TO THE GRIMOIRE</div>
+      <div onclick="{{ toLeaderboard }}" style="padding:14px 28px;border-radius:3px;border:1px solid rgba(216,181,107,.42);color:#e8cf95;font-family:Cinzel,serif;font-weight:500;font-size:14px;letter-spacing:1.5px;cursor:pointer">VIEW LEADERBOARD</div>
+    </div>
+    <div onclick="{{ startTrial }}" style="margin-top:22px;font-family:'EB Garamond',serif;font-size:15px;color:#b98fd8;cursor:pointer">↺ Retake the trial</div>
+  </div>
+</div>
+</sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script="">
+// The runtime evaluates this block with DCLogic, StreamableLogic and React
+// injected as locals. app.js exposes the component class through a factory
+// that receives them; we build the class and expose it as Component so the
+// runtime can pick it up.
+const Component = window.CovenComponentFactory(DCLogic, StreamableLogic, React);
+</script>
+</body>
+</html>
