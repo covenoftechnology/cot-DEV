@@ -59,6 +59,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
   // ══════════════════════════════════════════════════════════════════
   state = {
     screen: detectCurrentScreen(),
+    libraryFilter: 'all',
     qIndex: 0,
     selected: null,
     answered: false,
@@ -238,6 +239,14 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     });
 
     // ── Library: active + locked scroll cards ────────────────────
+    var filter = st.libraryFilter || 'all';
+    var BTN_ACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+    var BTN_INACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+    var filterAllStyle = filter === 'all' ? BTN_ACTIVE : BTN_INACTIVE;
+    var filterApexStyle = filter === 'apex' ? BTN_ACTIVE : BTN_INACTIVE;
+    var filterMentorshipStyle = filter === 'mentorship' ? BTN_ACTIVE : BTN_INACTIVE;
+    var filterBAStyle = filter === 'ba' ? BTN_ACTIVE : BTN_INACTIVE;
+
     var activeScrolls = C.libraryScrolls.filter(function(s) { return !s.locked; }).map(function(s) {
       return Object.assign({}, s, {
         wrapStyle:         'background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer',
@@ -366,6 +375,24 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
       toMemes:       function() { this.go('memes'); }.bind(this),
       login:         function() { this.login(); }.bind(this),
       startTrial:    function() { this.startTrial(); }.bind(this),
+
+      // Library filters
+      filterAllStyle,
+      filterApexStyle,
+      filterMentorshipStyle,
+      filterBAStyle,
+      isFilterAll: filter === 'all',
+      isFilterApex: filter === 'apex',
+      isFilterMentorship: filter === 'mentorship',
+      isFilterBA: filter === 'ba',
+      showApexCards: filter === 'all' || filter === 'apex',
+      showMentorshipCards: filter === 'all' || filter === 'mentorship',
+      showBaCards: filter === 'all' || filter === 'ba',
+      showLockedCards: filter === 'all',
+      setFilterAll: function() { this.setState({ libraryFilter: 'all' }); }.bind(this),
+      setFilterApex: function() { this.setState({ libraryFilter: 'apex' }); }.bind(this),
+      setFilterMentorship: function() { this.setState({ libraryFilter: 'mentorship' }); }.bind(this),
+      setFilterBA: function() { this.setState({ libraryFilter: 'ba' }); }.bind(this),
 
       // Content (dotted paths used in template)
       brand:               C.brand,
