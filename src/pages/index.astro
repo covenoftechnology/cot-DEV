@@ -1,5 +1,34 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const publishedFeaturedPosts = await getCollection('blog', ({ data }) => data.status === 'published' && data.featured);
+publishedFeaturedPosts.sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+
+const collectionCardsHtml = publishedFeaturedPosts.map(post => {
+  const tag = (post.data.tags && post.data.tags.length > 0)
+    ? post.data.tags.slice(0, 2).join(' · ').toUpperCase()
+    : post.data.category.toUpperCase();
+  const thumbBg = post.data.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+  const meta = post.data.meta || '12 min · ✦ 120 Aether';
+
+  return `
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:5px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+      <a href="/article/${post.id}" style="text-decoration:none;color:inherit;display:block">
+        <div style="height:150px;background:${thumbBg};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7f70;letter-spacing:1px;border-bottom:1px solid rgba(216,181,107,.12)">[ scroll glyph · 640×360 ]</div>
+        <div style="padding:22px">
+          <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px;margin-bottom:14px">${tag}</div>
+          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:21px;line-height:1.25;color:#ece6dd;margin:0 0 10px">${post.data.title}</h3>
+          <p style="font-family:'EB Garamond',serif;font-size:15px;color:#9b9189;margin:0 0 16px;line-height:1.5">${post.data.description}</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+            <span>${meta}</span>
+            <span style="color:#e8cf95">Read →</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  `;
+}).join('\n');
 
 const landingHtml = `<!-- ═══════════════════════════════════════════════════════════════
   LANDING
@@ -61,33 +90,45 @@ const landingHtml = `<!-- ══════════════════
         <div style="flex:1;text-align:center;position:relative;z-index:1">
           <div style="{{ rank.circleStyle }}">{{ rank.glyph }}</div>
           <div style="{{ rank.nameStyle }}">{{ rank.name }}</div>
-          <div style="{{ rank.aetherStyle }}">{{ rank.aether }}</div>
+          <div style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a;letter-spacing:1px;margin-top:2px">{{ rank.aether }}</div>
         </div>
       </sc-for>
     </div>
   </section>
 
-  <!-- Featured scrolls — edit cards in CONTENT.featuredScrolls -->
+  <!-- Featured scrolls -->
   <section style="padding:18px 56px 70px">
     <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:30px">
       <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:30px;color:#ece6dd;margin:0">Featured scrolls</h2>
       <span onclick="{{ toLibrary }}" style="font-family:'EB Garamond',serif;font-size:16px;color:#b98fd8;cursor:pointer">Enter the Grimoire →</span>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px">
-      <sc-for list="{{ featuredScrolls }}" as="scroll" hint-placeholder-count="3">
-        <div onclick="{{ toArticle }}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:5px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
-          <div style="{{ scroll.thumbStyle }}">[ scroll glyph · 640×360 ]</div>
-          <div style="padding:22px">
-            <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px;margin-bottom:14px">{{ scroll.tag }}</div>
-            <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:21px;line-height:1.25;color:#ece6dd;margin:0 0 10px">{{ scroll.title }}</h3>
-            <p style="font-family:'EB Garamond',serif;font-size:15px;color:#9b9189;margin:0 0 16px;line-height:1.5">{{ scroll.body }}</p>
-            <div style="display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-              <span>{{ scroll.meta }}</span>
-              <span style="color:#e8cf95">Read →</span>
-            </div>
+      ${collectionCardsHtml}
+      <!-- Demo cards for scrolls not yet written in markdown -->
+      <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:5px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+        <div style="height:150px;background:repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7f70;letter-spacing:1px;border-bottom:1px solid rgba(216,181,107,.12)">[ scroll glyph · 640×360 ]</div>
+        <div style="padding:22px">
+          <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px;margin-bottom:14px">THE MENTOR'S WAY</div>
+          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:21px;line-height:1.25;color:#ece6dd;margin:0 0 10px">Guiding Apprentices: The Art of the Mentor</h3>
+          <p style="font-family:'EB Garamond',serif;font-size:15px;color:#9b9189;margin:0 0 16px;line-height:1.5">How to grow new admins without casting their decisions for them.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+            <span>9 min · ✦ 90 Aether</span>
+            <span style="color:#e8cf95">Read →</span>
           </div>
         </div>
-      </sc-for>
+      </div>
+      <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:5px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+        <div style="height:150px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7f70;letter-spacing:1px;border-bottom:1px solid rgba(216,181,107,.12)">[ scroll glyph · 640×360 ]</div>
+        <div style="padding:22px">
+          <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px;margin-bottom:14px">DIVINATION · BA</div>
+          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:21px;line-height:1.25;color:#ece6dd;margin:0 0 10px">Reading the Omens: Requirements Divination</h3>
+          <p style="font-family:'EB Garamond',serif;font-size:15px;color:#9b9189;margin:0 0 16px;line-height:1.5">Ask the questions that surface what stakeholders truly need.</p>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+            <span>14 min · ✦ 140 Aether</span>
+            <span style="color:#e8cf95">Read →</span>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 

@@ -2,14 +2,17 @@
 title: ""
 description: ""
 author: ""
-publishedDate: 2026-10-01
 category: ""
 tags: []
+rank: ""
+meta: ""
 cover: ""
-status: "draft"
+status: "draft" # draft | published | hidden
 featured: false
+# publishedDate: 2026-10-01 (opcional)
+# order: 1 (opcional)
 ---
 
-# Article content
+# Título del artículo
 
-Write your article content here using Markdown.
+Escribe aquí el contenido en formato Markdown.

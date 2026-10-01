@@ -1,5 +1,40 @@
 ---
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const publishedPosts = await getCollection('blog', ({ data }) => data.status === 'published');
+publishedPosts.sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+
+const collectionLibraryCardsHtml = publishedPosts.map(post => {
+  const tag = (post.data.tags && post.data.tags.length > 0)
+    ? post.data.tags[0].toUpperCase()
+    : post.data.category.toUpperCase();
+  const rank = post.data.rank || 'Mechanic';
+  const thumbBg = post.data.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+
+  return `
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+      <a href="/article/${post.id}" style="text-decoration:none;color:inherit;display:block">
+        <div style="height:120px;background:${thumbBg};border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
+        <div style="padding:20px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">${tag}</span>
+            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">${rank}</span>
+          </div>
+          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">${post.data.title}</h3>
+          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">${post.data.description}</p>
+          <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
+            <div style="width:65%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+            <span>Scroll unrolled</span>
+            <span style="color:#e8cf95">Read →</span>
+          </div>
+        </div>
+      </a>
+    </div>
+  `;
+}).join('\n');
 
 const libraryHtml = `<!-- ═══════════════════════════════════════════════════════════════
   SPELL BOOK (LIBRARY)
@@ -55,45 +90,93 @@ const libraryHtml = `<!-- ══════════════════
     </div>
   </div>
 
-  <!-- Active scroll cards — edit in CONTENT.libraryScrolls (locked: false) -->
+  <!-- Active scroll cards -->
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:0 48px 52px;position:relative;z-index:1">
-    <sc-for list="{{ activeScrolls }}" as="scroll" hint-placeholder-count="4">
-      <div onclick="{{ toArticle }}" style="{{ scroll.wrapStyle }}" style-hover="border:1px solid rgba(216,181,107,.4)">
-        <div style="{{ scroll.thumbStyle }}">[ scroll · 560×280 ]</div>
-        <div style="padding:20px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="{{ scroll.tagStyle }}">{{ scroll.tag }}</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">{{ scroll.rank }}</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">{{ scroll.title }}</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">{{ scroll.body }}</p>
-          <div style="{{ scroll.progressBgStyle }}">
-            <div style="{{ scroll.progressFillStyle }}"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span style="{{ scroll.statusStyle }}">{{ scroll.statusLabel }}</span>
-            <span style="color:#e8cf95">{{ scroll.cta }}</span>
-          </div>
+    ${collectionLibraryCardsHtml}
+    <!-- Demo scrolls not yet written in markdown -->
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
+      <div style="padding:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">MENTORSHIP</span>
+          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Shaper</span>
+        </div>
+        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Guiding Apprentices: The Art of the Mentor</h3>
+        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Grow new admins without casting for them.</p>
+        <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
+          <div style="width:100%;height:100%;border-radius:3px;background:linear-gradient(90deg,#7bbf6a,#a9e09a)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+          <span style="color:#a9e09a">✓ Trial passed</span>
+          <span style="color:#e8cf95">Review →</span>
         </div>
       </div>
-    </sc-for>
-    <!-- Locked scroll cards — edit in CONTENT.libraryScrolls (locked: true) -->
-    <sc-for list="{{ lockedScrolls }}" as="scroll" hint-placeholder-count="2">
-      <div style="{{ scroll.wrapStyle }}">
-        <div style="{{ scroll.thumbStyle }}">⟡</div>
-        <div style="padding:20px;opacity:.65">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="{{ scroll.tagStyle }}">{{ scroll.tag }}</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">{{ scroll.rank }}</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#b3a99d;margin:0 0 8px">{{ scroll.title }}</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#7a7066;margin:0 0 16px;line-height:1.45">{{ scroll.body }}</p>
-          <div style="display:flex;align-items:center;gap:8px;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span style="color:#d8b56b">⚿</span><span>{{ scroll.lockNote }}</span>
-          </div>
+    </div>
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
+      <div style="padding:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">BA · DIVINATION</span>
+          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Shaper</span>
+        </div>
+        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Reading the Omens: Requirements Divination</h3>
+        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Surface what stakeholders truly need.</p>
+        <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
+          <div style="width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+          <span>Not started</span>
+          <span style="color:#e8cf95">Begin →</span>
         </div>
       </div>
-    </sc-for>
+    </div>
+    <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
+      <div style="padding:20px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">FLOW</span>
+          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Mechanic</span>
+        </div>
+        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Flow Sorcery: Automations That Don't Backfire</h3>
+        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Orchestrate without summoning chaos.</p>
+        <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
+          <div style="width:20%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+          <span>20% complete</span>
+          <span style="color:#e8cf95">Continue →</span>
+        </div>
+      </div>
+    </div>
+    <!-- Locked scroll cards -->
+    <div style="background:#100d15;border:1px solid rgba(216,181,107,.1);border-radius:6px;overflow:hidden;position:relative">
+      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.05) 0 10px,rgba(216,181,107,.01) 10px 20px);border-bottom:1px solid rgba(216,181,107,.08);display:flex;align-items:center;justify-content:center;color:#6b6258;font-size:22px">⟡</div>
+      <div style="padding:20px;opacity:.65">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#8f857a;border:1px solid rgba(216,181,107,.18);border-radius:2px;padding:3px 8px">ARCHITECTURE</span>
+          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Witch</span>
+        </div>
+        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#b3a99d;margin:0 0 8px">The Grand Design: Scalable Org Architecture</h3>
+        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#7a7066;margin:0 0 16px;line-height:1.45">Sealed until you reach the rank of Witch.</p>
+        <div style="display:flex;align-items:center;gap:8px;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+          <span style="color:#d8b56b">⚿</span><span>Locked · 13,000 Aether to unlock</span>
+        </div>
+      </div>
+    </div>
+    <div style="background:#100d15;border:1px solid rgba(216,181,107,.1);border-radius:6px;overflow:hidden;position:relative">
+      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.05) 0 10px,rgba(216,181,107,.01) 10px 20px);border-bottom:1px solid rgba(216,181,107,.08);display:flex;align-items:center;justify-content:center;color:#6b6258;font-size:22px">⟡</div>
+      <div style="padding:20px;opacity:.65">
+        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#8f857a;border:1px solid rgba(216,181,107,.18);border-radius:2px;padding:3px 8px">LEADERSHIP</span>
+          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Warden</span>
+        </div>
+        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#b3a99d;margin:0 0 8px">Convening the Circle: Leading Discovery Workshops</h3>
+        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#7a7066;margin:0 0 16px;line-height:1.45">Sealed until you reach the rank of Warden.</p>
+        <div style="display:flex;align-items:center;gap:8px;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+          <span style="color:#d8b56b">⚿</span><span>Locked · 3,000 Aether to unlock</span>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 </sc-if>`;
