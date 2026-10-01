@@ -14,7 +14,8 @@
 window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
   function detectCurrentScreen() {
     if (typeof window === 'undefined') return 'landing';
-    var path = (window.location.pathname.split('/').pop() || '').toLowerCase();
+    var segments = window.location.pathname.split('/').filter(Boolean);
+    var path = (segments.pop() || '').toLowerCase();
     if (!path || path === 'index.html' || path === '') return 'landing';
     var name = path.replace('.html', '');
     var known = ['landing', 'library', 'article', 'quiz', 'result', 'leaderboard', 'signup', 'profile', 'terms', 'memes'];
@@ -68,10 +69,11 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
   //  NAVIGATION
   // ══════════════════════════════════════════════════════════════════
   go(s) {
-    var target = (s === 'landing' ? 'index.html' : s + '.html');
     if (typeof window !== 'undefined') {
-      var currentFile = (window.location.pathname.split('/').pop() || 'index.html').toLowerCase();
-      if (currentFile === target) {
+      var isHtml = window.location.pathname.endsWith('.html');
+      var target = isHtml ? (s === 'landing' ? 'index.html' : s + '.html') : (s === 'landing' ? '/' : '/' + s);
+      var currentScreen = detectCurrentScreen();
+      if (currentScreen === s) {
         this.setState({ screen: s });
         window.scrollTo(0, 0);
       } else {

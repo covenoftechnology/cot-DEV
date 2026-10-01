@@ -1,0 +1,41 @@
+---
+import '../styles/styles.css';
+
+interface Props {
+  title?: string;
+}
+
+const { title = "Coven of Technology" } = Astro.props;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title}</title>
+
+  <!-- Google Fonts prefetch -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+
+  <!-- Design Component runtime (framework) -->
+  <script is:inline src="/js/support.js"></script>
+  <!-- Site content data -->
+  <script is:inline src="/js/content.js"></script>
+  <!-- Application logic -->
+  <script is:inline src="/js/app.js"></script>
+</head>
+<body>
+  <x-dc>
+    <div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif">
+      <slot />
+    </div>
+  </x-dc>
+
+  <script is:inline type="text/x-dc" data-dc-script="">
+    // The runtime evaluates this block with DCLogic, StreamableLogic and React injected
+    const Component = window.CovenComponentFactory(DCLogic, StreamableLogic, React);
+  </script>
+</body>
+</html>

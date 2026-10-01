@@ -1,31 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Coven of Technology — Trial of Apex Triggers</title>
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
 
-<!-- Google Fonts prefetch (matches original) -->
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
-
-<!-- Fonts, base reset & keyframes -->
-<link rel="stylesheet" href="styles.css">
-
-<!-- Design Component runtime (framework - do not edit) -->
-<script src="assets/support.js"></script>
-<!-- Site content data (edit copy/labels/data here) -->
-<script src="content.js"></script>
-<!-- Application logic (state, navigation, quiz, render) -->
-<script src="app.js"></script>
-</head>
-<body>
-<x-dc>
-
-<div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif">
-
-<!-- ═══════════════════════════════════════════════════════════════
-  QUIZ  —  questions live in the `questions` array in the logic class
+const quizHtml = `<!-- ═══════════════════════════════════════════════════════════════
+  QUIZ  —  questions live in the \`questions\` array in the logic class
 ════════════════════════════════════════════════════════════════ -->
 <sc-if value="{{ isQuiz }}" hint-placeholder-val="{{ true }}">
 <div style="position:relative;overflow:hidden;background:radial-gradient(1100px 680px at 50% -12%,rgba(124,77,196,.42),transparent 58%),radial-gradient(720px 520px at 16% 4%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 12%,rgba(170,128,224,.24),transparent 62%),#08060e;min-height:760px">
@@ -75,17 +52,9 @@
     <div onclick="{{ onPrimary }}" style="{{ primaryStyle }}">{{ primaryLabel }}</div>
   </div>
 </div>
-</sc-if>
+</sc-if>`;
+---
 
-</div>
-
-</x-dc>
-<script type="text/x-dc" data-dc-script="">
-// The runtime evaluates this block with DCLogic, StreamableLogic and React
-// injected as locals. app.js exposes the component class through a factory
-// that receives them; we build the class and expose it as Component so the
-// runtime can pick it up.
-const Component = window.CovenComponentFactory(DCLogic, StreamableLogic, React);
-</script>
-</body>
-</html>
+<BaseLayout title="Coven of Technology — Quiz">
+  <Fragment set:html={quizHtml} />
+</BaseLayout>

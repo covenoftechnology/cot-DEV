@@ -1,0 +1,22 @@
+---
+interface Props {
+  activePage?: string;
+}
+const { activePage } = Astro.props;
+
+const headerHtml = `<header style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:3">
+  <div onclick="{{ toLanding }}" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+    <div style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
+    <div style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
+  </div>
+  <nav style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;letter-spacing:.3px;white-space:nowrap">
+    <span onclick="{{ toLibrary }}" style="cursor:pointer" style-hover="color:#f3ecdf">Spell Book</span>
+    <span onclick="{{ toMemes }}" style="cursor:pointer" style-hover="color:#f3ecdf">Grimoire of Memes</span>
+    <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer" style-hover="color:#f3ecdf">About Me</span></sc-if>
+    <span onclick="{{ toTerms }}" style="cursor:pointer" style-hover="color:#f3ecdf">Mystic Terms &amp; Privacy</span>
+  </nav>
+  <div onclick="{{ toSignup }}" style="padding:9px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:12px;letter-spacing:1.5px;box-shadow:0 0 26px rgba(216,181,107,.30);cursor:pointer">ENTER THE COVEN</div>
+</header>`;
+---
+
+<Fragment set:html={headerHtml} />
