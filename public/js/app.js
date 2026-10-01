@@ -232,7 +232,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     });
 
     // ── Landing: featured scrolls ────────────────────────────────
-    var featuredScrolls = C.featuredScrolls.map(function(s) {
+    var featuredScrolls = (C.featuredScrolls || []).map(function(s) {
       return Object.assign({}, s, {
         thumbStyle: 'height:150px;background:' + s.thumbBg + ';display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#8a7f70;letter-spacing:1px;border-bottom:1px solid rgba(216,181,107,.12)',
       });
@@ -247,10 +247,17 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     var filterMentorshipStyle = filter === 'mentorship' ? BTN_ACTIVE : BTN_INACTIVE;
     var filterBAStyle = filter === 'ba' ? BTN_ACTIVE : BTN_INACTIVE;
 
-    var activeScrolls = C.libraryScrolls.filter(function(s) { return !s.locked; }).map(function(s) {
+    var activeScrolls = (C.libraryScrolls || []).filter(function(s) { return !s.locked; }).map(function(s) {
+      var meta = s.articleId && typeof window !== 'undefined' && window.COVEN_ARTICLES_INDEX && window.COVEN_ARTICLES_INDEX[s.articleId];
+      var title = meta ? meta.title : (s.title || 'Untitled Scroll');
+      var tag = meta ? meta.tag : (s.tag || 'SCROLL');
+      var thumbBg = meta ? meta.thumbBg : (s.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)');
       return Object.assign({}, s, {
+        title:             title,
+        tag:               tag,
+        thumbBg:           thumbBg,
         wrapStyle:         'background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer',
-        thumbStyle:        'height:120px;background:' + s.thumbBg + ';border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#8a7f70',
+        thumbStyle:        'height:120px;background:' + thumbBg + ';border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:10px;color:#8a7f70',
         tagStyle:          "font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px",
         progressBgStyle:   'height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px',
         progressFillStyle: 'width:' + s.progress + '%;height:100%;border-radius:3px;background:' + s.progressColor,
@@ -336,19 +343,38 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     var profileRankTrailStyle = 'position:absolute;left:6%;width:' + trailWidth + ';top:25px;height:1px;background:linear-gradient(90deg,#c49a4e,#e3c47e);box-shadow:0 0 8px rgba(216,181,107,.5);z-index:0';
 
     // Continue studying: auto-picks in-progress scrolls
-    var continueScrolls = C.libraryScrolls
+    var continueScrolls = (C.libraryScrolls || [])
       .filter(function(s) { return !s.locked && s.progress > 0 && s.progress < 100; })
       .slice(0, 2)
       .map(function(s) {
+        var meta = s.articleId && typeof window !== 'undefined' && window.COVEN_ARTICLES_INDEX && window.COVEN_ARTICLES_INDEX[s.articleId];
+        var title = meta ? meta.title : (s.title || 'Untitled Scroll');
+        var tag = meta ? meta.tag : (s.tag || 'SCROLL');
+        var thumbBg = meta ? meta.thumbBg : (s.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)');
+        var onClick;
+        if (s.articleId) {
+          var targetId = s.articleId;
+          onClick = function() {
+            if (typeof window !== 'undefined') {
+              window.location.href = '/article/' + targetId;
+            }
+          };
+        } else {
+          onClick = function() {
+            this.go('article');
+          }.bind(this);
+        }
         return {
-          tag:              s.tag,
-          title:            s.title,
-          thumbStyle:       'width:70px;height:70px;border-radius:6px;background:' + s.thumbBg + ';border:1px solid rgba(216,181,107,.14);flex-shrink:0',
+          articleId:        s.articleId,
+          tag:              tag,
+          title:            title,
+          thumbStyle:       'width:70px;height:70px;border-radius:6px;background:' + thumbBg + ';border:1px solid rgba(216,181,107,.14);flex-shrink:0',
           progressBgStyle:  'height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:7px',
           progressFillStyle:'width:' + s.progress + '%;height:100%;border-radius:3px;background:' + s.progressColor,
           progressPct:      s.progress + '%',
+          onClick:          onClick,
         };
-      });
+      }.bind(this));
 
     return {
       // Screen flags

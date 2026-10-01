@@ -133,7 +133,7 @@ const profileHtml = `<!-- ══════════════════
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:22px">
       <sc-for list="{{ continueScrolls }}" as="scroll" hint-placeholder-count="2">
-        <div onclick="{{ toArticle }}" style="display:flex;gap:18px;background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:8px;padding:20px;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
+        <div onclick="{{ scroll.onClick }}" style="display:flex;gap:18px;background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:8px;padding:20px;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
           <div style="{{ scroll.thumbStyle }}"></div>
           <div style="flex:1">
             <div style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;margin-bottom:6px">{{ scroll.tag }}</div>

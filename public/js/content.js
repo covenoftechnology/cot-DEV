@@ -47,18 +47,19 @@ window.SITE_CONTENT = {
       { glyph: '✶', name: 'Archmage',  aether: '24,000 Aether', isTop: true  },
     ],
 
-    // ── Featured scrolls (landing page) ───────────────────────────
+    // ── Featured scrolls (landing page demo placeholders) ────────
     featuredScrolls: [
-      { tag: 'APEX · CONJURATION', title: 'The Apex Incantation: Triggers Without Tears',  body: 'Bind your logic once, fire it cleanly. A grimoire for trigger frameworks.',       meta: '12 min · ✦ 120 Aether', thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)' },
       { tag: 'THE MENTOR\'S WAY',  title: 'Guiding Apprentices: The Art of the Mentor',    body: 'How to grow new admins without casting their decisions for them.',                 meta: '9 min · ✦ 90 Aether',  thumbBg: 'repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px)' },
       { tag: 'DIVINATION · BA',    title: 'Reading the Omens: Requirements Divination',    body: 'Ask the questions that surface what stakeholders truly need.',                     meta: '14 min · ✦ 140 Aether', thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)' },
     ],
 
-    // ── Spell Book scrolls ─────────────────────────────────────────
-    // locked:true  → sealed card (add lockNote)
-    // locked:false → active card (add progress 0-100, progressColor, statusLabel, cta)
+    // ── Spell Book scrolls (user state + legacy demo placeholders) ─
+    // Real articles link via articleId and resolve editorial metadata from Content Collections.
+    // Demo scrolls without markdown retain their placeholder copy.
     libraryScrolls: [
-      { tag: 'APEX',           rank: 'Mechanic', locked: false, progress: 65,  progressColor: 'linear-gradient(90deg,#c49a4e,#e3c47e)', statusLabel: '65% complete',   cta: 'Continue →', title: 'The Apex Incantation: Triggers Without Tears',        body: 'Bind your logic once, fire it cleanly.',        thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)' },
+      // Real article user state (title, tag, rank, thumbBg resolved from Content Collections)
+      { articleId: 'apex-triggers-without-tears', locked: false, progress: 65,  progressColor: 'linear-gradient(90deg,#c49a4e,#e3c47e)', statusLabel: '65% complete',   cta: 'Continue →' },
+      // Demo scrolls not yet written in markdown
       { tag: 'MENTORSHIP',     rank: 'Shaper',   locked: false, progress: 100, progressColor: 'linear-gradient(90deg,#7bbf6a,#a9e09a)', statusLabel: '✓ Trial passed', statusColor: '#a9e09a', cta: 'Review →', title: 'Guiding Apprentices: The Art of the Mentor',  body: 'Grow new admins without casting for them.',     thumbBg: 'repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px)' },
       { tag: 'BA · DIVINATION',rank: 'Shaper',   locked: false, progress: 0,   progressColor: 'linear-gradient(90deg,#c49a4e,#e3c47e)', statusLabel: 'Not started',    cta: 'Begin →',    title: 'Reading the Omens: Requirements Divination',          body: 'Surface what stakeholders truly need.',         thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)' },
       { tag: 'FLOW',           rank: 'Mechanic', locked: false, progress: 20,  progressColor: 'linear-gradient(90deg,#c49a4e,#e3c47e)', statusLabel: '20% complete',   cta: 'Continue →', title: 'Flow Sorcery: Automations That Don\'t Backfire',      body: 'Orchestrate without summoning chaos.',          thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)' },

@@ -1,4 +1,5 @@
 ---
+import { getCollection } from 'astro:content';
 import '../styles/styles.css';
 
 interface Props {
@@ -6,6 +7,14 @@ interface Props {
 }
 
 const { title = "Coven of Technology" } = Astro.props;
+
+const allBlogPosts = await getCollection('blog', ({ data }) => data.status === 'published');
+const blogArticlesMeta = Object.fromEntries(allBlogPosts.map(p => [p.id, {
+  id: p.id,
+  title: p.data.title,
+  tag: (p.data.tags && p.data.tags.length > 0) ? p.data.tags[0].toUpperCase() : (p.data.category || '').toUpperCase(),
+  thumbBg: p.data.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)'
+}]));
 ---
 
 <!DOCTYPE html>
@@ -18,6 +27,11 @@ const { title = "Coven of Technology" } = Astro.props;
   <!-- Google Fonts prefetch -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+
+  <!-- Articles metadata index from Content Collections -->
+  <script is:inline define:vars={{ blogArticlesMeta }}>
+    window.COVEN_ARTICLES_INDEX = blogArticlesMeta;
+  </script>
 
   <!-- Design Component runtime (framework) -->
   <script is:inline src="/js/support.js"></script>
