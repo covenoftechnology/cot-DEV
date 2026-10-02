@@ -51,5 +51,29 @@ const blogArticlesMeta = Object.fromEntries(allBlogPosts.map(p => [p.id, {
     // The runtime evaluates this block with DCLogic, StreamableLogic and React injected
     const Component = window.CovenComponentFactory(DCLogic, StreamableLogic, React);
   </script>
+
+  <script is:inline>
+    // Global mobile navigation drawer handler
+    document.addEventListener('click', function(e) {
+      var btn = e.target.closest('.cov-mobile-toggle');
+      if (btn) {
+        var header = btn.closest('.cov-header') || document.querySelector('.cov-header');
+        if (header) {
+          var drawer = header.querySelector('.cov-mobile-drawer');
+          if (drawer) {
+            drawer.classList.toggle('cov-open');
+          }
+        }
+        return;
+      }
+      var drawerItem = e.target.closest('.cov-mobile-drawer span, .cov-mobile-drawer div');
+      if (drawerItem) {
+        var drawer = drawerItem.closest('.cov-mobile-drawer');
+        if (drawer) {
+          drawer.classList.remove('cov-open');
+        }
+      }
+    });
+  </script>
 </body>
 </html>

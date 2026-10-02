@@ -14,74 +14,85 @@ const termsHtml = `<!-- ══════════════════�
     <div style="position:absolute;top:120px;left:13%;width:2px;height:2px;border-radius:50%;background:#e8cf95;box-shadow:0 0 8px 2px rgba(232,207,149,.5);animation:covTwinkle 3.4s .6s infinite"></div>
     <div style="position:absolute;top:170px;right:14%;width:3px;height:3px;border-radius:50%;background:#d6d0ec;box-shadow:0 0 9px 2px rgba(214,208,236,.6);animation:covTwinkle 5s .3s infinite"></div>
   </div>
-  <header style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:2">
+  <header class="cov-header" style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:2">
     <div onclick="{{ toLanding }}" style="display:flex;align-items:center;gap:13px;cursor:pointer">
-      <div style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
-      <div style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
+      <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
+      <div class="cov-brand-text" style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
     </div>
-    <nav style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
+    <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
       <span onclick="{{ toLibrary }}" style="cursor:pointer">Spell Book</span>
       <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
       <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer">About Me</span></sc-if>
       <span onclick="{{ toTerms }}" style="color:#e8cf95;cursor:pointer">Mystic Terms &amp; Privacy</span>
     </nav>
-    <div onclick="{{ toSignup }}" style="padding:10px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:11px;letter-spacing:1.5px;cursor:pointer">ENTER THE COVEN</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div class="cov-header-desktop-cta" onclick="{{ toSignup }}" style="padding:10px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:11px;letter-spacing:1.5px;cursor:pointer">ENTER THE COVEN</div>
+      <button class="cov-mobile-toggle" aria-label="Toggle navigation">☰</button>
+    </div>
   </header>
+  <div class="cov-mobile-drawer">
+    <a href="/library" style="color:#e8cf95;text-decoration:none;font-size:17px;font-family:Cinzel,serif">Spell Book</a>
+    <a href="/memes" style="color:#c5b9a8;text-decoration:none;font-size:17px;font-family:Cinzel,serif">Grimoire of Memes</a>
+    <a href="/profile" style="color:#c5b9a8;text-decoration:none;font-size:17px;font-family:Cinzel,serif">About Me</a>
+    <a href="/leaderboard" style="color:#c5b9a8;text-decoration:none;font-size:17px;font-family:Cinzel,serif">Leaderboard</a>
+    <a href="/terms" style="color:#c5b9a8;text-decoration:none;font-size:17px;font-family:Cinzel,serif">Mystic Terms</a>
+    <a href="/signup" style="display:inline-block;padding:10px 20px;border-radius:4px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;text-decoration:none;font-family:Cinzel,serif;font-weight:600;font-size:12px;letter-spacing:1px;margin-top:8px">ENTER THE COVEN</a>
+  </div>
 
-  <div style="max-width:820px;margin:0 auto;padding:64px 48px 18px;position:relative;z-index:1;text-align:center">
+  <div class="cov-section-pad" style="max-width:820px;margin:0 auto;padding:clamp(36px, 6vw, 64px) 48px 18px;position:relative;z-index:1;text-align:center">
     <div style="font-family:'EB Garamond',serif;letter-spacing:4px;text-transform:uppercase;font-size:12px;color:#b98fd8;margin-bottom:14px">☽ The Coven's Accord</div>
-    <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:46px;color:#f3ecdf;margin:0 0 16px;text-shadow:0 0 40px rgba(139,92,196,.28)">Mystic Terms &amp; Privacy</h1>
+    <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:clamp(28px, 6vw, 46px);color:#f3ecdf;margin:0 0 16px;text-shadow:0 0 40px rgba(139,92,196,.28)">Mystic Terms &amp; Privacy</h1>
     <p style="font-family:'EB Garamond',serif;font-size:19px;line-height:1.6;color:#b3a99d;max-width:580px;margin:0 auto 14px">The pact between you and the coven — what we ask of you, what we gather, and how we guard it.</p>
     <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;letter-spacing:1px;color:#8f857a">LAST INSCRIBED · {{ brand.termsDate }}</div>
   </div>
 
   <!-- TERMS BODY — edit section copy directly here -->
-  <div style="max-width:820px;margin:0 auto;padding:30px 48px 56px;position:relative;z-index:1">
-    <div style="border:1px solid rgba(216,181,107,.18);border-radius:8px;padding:24px 28px;margin-bottom:40px;background:radial-gradient(500px 200px at 20% 0%,rgba(139,92,196,.14),transparent 65%),#100d16">
+  <div class="cov-section-pad" style="max-width:820px;margin:0 auto;padding:24px 48px 56px;position:relative;z-index:1">
+    <div style="border:1px solid rgba(216,181,107,.18);border-radius:8px;padding:clamp(18px, 3vw, 24px) clamp(16px, 3vw, 28px);margin-bottom:40px;background:radial-gradient(500px 200px at 20% 0%,rgba(139,92,196,.14),transparent 65%),#100d16">
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#cdc3b6;margin:0">Welcome, seeker. By entering the Coven of Technology you accept the terms below and entrust us with the care of your data. We keep this plain and honest — no cursed fine print.</p>
     </div>
     <div style="margin-bottom:36px">
-      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:24px;color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">✦</span> The Pact — using the coven</h2>
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 24px);color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">✦</span> The Pact — using the coven</h2>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0">The Coven of Technology is a place of learning. You may read the scrolls, attempt the trials, and earn your rank for your own growth and craft. The scrolls, trials, and teachings remain the intellectual property of the coven and its authors — you're welcome to learn from them, but not to resell or redistribute them without written consent. Use the coven kindly: no harassment of fellow members, no abuse of the platform, no dark magic.</p>
     </div>
     <div style="margin-bottom:36px">
-      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:24px;color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">⟡</span> What we gather</h2>
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 24px);color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">⟡</span> What we gather</h2>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0">To welcome you into the circle we collect what you give us — your coven name and email when you register. As you study, we record your learning progress: scrolls read, trial scores, Aether earned, and your rank. We also note basic technical details such as browser and device type, and anonymized usage patterns that help us improve the craft.</p>
     </div>
     <div style="margin-bottom:36px">
-      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:24px;color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">✷</span> How the Aether flows</h2>
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 24px);color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">✷</span> How the Aether flows</h2>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0">We use your data to track your progress, power the ranks and the coven leaderboard, recommend the next scroll, and keep your account secure. We may send you the occasional missive about new scrolls or coven happenings — you can silence these at any time. We never sell your personal data to anyone, in this realm or another.</p>
     </div>
     <div style="margin-bottom:36px">
-      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:24px;color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">☽</span> Cookies &amp; scrying</h2>
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 24px);color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">☽</span> Cookies &amp; scrying</h2>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0">We use essential cookies to keep you signed in and remember your progress, plus optional analytics cookies that show us how the coven is used. You may clear or decline the optional ones at any time through your browser without losing your place.</p>
     </div>
     <div style="margin-bottom:36px">
-      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:24px;color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">✶</span> Third-party spirits</h2>
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 24px);color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">✶</span> Third-party spirits</h2>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0">A few trusted familiars help us run the coven — hosting, analytics, and email providers who process data on our behalf under their own safeguards. We share only what they need to serve you, and never more.</p>
     </div>
     <div style="margin-bottom:36px">
-      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:24px;color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">⚖</span> Your rights as a member</h2>
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 24px);color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">⚖</span> Your rights as a member</h2>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0">The coven serves you, not the other way around. You may request access to your data, correct it, export it, or ask us to erase it entirely. You can withdraw consent or unsubscribe whenever you wish. Send a raven (or an email) and we'll honor your request promptly.</p>
     </div>
     <div style="margin-bottom:40px">
-      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:24px;color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">⚿</span> Guarding &amp; keeping</h2>
+      <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 24px);color:#ece6dd;margin:0 0 12px;display:flex;align-items:center;gap:12px"><span style="color:#d8b56b">⚿</span> Guarding &amp; keeping</h2>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0">We keep your data only while your account lives, and protect it with reasonable wards and safeguards. No spell is perfectly unbreakable, but we treat your trust as sacred and act quickly should anything go amiss.</p>
     </div>
     <div style="border-top:1px solid rgba(216,181,107,.14);padding-top:30px;text-align:center">
       <div style="font-size:22px;color:#d8b56b;margin-bottom:12px">✉</div>
-      <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:22px;color:#f3ecdf;margin:0 0 10px">Summon the coven</h3>
+      <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(18px, 4vw, 22px);color:#f3ecdf;margin:0 0 10px">Summon the coven</h3>
       <p style="font-family:'EB Garamond',serif;font-size:17px;line-height:1.7;color:#b3a99d;margin:0 auto;max-width:480px">Questions about these terms or your data? Reach the coven at <span style="color:#e8cf95">{{ brand.contact }}</span> and we'll answer.</p>
     </div>
   </div>
 
   <!-- Footer — edit in CONTENT.brand -->
-  <footer style="border-top:1px solid rgba(216,181,107,.12);padding:34px 56px;display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:14px;color:#8f857a">
+  <footer class="cov-footer" style="border-top:1px solid rgba(216,181,107,.12);padding:34px 56px;display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:14px;color:#8f857a">
     <div style="display:flex;align-items:center;gap:12px">
       <div style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(216,181,107,.5);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:13px">✦</div>
       <span style="color:#c5b9a8;letter-spacing:1px">COVEN OF TECHNOLOGY</span>
     </div>
-    <div style="text-align:right;line-height:1.7">
+    <div class="cov-footer-right" style="text-align:right;line-height:1.7">
       <div style="color:#b3a99d">{{ brand.footerBy }}</div>
       <div style="color:#6b6258">{{ brand.copyright }}</div>
     </div>

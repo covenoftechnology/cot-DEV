@@ -13,24 +13,34 @@ const leaderboardHtml = `<!-- ════════════════�
     <div style="position:absolute;top:96px;left:16%;width:2px;height:2px;border-radius:50%;background:#e8cf95;box-shadow:0 0 8px 2px rgba(232,207,149,.5);animation:covTwinkle 3.4s .6s infinite"></div>
     <div style="position:absolute;top:130px;right:40%;width:3px;height:3px;border-radius:50%;background:#d6d0ec;box-shadow:0 0 9px 2px rgba(214,208,236,.6);animation:covTwinkle 5s .3s infinite"></div>
   </div>
-  <header style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:2">
-    <div onclick="{{ toLanding }}" style="display:flex;align-items:center;gap:13px;cursor:pointer">
-      <div style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e">✶</div>
-      <div style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
+  <header class="cov-header" style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:10">
+    <div onclick="{{ toLanding }}" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+      <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e">✶</div>
+      <div class="cov-brand-text" style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
     </div>
-    <nav style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
+    <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
       <span onclick="{{ toLibrary }}" style="cursor:pointer">Spell Book</span>
       <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
       <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer">About Me</span></sc-if>
       <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
     </nav>
-    <div onclick="{{ toProfile }}" style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px;cursor:pointer">{{ profileInitial }}</div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div onclick="{{ toProfile }}" style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px;cursor:pointer">{{ profileInitial }}</div>
+      <button class="cov-mobile-toggle" aria-label="Toggle navigation menu" type="button">☰</button>
+    </div>
+    <div class="cov-mobile-drawer">
+      <span onclick="{{ toLanding }}">The Sanctuary (Home)</span>
+      <span onclick="{{ toLibrary }}">Spell Book</span>
+      <span onclick="{{ toMemes }}">Grimoire of Memes</span>
+      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}">About Me</span></sc-if>
+      <span onclick="{{ toTerms }}">Mystic Terms &amp; Privacy</span>
+    </div>
   </header>
 
-  <div style="display:flex;align-items:flex-end;justify-content:space-between;padding:44px 48px 18px;position:relative;z-index:1">
+  <div class="cov-section-pad cov-flex-stack" style="display:flex;align-items:flex-end;justify-content:space-between;padding:44px 48px 18px;position:relative;z-index:1;gap:16px">
     <div>
       <div style="font-family:'EB Garamond',serif;letter-spacing:4px;text-transform:uppercase;font-size:12px;color:#b98fd8;margin-bottom:10px">✦ The Coven</div>
-      <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:42px;color:#f3ecdf;margin:0">Leaderboard</h1>
+      <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:clamp(28px,6vw,42px);color:#f3ecdf;margin:0">Leaderboard</h1>
     </div>
     <div style="display:flex;border:1px solid rgba(216,181,107,.24);border-radius:24px;overflow:hidden;font-family:'EB Garamond',serif;font-size:14px">
       <span style="padding:9px 20px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;cursor:pointer">This moon</span>
@@ -39,7 +49,7 @@ const leaderboardHtml = `<!-- ════════════════�
   </div>
 
   <!-- Podium — edit CONTENT.leaderboard.podium (order: 2nd · 1st · 3rd) -->
-  <div style="display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;align-items:end;padding:24px 48px 18px;position:relative;z-index:1">
+  <div class="cov-section-pad cov-podium" style="display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:18px;align-items:end;padding:24px 48px 18px;position:relative;z-index:1">
     <div style="background:#15121c;border:1px solid rgba(216,181,107,.16);border-radius:8px;padding:26px 20px;text-align:center">
       <div style="font-family:Cinzel,serif;font-size:22px;color:#c0c0c8;margin-bottom:12px">{{ pod2.position }}</div>
       <div style="width:60px;height:60px;border-radius:50%;margin:0 auto 12px;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(192,192,200,.5);display:flex;align-items:center;justify-content:center;color:#d6d6de;font-family:Cinzel,serif;font-size:22px">{{ pod2.initial }}</div>
@@ -65,22 +75,26 @@ const leaderboardHtml = `<!-- ════════════════�
   </div>
 
   <!-- Rows — edit CONTENT.leaderboard.rows -->
-  <div style="padding:18px 48px 8px;position:relative;z-index:1">
-    <div style="display:grid;grid-template-columns:60px 1fr 160px 110px 130px;gap:16px;padding:0 22px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;color:#8f857a;text-transform:uppercase">
-      <span>Rank</span><span>Witch</span><span>Role</span><span>Accuracy</span><span style="text-align:right">Aether</span>
-    </div>
-    <sc-for list="{{ leaderboardRows }}" as="row" hint-placeholder-count="4">
-      <div style="{{ row.rowStyle }}">
-        <span style="{{ row.rankNumStyle }}">{{ row.rankNum }}</span>
-        <div style="display:flex;align-items:center;gap:12px">
-          <div style="{{ row.avatarStyle }}">{{ row.initial }}</div>
-          <span style="{{ row.nameStyle }}">{{ row.name }}</span>
+  <div class="cov-section-pad" style="padding:18px 48px 8px;position:relative;z-index:1">
+    <div class="cov-table-scroll">
+      <div style="min-width:580px">
+        <div style="display:grid;grid-template-columns:60px 1fr 160px 110px 130px;gap:16px;padding:0 22px 12px;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1px;color:#8f857a;text-transform:uppercase">
+          <span>Rank</span><span>Witch</span><span>Role</span><span>Accuracy</span><span style="text-align:right">Aether</span>
         </div>
-        <span style="{{ row.roleStyle }}">{{ row.role }}</span>
-        <span style="{{ row.accuracyStyle }}">{{ row.accuracy }}</span>
-        <span style="{{ row.aetherStyle }}">{{ row.aether }}</span>
+        <sc-for list="{{ leaderboardRows }}" as="row" hint-placeholder-count="4">
+          <div style="{{ row.rowStyle }}">
+            <span style="{{ row.rankNumStyle }}">{{ row.rankNum }}</span>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="{{ row.avatarStyle }}">{{ row.initial }}</div>
+              <span style="{{ row.nameStyle }}">{{ row.name }}</span>
+            </div>
+            <span style="{{ row.roleStyle }}">{{ row.role }}</span>
+            <span style="{{ row.accuracyStyle }}">{{ row.accuracy }}</span>
+            <span style="{{ row.aetherStyle }}">{{ row.aether }}</span>
+          </div>
+        </sc-for>
       </div>
-    </sc-for>
+    </div>
     <div style="text-align:center;padding:16px 0 36px;font-family:'EB Garamond',serif;font-size:14px;color:#8f857a">Read more scrolls and pass their trials to climb the ranks ↑</div>
   </div>
 </div>
