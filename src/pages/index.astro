@@ -1,27 +1,27 @@
 ---
-import { getCollection } from 'astro:content';
+import { getFeaturedArticles } from '../lib/articles';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const publishedFeaturedPosts = await getCollection('blog', ({ data }) => data.status === 'published' && data.featured);
-publishedFeaturedPosts.sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+const featuredArticles = getFeaturedArticles();
 
-const collectionCardsHtml = publishedFeaturedPosts.map(post => {
-  const tag = (post.data.tags && post.data.tags.length > 0)
-    ? post.data.tags.slice(0, 2).join(' · ').toUpperCase()
-    : post.data.category.toUpperCase();
-  const thumbBg = post.data.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
-  const meta = post.data.meta || '12 min · ✦ 120 Aether';
+const collectionCardsHtml = featuredArticles.map(article => {
+  const { slug, meta } = article;
+  const tag = (meta.tags && meta.tags.length > 0)
+    ? meta.tags.slice(0, 2).join(' · ').toUpperCase()
+    : meta.category.toUpperCase();
+  const thumbBg = meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+  const metaText = meta.meta || '12 min · ✦ 120 Aether';
 
   return `
     <div style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:5px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
-      <a href="/article/${post.id}" style="text-decoration:none;color:inherit;display:block">
+      <a href="/article/${slug}" style="text-decoration:none;color:inherit;display:block">
         <div style="height:150px;background:${thumbBg};display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7f70;letter-spacing:1px;border-bottom:1px solid rgba(216,181,107,.12)">[ scroll glyph · 640×360 ]</div>
         <div style="padding:22px">
           <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px;margin-bottom:14px">${tag}</div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:21px;line-height:1.25;color:#ece6dd;margin:0 0 10px">${post.data.title}</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:15px;color:#9b9189;margin:0 0 16px;line-height:1.5">${post.data.description}</p>
+          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:21px;line-height:1.25;color:#ece6dd;margin:0 0 10px">${meta.title}</h3>
+          <p style="font-family:'EB Garamond',serif;font-size:15px;color:#9b9189;margin:0 0 16px;line-height:1.5">${meta.description}</p>
           <div style="display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span>${meta}</span>
+            <span>${metaText}</span>
             <span style="color:#e8cf95">Read →</span>
           </div>
         </div>
@@ -150,17 +150,6 @@ const landingHtml = `<!-- ══════════════════
     <div onclick="{{ toSignup }}" style="display:inline-block;padding:15px clamp(16px,4vw,34px);border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:clamp(12px,3.5vw,14px);letter-spacing:1.5px;box-shadow:0 0 34px rgba(216,181,107,.34);cursor:pointer;max-width:100%">JOIN THE COVEN — IT'S FREE</div>
   </section>
 
-  <!-- Footer — edit in CONTENT.brand -->
-  <footer class="cov-section-pad cov-flex-stack" style="border-top:1px solid rgba(216,181,107,.12);padding:34px 56px;display:flex;justify-content:space-between;align-items:center;font-family:'EB Garamond',serif;font-size:14px;color:#8f857a;gap:16px">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:28px;height:28px;border-radius:50%;border:1px solid rgba(216,181,107,.5);display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:13px">✦</div>
-      <span style="color:#c5b9a8;letter-spacing:1px">COVEN OF TECHNOLOGY</span>
-    </div>
-    <div style="line-height:1.7">
-      <div style="color:#b3a99d">{{ brand.footerBy }}</div>
-      <div style="color:#6b6258">{{ brand.copyright }}</div>
-    </div>
-  </footer>
 </div>
 </sc-if>`;
 ---

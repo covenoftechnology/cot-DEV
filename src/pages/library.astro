@@ -1,19 +1,19 @@
 ---
-import { getCollection } from 'astro:content';
+import { getPublishedArticles } from '../lib/articles';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const publishedPosts = await getCollection('blog', ({ data }) => data.status === 'published');
-publishedPosts.sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+const publishedArticles = getPublishedArticles();
 
-const collectionLibraryCardsHtml = publishedPosts.map(post => {
-  const tag = (post.data.tags && post.data.tags.length > 0)
-    ? post.data.tags[0].toUpperCase()
-    : (post.data.category || '').toUpperCase();
-  const rank = post.data.rank || 'Mechanic';
-  const thumbBg = post.data.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+const collectionLibraryCardsHtml = publishedArticles.map(article => {
+  const { slug, meta } = article;
+  const tag = (meta.tags && meta.tags.length > 0)
+    ? meta.tags[0].toUpperCase()
+    : (meta.category || '').toUpperCase();
+  const rank = meta.rank || 'Mechanic';
+  const thumbBg = meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
 
-  const cat = (post.data.category || '').toLowerCase();
-  const tags = (post.data.tags || []).map(t => String(t).toLowerCase());
+  const cat = (meta.category || '').toLowerCase();
+  const tags = (meta.tags || []).map(t => String(t).toLowerCase());
 
   const matchesApexOrFlow = cat === 'apex' || cat === 'flow' || tags.includes('apex') || tags.includes('flow');
   const matchesMentorship = cat === 'mentorship' || cat === 'mentor' || tags.includes('mentorship') || tags.includes('mentor');
@@ -26,16 +26,16 @@ const collectionLibraryCardsHtml = publishedPosts.map(post => {
 
   return `
     <sc-if value="{{ ${filterCond} }}" hint-placeholder-val="{{ true }}">
-      <div data-category="${post.data.category}" data-tags="${(post.data.tags || []).join(',')}" data-tag="${tag}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
-        <a href="/article/${post.id}" style="text-decoration:none;color:inherit;display:block">
+      <div data-category="${meta.category}" data-tags="${(meta.tags || []).join(',')}" data-tag="${tag}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
+        <a href="/article/${slug}" style="text-decoration:none;color:inherit;display:block">
           <div style="height:120px;background:${thumbBg};border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
           <div style="padding:20px">
             <div style="display:flex;justify-content:space-between;margin-bottom:12px">
               <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">${tag}</span>
               <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">${rank}</span>
             </div>
-            <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">${post.data.title}</h3>
-            <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">${post.data.description}</p>
+            <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">${meta.title}</h3>
+            <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">${meta.description}</p>
             <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
               <div style="width:65%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
             </div>

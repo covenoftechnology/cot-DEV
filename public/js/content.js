@@ -54,10 +54,10 @@ window.SITE_CONTENT = {
     ],
 
     // ── Spell Book scrolls (user state + legacy demo placeholders) ─
-    // Real articles link via articleId and resolve editorial metadata from Content Collections.
-    // Demo scrolls without markdown retain their placeholder copy.
+    // Real articles link via articleId and resolve editorial metadata from the articles system (window.COVEN_ARTICLES_INDEX).
+    // Demo scrolls without an article folder retain their placeholder copy.
     libraryScrolls: [
-      // Real article user state (title, tag, rank, thumbBg resolved from Content Collections)
+      // Real article user state (title, tag, rank, thumbBg resolved from articles metadata index)
       { articleId: 'apex-triggers-without-tears', locked: false, progress: 65,  progressColor: 'linear-gradient(90deg,#c49a4e,#e3c47e)', statusLabel: '65% complete',   cta: 'Continue →' },
       // Demo scrolls not yet written in markdown
       { tag: 'MENTORSHIP',     rank: 'Shaper',   locked: false, progress: 100, progressColor: 'linear-gradient(90deg,#7bbf6a,#a9e09a)', statusLabel: '✓ Trial passed', statusColor: '#a9e09a', cta: 'Review →', title: 'Guiding Apprentices: The Art of the Mentor',  body: 'Grow new admins without casting for them.',     thumbBg: 'repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px)' },

@@ -1,5 +1,6 @@
 ---
-import { getCollection } from 'astro:content';
+import { getPublishedArticles } from '../lib/articles';
+import Footer from '../components/Footer.astro';
 import '../styles/styles.css';
 
 interface Props {
@@ -8,12 +9,12 @@ interface Props {
 
 const { title = "Coven of Technology" } = Astro.props;
 
-const allBlogPosts = await getCollection('blog', ({ data }) => data.status === 'published');
-const blogArticlesMeta = Object.fromEntries(allBlogPosts.map(p => [p.id, {
-  id: p.id,
-  title: p.data.title,
-  tag: (p.data.tags && p.data.tags.length > 0) ? p.data.tags[0].toUpperCase() : (p.data.category || '').toUpperCase(),
-  thumbBg: p.data.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)'
+const publishedArticles = getPublishedArticles();
+const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, {
+  id: a.slug,
+  title: a.meta.title,
+  tag: (a.meta.tags && a.meta.tags.length > 0) ? a.meta.tags[0].toUpperCase() : (a.meta.category || '').toUpperCase(),
+  thumbBg: a.meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)'
 }]));
 ---
 
@@ -42,8 +43,11 @@ const blogArticlesMeta = Object.fromEntries(allBlogPosts.map(p => [p.id, {
 </head>
 <body>
   <x-dc>
-    <div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif">
-      <slot />
+    <div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif;display:flex;flex-direction:column">
+      <div style="flex:1">
+        <slot />
+      </div>
+      <Footer />
     </div>
   </x-dc>
 

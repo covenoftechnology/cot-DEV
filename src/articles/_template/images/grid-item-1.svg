@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 380" width="600" height="380">
+  <defs>
+    <radialGradient id="g1Bg" cx="50%" cy="40%" r="70%">
+      <stop offset="0%" stop-color="#28173f" />
+      <stop offset="100%" stop-color="#0e0a16" />
+    </radialGradient>
+  </defs>
+  <rect width="600" height="380" fill="url(#g1Bg)" rx="6" />
+  <rect width="598" height="378" x="1" y="1" fill="none" stroke="rgba(216,181,107,0.18)" stroke-width="1" rx="6" />
+
+  <circle cx="300" cy="140" r="70" fill="rgba(185,143,216,0.12)" stroke="#b98fd8" stroke-width="1.2" stroke-dasharray="3,6" />
+  <circle cx="300" cy="140" r="45" fill="rgba(216,181,107,0.15)" stroke="#d8b56b" stroke-width="1.5" />
+  <text x="300" y="152" font-family="'Cinzel', serif" font-size="34" fill="#e8cf95" text-anchor="middle">◈</text>
+
+  <text x="300" y="260" font-family="'Cinzel', serif" font-size="18" font-weight="600" fill="#f3ecdf" letter-spacing="1" text-anchor="middle">ASSET PROPENSITY</text>
+  <text x="300" y="288" font-family="'EB Garamond', serif" font-size="14" fill="#cdc3b6" text-anchor="middle">Categorizing visual and copy components by predicted response</text>
+  <text x="300" y="325" font-family="'IBM Plex Mono', monospace" font-size="10" fill="#b98fd8" letter-spacing="1.5" text-anchor="middle">[ SCROLL ASSET · CLUSTERING MODEL ]</text>
+</svg>

@@ -1,0 +1,328 @@
+---
+import BaseLayout from './BaseLayout.astro';
+import type { ArticleMeta } from '../types/article';
+
+interface Props {
+  meta: ArticleMeta;
+  wide?: boolean;
+}
+
+const { meta, wide = false } = Astro.props;
+
+const authorInitial = (meta.author || 'O').charAt(0).toUpperCase();
+const tagDisplay = (meta.tags && meta.tags.length > 0)
+  ? meta.tags.join(' · ').toUpperCase()
+  : (meta.category || '').toUpperCase();
+
+// Single source of truth for Aether Reward
+let aetherReward = meta.aetherReward;
+if (aetherReward === undefined) {
+  const match = meta.meta?.match(/✦\s*(\d+)\s*Aether/i);
+  aetherReward = match ? parseInt(match[1], 10) : 120;
+}
+
+// Single source of truth for Reading Time
+let readingTime = meta.readingTime;
+if (!readingTime) {
+  if (meta.meta) {
+    const parts = meta.meta.split('·');
+    readingTime = parts[0]?.trim();
+  } else {
+    readingTime = '12 min';
+  }
+}
+
+// Format publication dates cleanly
+function formatDate(dateVal?: Date | string): string {
+  if (!dateVal) return '';
+  const d = typeof dateVal === 'string' ? new Date(dateVal.includes('T') ? dateVal : `${dateVal}T00:00:00`) : dateVal;
+  if (isNaN(d.getTime())) return String(dateVal);
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+const formattedPublishedDate = formatDate(meta.publishedDate);
+const formattedUpdatedDate = formatDate(meta.updatedDate);
+
+const isWide = Boolean(wide || meta.wide);
+const containerMaxWidth = isWide ? '1220px' : '820px';
+---
+
+<BaseLayout title={`Coven of Technology — ${meta.title}`}>
+  <div style="position:relative;background:radial-gradient(1100px 640px at 50% -14%,rgba(124,77,196,.40),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.24),transparent 62%),#08060e">
+    <div style="position:absolute;top:64px;left:0;right:0;height:300px;overflow:hidden;z-index:0;pointer-events:none">
+      <div style="position:absolute;top:60px;right:7%;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#efe7d2,#cdbfae 58%,#6f6450);box-shadow:0 0 40px rgba(214,208,236,.38),inset -7px -5px 12px rgba(40,30,60,.55);opacity:.4;animation:covFloat 9s ease-in-out infinite"></div>
+      <div style="position:absolute;top:44px;left:9%;width:3px;height:3px;border-radius:50%;background:#c9b8ff;box-shadow:0 0 10px 2px rgba(201,184,255,.7);animation:covTwinkle 4s infinite"></div>
+      <div style="position:absolute;top:120px;left:13%;width:2px;height:2px;border-radius:50%;background:#e8cf95;box-shadow:0 0 8px 2px rgba(232,207,149,.5);animation:covTwinkle 3.4s .6s infinite"></div>
+      <div style="position:absolute;top:170px;right:11%;width:3px;height:3px;border-radius:50%;background:#d6d0ec;box-shadow:0 0 9px 2px rgba(214,208,236,.6);animation:covTwinkle 5s .3s infinite"></div>
+    </div>
+
+    <!-- STICKY ARTICLE TOP ZONE (Header + Reading Progress Bar) -->
+    <div class="article-sticky-top-zone">
+      <header class="cov-header cov-section-pad article-top-header">
+        <div onclick="{{ toLanding }}" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+          <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
+          <div class="cov-brand-text" style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{"{{ brand.name }}"}</div>
+        </div>
+        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;max-width:100%">
+          <span onclick="{{ toLibrary }}" style="cursor:pointer">The Grimoire</span> / {meta.category} / <span style="color:#c5b9a8">{meta.title}</span>
+        </div>
+        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#e8cf95;border:1px solid rgba(216,181,107,.3);padding:7px 14px;border-radius:4px;white-space:nowrap">✦ {aetherReward} Aether on completion</div>
+      </header>
+
+      <!-- Sticky Reading Progress Bar (pins to viewport top during scroll) -->
+      <div id="article-progress-track" class="cov-reading-progress-track">
+        <div id="article-progress-bar" class="cov-reading-progress-bar"></div>
+      </div>
+    </div>
+
+    <!-- ARTICLE WRAPPER -->
+    <article id="coven-article-container" class="cov-section-pad" style={`max-width:${containerMaxWidth};margin:0 auto;padding:56px 48px 64px;position:relative;z-index:1`}>
+      <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:5px 10px;margin-bottom:22px">{tagDisplay}</div>
+      <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:clamp(28px,6.5vw,46px);line-height:1.12;color:#f3ecdf;margin:0 0 22px;text-shadow:0 0 40px rgba(139,92,196,.2);word-break:break-word">{meta.title}</h1>
+      <div style="display:flex;align-items:center;gap:14px;margin-bottom:34px;padding-bottom:26px;border-bottom:1px solid rgba(216,181,107,.12);flex-wrap:wrap">
+        <div style="width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;flex-shrink:0">{authorInitial}</div>
+        <div>
+          <div style="font-family:'EB Garamond',serif;font-size:16px;color:#ece6dd">Inscribed by the {meta.author}</div>
+          <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            <span>{readingTime}</span>
+            {formattedPublishedDate && (
+              <>
+                <span>·</span>
+                <span>{formattedPublishedDate}</span>
+              </>
+            )}
+            {formattedUpdatedDate && formattedUpdatedDate !== formattedPublishedDate && (
+              <>
+                <span>·</span>
+                <span style="font-style:italic;color:#7b6f63">(Updated {formattedUpdatedDate})</span>
+              </>
+            )}
+            <span>·</span>
+            <span style="color:#d8b56b">✦ {aetherReward} Aether</span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- ARTICLE BODY -->
+      <div class="article-body article-content article-markdown-body">
+        <slot />
+      </div>
+    </article>
+
+    {!meta.hideTrial && (
+      <div class="cov-banner" style={`margin:0 auto 48px;max-width:${containerMaxWidth};border:1px solid rgba(216,181,107,.18);border-radius:8px;padding:36px;text-align:center;background:radial-gradient(500px 200px at 50% 0%,rgba(139,92,196,.18),transparent 65%),#100d16;position:relative;z-index:1`}>
+        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:26px;color:#f3ecdf;margin:0 0 8px">You've reached the trial</h3>
+        <p style="font-family:'EB Garamond',serif;font-size:16px;color:#b3a99d;margin:0 0 24px">Prove your mastery to claim ✦ {aetherReward} Aether and advance toward {meta.rank || 'Mechanic'}.</p>
+        <div onclick="{{ startTrial }}" style="display:inline-block;padding:14px 32px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.34);cursor:pointer;max-width:100%">BEGIN THE TRIAL</div>
+      </div>
+    )}
+  </div>
+
+  <script is:inline>
+    // Unified Reading Progress for Article (top sticky bar, sidebar bar, and sidebar percentage)
+    function updateUnifiedReadingProgress() {
+      var articleEl = document.getElementById('coven-article-container') || document.querySelector('article');
+      if (!articleEl) return;
+
+      var rect = articleEl.getBoundingClientRect();
+      var scrollTop = window.scrollY || document.documentElement.scrollTop;
+      var articleTop = rect.top + scrollTop;
+      var articleHeight = rect.height;
+      var viewportHeight = window.innerHeight;
+
+      // Distance from top of article until the bottom of the article enters the viewport
+      var totalDistance = articleHeight - viewportHeight;
+      var progress = 0;
+
+      if (totalDistance <= 0) {
+        progress = 100;
+      } else {
+        var scrolled = scrollTop - articleTop;
+        progress = Math.min(100, Math.max(0, Math.round((scrolled / totalDistance) * 100)));
+      }
+
+      // 1. Sticky top reading progress bar
+      var topBar = document.getElementById('article-progress-bar');
+      if (topBar) topBar.style.width = progress + '%';
+
+      // 2. Sidebar reading progress bar
+      var sidebarBar = document.getElementById('reading-bar');
+      if (sidebarBar) sidebarBar.style.width = progress + '%';
+
+      // 3. Sidebar percentage indicator
+      var sidebarPct = document.getElementById('reading-pct');
+      if (sidebarPct) sidebarPct.textContent = progress + '%';
+    }
+
+    window.addEventListener('scroll', updateUnifiedReadingProgress, { passive: true });
+    window.addEventListener('resize', updateUnifiedReadingProgress, { passive: true });
+    // Run on initial load
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      updateUnifiedReadingProgress();
+    } else {
+      document.addEventListener('DOMContentLoaded', updateUnifiedReadingProgress);
+    }
+  </script>
+</BaseLayout>
+
+<style is:global>
+  :root {
+    --article-header-height: 72px;
+    --article-progress-height: 3px;
+    --article-sticky-height: calc(var(--article-header-height) + var(--article-progress-height));
+    --article-mobile-toc-height: 48px;
+  }
+
+  @media (max-width: 980px) {
+    :root {
+      --article-header-height: 64px;
+      --article-mobile-toc-height: 46px;
+    }
+  }
+
+  .article-sticky-top-zone {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    width: 100%;
+    background: rgba(8, 6, 14, 0.94);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border-bottom: 1px solid rgba(216, 181, 107, 0.15);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  }
+
+  .article-top-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 48px;
+    flex-wrap: wrap;
+    gap: 12px;
+    min-height: var(--article-header-height);
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 980px) {
+    .article-top-header {
+      padding: 12px 20px;
+    }
+  }
+
+  .cov-reading-progress-track {
+    height: var(--article-progress-height);
+    background: rgba(216, 181, 107, 0.12);
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .cov-reading-progress-bar {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #c49a4e, #e3c47e);
+    transition: width 0.08s linear;
+  }
+
+  .article-body p,
+  .article-content p,
+  .article-markdown-body p {
+    font-family: 'EB Garamond', serif;
+    font-size: 19px;
+    line-height: 1.75;
+    color: #cdc3b6;
+    margin: 0 0 24px;
+  }
+  .article-body h2,
+  .article-content h2,
+  .article-markdown-body h2 {
+    font-family: Cinzel, serif;
+    font-weight: 600;
+    font-size: clamp(22px, 5vw, 26px);
+    color: #ece6dd;
+    margin: 38px 0 16px;
+  }
+  .article-body h3,
+  .article-content h3,
+  .article-markdown-body h3 {
+    font-family: Cinzel, serif;
+    font-weight: 600;
+    font-size: clamp(18px, 4.5vw, 22px);
+    color: #ece6dd;
+    margin: 30px 0 14px;
+  }
+  .article-body blockquote,
+  .article-content blockquote,
+  .article-markdown-body blockquote {
+    border-left: 2px solid #d8b56b;
+    padding: 6px 0 6px 24px;
+    margin: 32px 0;
+    background: linear-gradient(90deg, rgba(216, 181, 107, 0.06), transparent);
+  }
+  .article-body blockquote p,
+  .article-content blockquote p,
+  .article-markdown-body blockquote p {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: clamp(17px, 4vw, 21px);
+    line-height: 1.5;
+    color: #e8cf95;
+    margin: 0;
+  }
+  .article-body pre,
+  .article-content pre,
+  .article-markdown-body pre {
+    background: #100d15 !important;
+    border: 1px solid rgba(216, 181, 107, 0.16);
+    border-radius: 6px;
+    padding: clamp(14px, 3vw, 22px) clamp(16px, 3vw, 24px);
+    margin: 28px 0;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    line-height: 1.7;
+    color: #cbbfae;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .article-body pre code,
+  .article-content pre code,
+  .article-markdown-body pre code {
+    background: transparent !important;
+    padding: 0;
+    border: none;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+    white-space: pre;
+    word-break: normal;
+  }
+  .article-body ul,
+  .article-body ol,
+  .article-content ul,
+  .article-content ol {
+    font-family: 'EB Garamond', serif;
+    font-size: 18px;
+    line-height: 1.7;
+    color: #cdc3b6;
+    margin: 0 0 24px;
+    padding-left: 28px;
+  }
+  .article-body li,
+  .article-content li {
+    margin-bottom: 8px;
+  }
+  .article-body a,
+  .article-content a {
+    color: #e8cf95;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  .article-body a:hover,
+  .article-content a:hover {
+    color: #f3ecdf;
+  }
+</style>

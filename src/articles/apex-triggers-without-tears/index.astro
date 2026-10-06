@@ -1,0 +1,32 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import './article.css';
+import meta from './meta';
+---
+
+<ArticleLayout meta={meta}>
+  <div class="apex-illustration">[ illustration · 1280×640 ]</div>
+
+  <p>
+    Every trigger you write is a binding spell — speak it carelessly and it fires a thousand times in the dark, recursing until your governor limits collapse. Speak it with intent, and a single incantation governs every record that crosses your altar.
+  </p>
+
+  <h2>One trigger per object</h2>
+
+  <p>
+    The first law of the craft: bind one trigger to each object and let a handler class carry the logic. Scatter your spells across many triggers and you forfeit all control over the order in which they wake.
+  </p>
+
+  <blockquote>
+    <p>"A trigger should decide nothing and delegate everything. It is the doorway, not the room."</p>
+  </blockquote>
+
+  <pre><code><span class="code-comment">// the incantation</span>
+trigger AccountTrigger on Account (before insert) {'{'}
+    AccountHandler.conjure(Trigger.new);
+{'}'}</code></pre>
+
+  <p>
+    Master this rite and the next scrolls — bulkification, recursion wards, and the trigger framework — will open to you.
+  </p>
+</ArticleLayout>

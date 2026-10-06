@@ -1,0 +1,16 @@
+---
+import { getPublishedArticles } from '../../lib/articles';
+
+export async function getStaticPaths() {
+  const articles = getPublishedArticles();
+  return articles.map((article) => ({
+    params: { slug: article.slug },
+    props: { article },
+  }));
+}
+
+const { article } = Astro.props;
+const ArticleComponent = article.component;
+---
+
+<ArticleComponent />

@@ -1,0 +1,60 @@
+---
+interface Props {
+  type?: 'info' | 'warning' | 'note' | 'tip';
+  title?: string;
+}
+
+const { type = 'info', title } = Astro.props;
+
+const config = {
+  info: {
+    borderColor: 'rgba(185, 143, 216, 0.35)',
+    bgColor: 'linear-gradient(90deg, rgba(185, 143, 216, 0.08) 0%, rgba(185, 143, 216, 0.02) 100%)',
+    glyphColor: '#b98fd8',
+    glyph: '✦',
+    defaultTitle: 'Incantation Note'
+  },
+  warning: {
+    borderColor: 'rgba(216, 181, 107, 0.4)',
+    bgColor: 'linear-gradient(90deg, rgba(216, 181, 107, 0.09) 0%, rgba(216, 181, 107, 0.02) 100%)',
+    glyphColor: '#e8cf95',
+    glyph: '⚠',
+    defaultTitle: 'Ward of Caution'
+  },
+  note: {
+    borderColor: 'rgba(216, 181, 107, 0.25)',
+    bgColor: 'linear-gradient(90deg, rgba(216, 181, 107, 0.05) 0%, transparent 100%)',
+    glyphColor: '#d8b56b',
+    glyph: '☽',
+    defaultTitle: 'Grimoire Note'
+  },
+  tip: {
+    borderColor: 'rgba(169, 224, 154, 0.35)',
+    bgColor: 'linear-gradient(90deg, rgba(123, 191, 106, 0.08) 0%, rgba(123, 191, 106, 0.02) 100%)',
+    glyphColor: '#a9e09a',
+    glyph: '✧',
+    defaultTitle: 'Craft Mastery Tip'
+  }
+}[type];
+
+const displayTitle = title ?? config.defaultTitle;
+---
+
+<div class={`cov-callout cov-callout-${type}`} style={`border-left: 3px solid ${config.glyphColor}; border-top: 1px solid ${config.borderColor}; border-right: 1px solid ${config.borderColor}; border-bottom: 1px solid ${config.borderColor}; background: ${config.bgColor}; border-radius: 4px; padding: 18px 22px; margin: 28px 0; position: relative;`}>
+  <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 8px;">
+    <span style={`color: ${config.glyphColor}; font-size: 14px;`}>{config.glyph}</span>
+    <span style={`font-family: Cinzel, serif; font-size: 13px; font-weight: 600; letter-spacing: 1px; color: ${config.glyphColor}; text-transform: uppercase;`}>{displayTitle}</span>
+  </div>
+  <div class="cov-callout-content" style="font-family: 'EB Garamond', serif; font-size: 17px; line-height: 1.6; color: #cdc3b6;">
+    <slot />
+  </div>
+</div>
+
+<style is:global>
+  .cov-callout-content p {
+    margin: 0 0 10px !important;
+  }
+  .cov-callout-content p:last-child {
+    margin-bottom: 0 !important;
+  }
+</style>

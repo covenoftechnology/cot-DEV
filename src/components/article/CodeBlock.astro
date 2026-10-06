@@ -1,0 +1,171 @@
+---
+import { codeToHtml } from 'shiki';
+
+interface Props {
+  title?: string;
+  language?: string;
+  code?: string;
+}
+
+const { title, language = 'apex', code } = Astro.props;
+
+let rawCode = code;
+if (!rawCode && Astro.slots.has('default')) {
+  const rendered = await Astro.slots.render('default');
+  rawCode = rendered
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&amp;/g, '&')
+    .replace(/&#39;/g, "'")
+    .replace(/&quot;/g, '"');
+}
+rawCode = (rawCode || '').trim();
+
+const langAliases: Record<string, string> = {
+  ssjs: 'javascript',
+  amp: 'html',
+  ampscript: 'html',
+};
+
+const targetLang = langAliases[language.toLowerCase()] || language.toLowerCase();
+
+let highlightedHtml = '';
+try {
+  highlightedHtml = await codeToHtml(rawCode, {
+    lang: targetLang,
+    theme: 'one-dark-pro',
+  });
+} catch (e) {
+  highlightedHtml = `<pre class="shiki" tabindex="0"><code>${rawCode.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</code></pre>`;
+}
+---
+
+<div class="cov-code-block">
+  <div class="cov-code-header">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <span class="cov-code-title">{title || 'Scroll Snippet'}</span>
+      <span class="cov-code-lang">{language.toUpperCase()}</span>
+    </div>
+    <button type="button" class="cov-code-copy-btn" aria-label="Copy code to clipboard">
+      <span class="copy-text">Copy</span>
+    </button>
+  </div>
+  <div class="cov-code-body">
+    <Fragment set:html={highlightedHtml} />
+  </div>
+</div>
+
+<script is:inline>
+  document.addEventListener('click', function(e) {
+    var btn = e.target.closest('.cov-code-copy-btn');
+    if (!btn) return;
+    var block = btn.closest('.cov-code-block');
+    if (!block) return;
+    var pre = block.querySelector('pre');
+    if (!pre) return;
+    var text = pre.innerText || pre.textContent || '';
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function() {
+        var label = btn.querySelector('.copy-text');
+        if (label) {
+          var original = label.textContent;
+          label.textContent = '✦ Copied';
+          setTimeout(function() {
+            label.textContent = original;
+          }, 2000);
+        }
+      });
+    }
+  });
+</script>
+
+<style is:global>
+  .cov-code-block {
+    margin: 28px 0;
+    border: 1px solid rgba(216, 181, 107, 0.18);
+    border-radius: 6px;
+    background: #100d15;
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  .cov-code-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 9px 16px;
+    background: rgba(216, 181, 107, 0.05);
+    border-bottom: 1px solid rgba(216, 181, 107, 0.12);
+  }
+
+  .cov-code-title {
+    font-family: 'EB Garamond', serif;
+    font-size: 14px;
+    color: #c5b9a8;
+  }
+
+  .cov-code-lang {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #b98fd8;
+    background: rgba(185, 143, 216, 0.12);
+    border: 1px solid rgba(185, 143, 216, 0.28);
+    border-radius: 2px;
+    padding: 2px 6px;
+  }
+
+  .cov-code-copy-btn {
+    background: transparent;
+    border: 1px solid rgba(216, 181, 107, 0.25);
+    border-radius: 3px;
+    padding: 3px 10px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1px;
+    color: #e8cf95;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .cov-code-copy-btn:hover {
+    background: rgba(216, 181, 107, 0.1);
+    border-color: #d8b56b;
+    color: #f3ecdf;
+  }
+
+  /* Shiki styles scoped to cov-code-block */
+  .cov-code-block .cov-code-body pre.shiki {
+    background-color: transparent !important;
+    margin: 0 !important;
+    padding: clamp(14px, 3vw, 20px) clamp(16px, 3vw, 22px) !important;
+    font-family: 'IBM Plex Mono', monospace !important;
+    font-size: 13.5px !important;
+    line-height: 1.7 !important;
+    overflow-x: auto !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    border: none !important;
+    border-radius: 0 !important;
+    white-space: pre !important;
+  }
+
+  .cov-code-block .cov-code-body pre.shiki code {
+    background: transparent !important;
+    padding: 0 !important;
+    border: none !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+    display: block !important;
+    width: fit-content !important;
+    min-width: 100% !important;
+    white-space: pre !important;
+    word-break: normal !important;
+  }
+
+  .cov-code-block .cov-code-body pre.shiki .line {
+    display: block !important;
+    min-height: 1.5em;
+    white-space: pre !important;
+  }
+</style>

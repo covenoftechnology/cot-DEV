@@ -1,0 +1,875 @@
+---
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import './article.css';
+import meta from './meta';
+
+// Local images
+import coverImg from './images/cover.svg';
+import diagramImg from './images/diagram-architecture.svg';
+import scoringImg from './images/feature-scoring.svg';
+import timingImg from './images/feature-timing.svg';
+import gridItem1 from './images/grid-item-1.svg';
+import gridItem2 from './images/grid-item-2.svg';
+import gridItem3 from './images/grid-item-3.svg';
+
+// Reusable article components
+import Callout from '../../components/article/Callout.astro';
+import CodeBlock from '../../components/article/CodeBlock.astro';
+---
+
+<ArticleLayout meta={meta} wide={true}>
+  <article class="article-template">
+
+    <!-- Hero-specific content -->
+    <p class="hero-lead">
+      {meta.description}
+    </p>
+
+    <figure class="hero-cover">
+      <img src={coverImg.src} alt="Article visual system showcase cover artwork" width="1200" height="560" loading="eager" />
+      <figcaption>Figure — Architectural overview and pattern showcase for Coven of Technology editorial scrolls.</figcaption>
+    </figure>
+
+    <!-- Mobile Table of Contents (visible on <= 980px) -->
+    <details class="mobile-toc">
+      <summary class="mobile-toc-summary">
+        <span>☰ ON THIS SCROLL</span>
+        <span style="font-size: 11px; opacity: 0.7;">EXPLORE</span>
+      </summary>
+      <div class="mobile-toc-content">
+        <ul class="toc-nav-list" id="mobile-toc-list">
+          <!-- Populated dynamically by client-side script from .article-section[data-toc-title] -->
+        </ul>
+      </div>
+    </details>
+
+    <div class="editorial-layout">
+
+      <!-- Main content column -->
+      <div class="main-content">
+
+        <!-- ============================================================== -->
+        <!-- 01 · BASIC TYPOGRAPHY                                          -->
+        <!-- ============================================================== -->
+        <section id="basic-typography" class="article-section" data-toc-title="Basic Typography">
+          <div class="section-kicker">01 · BASIC TYPOGRAPHY</div>
+          <h2>Editorial Headings & Typography System</h2>
+
+          <!-- BLOCK: Title + Text -->
+          <div class="block-typography-title-text">
+            <div class="section-kicker">DEMO KICKER · SYSTEM ARCHITECTURE</div>
+            <h3>Primary Section Heading Pattern</h3>
+            <p>
+              This example paragraph demonstrates a standard title and text block. In technical editorial writing, clear typographic hierarchy ensures the initiate absorbs complex doctrines with precision and ease.
+            </p>
+            <p>
+              Placeholder text elaborating on the core architectural premise. Sentences are paced deliberately to cultivate a calm, authoritative editorial presence throughout the grimoire.
+            </p>
+          </div>
+          <!-- END BLOCK: Title + Text -->
+
+          <!-- BLOCK: Text + Title -->
+          <div class="block-typography-text-title">
+            <p class="text-intro">
+              Before introducing secondary subroutines, this introductory paragraph establishes operational context and transitions smoothly from the previous discussion into the following concept.
+            </p>
+            <h3 class="heading-subsequent">Subsequent Subsystem Heading</h3>
+            <p>
+              Following the transition, this body paragraph delivers the technical breakdown of the newly introduced mechanism, maintaining narrative continuity across editorial boundaries.
+            </p>
+          </div>
+          <!-- END BLOCK: Text + Title -->
+
+          <!-- BLOCK: Solo Text -->
+          <div class="block-solo-text">
+            <p>
+              This long editorial paragraph demonstrates comprehensive inline typography. Within this scroll, initiates can review <strong>bold emphases for critical tokens</strong>, <em>italicized passages denoting sacred axioms</em>, and inline hyperlinks directing the scholar to <a href="/library">The Grimoire Archive</a> or external documentation sources.
+            </p>
+            <p>
+              Every line adheres to strict baseline rhythms and carefully tuned contrast ratios, ensuring legibility against the dark cosmic canvas even during protracted midnight research sessions.
+            </p>
+          </div>
+          <!-- END BLOCK: Solo Text -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 02 · LISTS & STEPS                                             -->
+        <!-- ============================================================== -->
+        <section id="lists-and-steps" class="article-section" data-toc-title="Lists & Steps">
+          <div class="section-kicker">02 · LISTS & STEPS</div>
+          <h2>Lists, Inscriptions & Ordered Rituals</h2>
+
+          <!-- BLOCK: Bullet List -->
+          <div class="block-bullet-list">
+            <h3 class="list-title">Core Archetype Principles</h3>
+            <ul class="bullets-list">
+              <li><strong>Deterministic Scoring:</strong> Propensity matrices calibrated against 90-day rolling interaction windows.</li>
+              <li><strong>Audience Saturation Wards:</strong> Frequency caps preventing contact fatigue before unsubscribe events occur.</li>
+              <li><strong>Temporal Synchronization:</strong> Message dispatch windows aligned with local subscriber engagement peaks.</li>
+              <li><strong>Multi-Channel Telemetry:</strong> Seamless signal aggregation across Email, MobilePush, and CloudPages.</li>
+            </ul>
+          </div>
+          <!-- END BLOCK: Bullet List -->
+
+          <!-- BLOCK: Numbered Steps -->
+          <div class="block-numbered-steps">
+            <h3 class="list-title">Implementation Ritual Steps</h3>
+            <ol class="steps-list">
+              <li class="step-item">
+                <div class="step-badge">01</div>
+                <div class="step-content">
+                  <h4>Telemetry Verification</h4>
+                  <p>Verify that your business unit has captured a minimum threshold of 50,000 interactions over the preceding 90-day evaluation horizon.</p>
+                </div>
+              </li>
+              <li class="step-item">
+                <div class="step-badge">02</div>
+                <div class="step-content">
+                  <h4>Feature Activation</h4>
+                  <p>Navigate to Setup &gt; Einstein &gt; Engagement Scoring and toggle the activation rune to initiate model calibration.</p>
+                </div>
+              </li>
+              <li class="step-item">
+                <div class="step-badge">03</div>
+                <div class="step-content">
+                  <h4>Model Training Horizon</h4>
+                  <p>Allow 48 to 72 hours for the predictive engine to calculate initial propensity deciles and populate system data extensions.</p>
+                </div>
+              </li>
+              <li class="step-item">
+                <div class="step-badge">04</div>
+                <div class="step-content">
+                  <h4>Journey Builder Deployment</h4>
+                  <p>Insert Einstein Split activities into active journeys to steer contacts dynamically according to persona classifications.</p>
+                </div>
+              </li>
+            </ol>
+          </div>
+          <!-- END BLOCK: Numbered Steps -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 03 · COLUMN LAYOUTS                                            -->
+        <!-- ============================================================== -->
+        <section id="column-layouts" class="article-section" data-toc-title="Column Layouts">
+          <div class="section-kicker">03 · COLUMN LAYOUTS</div>
+          <h2>Modular Multi-Column Layouts</h2>
+
+          <!-- BLOCK: Text | Image -->
+          <div class="layout-text-media">
+            <div class="layout-copy">
+              <h3>Quadrant Propensity Matrix</h3>
+              <p>
+                This example demonstrates a 50/50 desktop layout with copy on the left and supporting visual media on the right. On tablet and mobile viewports, the layout gracefully stacks with copy preceding the illustration.
+              </p>
+              <p>
+                Subscribers are categorized into four distinct quadrants based on predicted open and click probabilities, guiding personalized messaging cadence.
+              </p>
+            </div>
+            <figure class="layout-media">
+              <img src={scoringImg.src} alt="Quadrant Propensity Matrix demonstration" width="600" height="420" loading="lazy" />
+              <figcaption>Figure — Behavioral quadrant distribution across active contact base.</figcaption>
+            </figure>
+          </div>
+          <!-- END BLOCK: Text | Image -->
+
+          <!-- BLOCK: Image | Text -->
+          <div class="layout-media-text">
+            <figure class="layout-media">
+              <img src={timingImg.src} alt="Temporal send time optimization distribution" width="600" height="420" loading="lazy" />
+              <figcaption>Figure — 168-hour probability matrix modeled per individual subscriber.</figcaption>
+            </figure>
+            <div class="layout-copy">
+              <h3>Temporal Distribution Curves</h3>
+              <p>
+                This pattern places media on the left and technical narrative on the right. Rather than resorting to direction inversions, semantic DOM ordering ensures accessibility and flawless responsive stacking.
+              </p>
+              <p>
+                Send Time Optimization calculates individual response probability curves over a 168-hour weekly cycle, maximizing open engagement without batch congestion.
+              </p>
+            </div>
+          </div>
+          <!-- END BLOCK: Image | Text -->
+
+          <!-- BLOCK: Two Text Columns -->
+          <div class="layout-2col">
+            <div class="col-box">
+              <h3>Inbound Channel Architecture</h3>
+              <p>
+                Demonstrating a balanced two-column text layout. Column A focuses on inbound engagement streams, telemetry ingestion, and webhook listeners that register subscriber actions in real-time.
+              </p>
+              <ul class="col-list">
+                <li>API-triggered transactional events</li>
+                <li>Real-time behavioral web events</li>
+              </ul>
+            </div>
+            <div class="col-box">
+              <h3>Outbound Orchestration Pipeline</h3>
+              <p>
+                Column B addresses outbound dispatch engines, delivery queue priority, and automatic throttle policies that keep send volume safely within ISP thresholds.
+              </p>
+              <ul class="col-list">
+                <li>Dynamic journey split routing</li>
+                <li>Predictive quiet-hour suppression</li>
+              </ul>
+            </div>
+          </div>
+          <!-- END BLOCK: Two Text Columns -->
+
+          <!-- BLOCK: Three Columns -->
+          <div class="layout-3col">
+            <div class="col-box">
+              <div class="col-kicker">PILLAR I</div>
+              <h3>Telemetry Ingestion</h3>
+              <p>Captures continuous subscriber behavioral streams, normalizing raw click timestamps and interaction counters across enterprise units.</p>
+            </div>
+            <div class="col-box">
+              <div class="col-kicker">PILLAR II</div>
+              <h3>Predictive Modeling</h3>
+              <p>Executes weekly machine learning training cycles, refreshing persona deciles and fatigue coefficients for every active subscriber.</p>
+            </div>
+            <div class="col-box">
+              <div class="col-kicker">PILLAR III</div>
+              <h3>Journey Activation</h3>
+              <p>Translates model scores into deterministic splits, empowering automated journeys to adapt dispatch timing and content dynamically.</p>
+            </div>
+          </div>
+          <!-- END BLOCK: Three Columns -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 04 · IMAGES & MEDIA                                            -->
+        <!-- ============================================================== -->
+        <section id="images-and-media" class="article-section" data-toc-title="Images & Media">
+          <div class="section-kicker">04 · IMAGES & MEDIA</div>
+          <h2>Visual Assets, Diagrams & Galleries</h2>
+
+          <!-- BLOCK: Single Image -->
+          <figure class="figure-single">
+            <img src={coverImg.src} alt="Standard single figure diagram" width="1000" height="480" loading="lazy" />
+            <figcaption>Figure — Standard contained figure with subtle border and stylized caption.</figcaption>
+          </figure>
+          <!-- END BLOCK: Single Image -->
+
+          <!-- BLOCK: Full Width Image -->
+          <figure class="figure-full">
+            <img src={diagramImg.src} alt="Full width architecture diagram" width="1200" height="600" loading="lazy" />
+            <figcaption>Figure — Full-width technical diagram spanning the entire width of the editorial column.</figcaption>
+          </figure>
+          <!-- END BLOCK: Full Width Image -->
+
+          <!-- BLOCK: Two Images Grid -->
+          <div class="image-grid-2">
+            <figure class="figure-item">
+              <img src={gridItem1.src} alt="Artifact classification asset" width="600" height="380" loading="lazy" />
+              <figcaption>Artifact 01 — Asset clustering and classification model.</figcaption>
+            </figure>
+            <figure class="figure-item">
+              <img src={gridItem2.src} alt="Audience fatigue saturation curve" width="600" height="380" loading="lazy" />
+              <figcaption>Artifact 02 — Audience fatigue saturation threshold curve.</figcaption>
+            </figure>
+          </div>
+          <!-- END BLOCK: Two Images Grid -->
+
+          <!-- BLOCK: Three Images Grid -->
+          <div class="image-grid-3">
+            <figure class="figure-item">
+              <img src={gridItem1.src} alt="Visual feature classification" width="600" height="380" loading="lazy" />
+              <figcaption>Matrix A — Visual feature clustering</figcaption>
+            </figure>
+            <figure class="figure-item">
+              <img src={gridItem2.src} alt="Fatigue threshold analysis" width="600" height="380" loading="lazy" />
+              <figcaption>Matrix B — Fatigue threshold analysis</figcaption>
+            </figure>
+            <figure class="figure-item">
+              <img src={gridItem3.src} alt="NLP subject line prediction" width="600" height="380" loading="lazy" />
+              <figcaption>Matrix C — NLP subject prediction</figcaption>
+            </figure>
+          </div>
+          <!-- END BLOCK: Three Images Grid -->
+
+          <!-- BLOCK: Horizontal Gallery Scroll -->
+          <div class="horizontal-scroll-wrap">
+            <div class="horizontal-scroll" role="region" aria-label="Horizontal image gallery" tabindex="0">
+              <figure class="gallery-card">
+                <img src={gridItem1.src} alt="Gallery item 1 - Propensity Matrix" width="360" height="230" loading="lazy" />
+                <figcaption>01 · Propensity Matrix Overview</figcaption>
+              </figure>
+              <figure class="gallery-card">
+                <img src={gridItem2.src} alt="Gallery item 2 - Saturation Curve" width="360" height="230" loading="lazy" />
+                <figcaption>02 · Saturation Decay Curve</figcaption>
+              </figure>
+              <figure class="gallery-card">
+                <img src={gridItem3.src} alt="Gallery item 3 - Frequency Model" width="360" height="230" loading="lazy" />
+                <figcaption>03 · Frequency Threshold Model</figcaption>
+              </figure>
+              <figure class="gallery-card">
+                <img src={coverImg.src} alt="Gallery item 4 - Holistic Pipeline" width="360" height="230" loading="lazy" />
+                <figcaption>04 · Holistic Pipeline Topology</figcaption>
+              </figure>
+            </div>
+            <div class="gallery-scroll-hint">✦ Scroll horizontally to inspect model artifacts</div>
+          </div>
+          <!-- END BLOCK: Horizontal Gallery Scroll -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 05 · CARDS & COMPARISONS                                       -->
+        <!-- ============================================================== -->
+        <section id="cards-and-comparisons" class="article-section" data-toc-title="Cards & Comparisons">
+          <div class="section-kicker">05 · CARDS & COMPARISONS</div>
+          <h2>Cards, Comparisons & Statistical Metrics</h2>
+
+          <!-- BLOCK: 2-Card Grid -->
+          <div class="card-grid-2">
+            <div class="pattern-card">
+              <div class="pattern-card-icon">✧</div>
+              <h3 class="pattern-card-title">Supervised Propensity Models</h3>
+              <p class="pattern-card-desc">Trained on historical engagement outcomes to classify subscribers into high, medium, and low likelihood deciles.</p>
+            </div>
+            <div class="pattern-card">
+              <div class="pattern-card-icon">◈</div>
+              <h3 class="pattern-card-title">Unsupervised Cluster Models</h3>
+              <p class="pattern-card-desc">Detects emergent subscriber behavioral groupings without pre-labeled categories to reveal hidden segment affinity.</p>
+            </div>
+          </div>
+          <!-- END BLOCK: 2-Card Grid -->
+
+          <!-- BLOCK: 3-Card Grid -->
+          <div class="card-grid-3">
+            <div class="pattern-card">
+              <div class="pattern-card-icon">✉</div>
+              <h3 class="pattern-card-title">Asset Propensity</h3>
+              <p class="pattern-card-desc">Evaluates image tags, color palettes, and CTA phrasing to forecast message engagement prior to dispatch.</p>
+            </div>
+            <div class="pattern-card">
+              <div class="pattern-card-icon">⚙</div>
+              <h3 class="pattern-card-title">Fatigue Horizons</h3>
+              <p class="pattern-card-desc">Tracks saturation thresholds, redirecting recipients to passive holding paths when send density exceeds safety.</p>
+            </div>
+            <div class="pattern-card">
+              <div class="pattern-card-icon">✦</div>
+              <h3 class="pattern-card-title">Lexical Predictor</h3>
+              <p class="pattern-card-desc">Applies natural language analysis to subject lines to detect fatigue-inducing patterns and improve open rates.</p>
+            </div>
+          </div>
+          <!-- END BLOCK: 3-Card Grid -->
+
+          <!-- BLOCK: 50/50 Comparison -->
+          <div class="comparison-split">
+            <div class="comparison-column">
+              <div class="comparison-col-header">
+                <span class="comparison-col-icon">✉</span>
+                <span>EMAIL STUDIO SIGNALS</span>
+              </div>
+              <ul class="comparison-list">
+                <li>Unique and cumulative open timestamps</li>
+                <li>Explicit click tracking and link category affinity</li>
+                <li>Spam complaint rates and domain bounce thresholds</li>
+                <li>Fatigue decay based on weekly broadcast density</li>
+              </ul>
+            </div>
+            <div class="comparison-column">
+              <div class="comparison-col-header">
+                <span class="comparison-col-icon">◈</span>
+                <span>MOBILEPUSH SIGNALS</span>
+              </div>
+              <ul class="comparison-list">
+                <li>Direct application opens from push banners</li>
+                <li>In-app session duration following notification</li>
+                <li>Quiet hour suppression per subscriber timezone</li>
+                <li>Operating system notification permission state</li>
+              </ul>
+            </div>
+          </div>
+          <!-- END BLOCK: 50/50 Comparison -->
+
+          <!-- BLOCK: Stats & Metrics -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-number">12</div>
+              <div class="stat-label">Active Journeys</div>
+              <div class="stat-sub">Multi-cloud orchestration</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">89%</div>
+              <div class="stat-label">Engagement Rate</div>
+              <div class="stat-sub">Model-guided optimization</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number">42K</div>
+              <div class="stat-label">Contacts Scored</div>
+              <div class="stat-sub">90-day rolling window</div>
+            </div>
+          </div>
+          <!-- END BLOCK: Stats & Metrics -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 06 · TABLES                                                    -->
+        <!-- ============================================================== -->
+        <section id="tables" class="article-section" data-toc-title="Technical Tables">
+          <div class="section-kicker">06 · TABLES</div>
+          <h2>Responsive Technical Data Matrices</h2>
+          <p>
+            Technical articles frequently demand comparative data specifications. Below is an example of a responsive table that preserves internal horizontal scrollability on narrow viewports:
+          </p>
+
+          <!-- BLOCK: Responsive Technical Table -->
+          <div class="table-wrap">
+            <table class="coven-table">
+              <thead>
+                <tr>
+                  <th>Predictive Feature</th>
+                  <th>Email Studio</th>
+                  <th>MobilePush</th>
+                  <th>CloudPages / Web</th>
+                  <th>Model Refresh Cycle</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><strong>Engagement Scoring</strong></td>
+                  <td><span class="table-status status-active">Available</span></td>
+                  <td><span class="table-status status-active">Available</span></td>
+                  <td><span class="table-status status-beta">Beta</span></td>
+                  <td>Weekly (Sunday UTC)</td>
+                </tr>
+                <tr>
+                  <td><strong>Send Time Optimization</strong></td>
+                  <td><span class="table-status status-active">Available</span></td>
+                  <td><span class="table-status status-active">Available</span></td>
+                  <td><span class="table-status status-disabled">N/A</span></td>
+                  <td>Continuous (168-hr matrix)</td>
+                </tr>
+                <tr>
+                  <td><strong>Engagement Frequency</strong></td>
+                  <td><span class="table-status status-active">Available</span></td>
+                  <td><span class="table-status status-beta">Beta</span></td>
+                  <td><span class="table-status status-disabled">N/A</span></td>
+                  <td>Daily aggregation</td>
+                </tr>
+                <tr>
+                  <td><strong>Content Selection</strong></td>
+                  <td><span class="table-status status-active">Available</span></td>
+                  <td><span class="table-status status-disabled">N/A</span></td>
+                  <td><span class="table-status status-active">Available</span></td>
+                  <td>Real-time per dispatch</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <!-- END BLOCK: Responsive Technical Table -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 07 · CALLOUTS & QUOTES                                         -->
+        <!-- ============================================================== -->
+        <section id="callouts-and-quotes" class="article-section" data-toc-title="Callouts & Quotes">
+          <div class="section-kicker">07 · CALLOUTS & QUOTES</div>
+          <h2>Callouts, Advisories & Editorial Quotes</h2>
+
+          <!-- BLOCK: Callouts (Info, Warning, Tip, Note) -->
+          <div class="block-callouts-group">
+            <Callout type="info" title="Arcane Telemetry Note">
+              <p>
+                Einstein requires a minimum threshold of <strong>50,000 interactions</strong> across your business unit over the preceding 90 days. Below this threshold, predictions fallback to organic average metrics.
+              </p>
+            </Callout>
+
+            <Callout type="warning" title="Ward of Caution">
+              <p>
+                Never place an Einstein STO activity directly after a Wait Activity with a fixed hour; the two timers will conflict and cause asynchronous queuing delays in the contact journey.
+              </p>
+            </Callout>
+
+            <Callout type="tip" title="Craft Mastery Tip">
+              <p>
+                Query the <code>_Einstein_MC_Predictive_Scores</code> system data extension via Automation Studio SQL to export raw propensity deciles into your external data lake.
+              </p>
+            </Callout>
+
+            <Callout type="note" title="Grimoire Reference">
+              <p>
+                Refer to Salesforce Trailhead module <em>Einstein for Marketing Cloud: Quick Look</em> for setup prerequisites and permissions.
+              </p>
+            </Callout>
+          </div>
+          <!-- END BLOCK: Callouts (Info, Warning, Tip, Note) -->
+
+          <!-- BLOCK: Pullquote -->
+          <div class="pullquote">
+            <p class="pullquote-text">
+              "A predictive algorithm that operates without architectural intent is merely noise cast into the dark. Master the signal, and every dispatch finds its rightful mark."
+            </p>
+            <span class="pullquote-author">— Coven Principle of Predictive Divination</span>
+          </div>
+          <!-- END BLOCK: Pullquote -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 08 · CODE INSCRIPTIONS                                         -->
+        <!-- ============================================================== -->
+        <section id="code" class="article-section" data-toc-title="Code Inscriptions">
+          <div class="section-kicker">08 · CODE</div>
+          <h2>Syntax-Highlighted Code Inscriptions</h2>
+          <p>
+            When coordinating cross-cloud journeys between Salesforce Core and Marketing Cloud, use a deterministic handler to consume Einstein segment classifications:
+          </p>
+
+          <!-- BLOCK: Code Block -->
+          <CodeBlock title="EinsteinSyncHandler.cls" language="apex">
+{`// Sacred Controller: Synchronizing Einstein Persona to Salesforce Core
+public with sharing class EinsteinSyncHandler {
+    @InvocableMethod(label='Sync Einstein Persona' description='Updates contact record with AI Persona')
+    public static void updatePersonas(List<Id> contactIds) {
+        List<Contact> recordsToUpdate = new List<Contact>();
+        for (Contact c : [SELECT Id, Einstein_Persona__c FROM Contact WHERE Id IN :contactIds]) {
+            // Re-align loyalty tier based on predicted score and trigger asynchronous enterprise telemetry pipeline invocation across multi-cloud boundaries
+            if (c.Einstein_Persona__c == 'Loyalist') {
+                c.Tier__c = 'VIP Archmage';
+                recordsToUpdate.add(c);
+            }
+        }
+        if (!recordsToUpdate.isEmpty()) {
+            update recordsToUpdate;
+        }
+    }
+}`}
+          </CodeBlock>
+          <!-- END BLOCK: Code Block -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 09 · INTERACTIVE BLOCKS                                        -->
+        <!-- ============================================================== -->
+        <section id="interaction" class="article-section" data-toc-title="Interactive Blocks">
+          <div class="section-kicker">09 · INTERACTION</div>
+          <h2>Interactive FAQ & Use Case Exercises</h2>
+
+          <!-- BLOCK: FAQ Accordion -->
+          <div class="faq-list">
+            <details class="faq-item">
+              <summary>How long does it take for models to initialize after activation?</summary>
+              <div class="faq-body">
+                <p>
+                  Initial model training requires up to <strong>72 hours</strong> once the prerequisite 50,000 subscriber interactions have been ingested. Subsequent re-training occurs on a weekly cadence automatically.
+                </p>
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary>Does Apple Mail Privacy Protection (MPP) skew open scores?</summary>
+              <div class="faq-body">
+                <p>
+                  Salesforce has integrated MPP filtering algorithms that de-weight automated proxy cache pre-fetches, focusing on confirmed intent signals like click timestamps and zero-party interactions.
+                </p>
+              </div>
+            </details>
+
+            <details class="faq-item">
+              <summary>Can Einstein scores be extracted using Automation Studio SQL?</summary>
+              <div class="faq-body">
+                <p>
+                  Yes. By querying the Einstein Data Extensions provisioned in your enterprise account (e.g. <code>_Einstein_MC_Predictive_Scores</code>), you can join scores with custom master subscriber tables.
+                </p>
+              </div>
+            </details>
+          </div>
+          <!-- END BLOCK: FAQ Accordion -->
+
+          <!-- BLOCK: Exercises with Reveal Answer -->
+          <div class="exercise-group">
+            <div class="exercise-card">
+              <span class="exercise-badge">TRIAL SCENARIO 01</span>
+              <p class="exercise-scenario">
+                <strong>Scenario:</strong> A retail enterprise notices that 38% of their subscriber base opens emails faithfully every Friday afternoon, but click rates have dropped by half due to promotional saturation. Which Einstein feature should be configured first?
+              </p>
+              <button type="button" class="reveal-btn" aria-expanded="false" data-target="ans-1">
+                <span>✦ Reveal Answer</span>
+              </button>
+              <div id="ans-1" class="reveal-answer">
+                <strong>Solution: Einstein Engagement Frequency.</strong>
+                <p>The subscribers are "Window Shoppers" suffering from saturation. Capping the frequency prevents fatigue while dynamic content testing within the existing send window restores click engagement.</p>
+              </div>
+            </div>
+
+            <div class="exercise-card">
+              <span class="exercise-badge">TRIAL SCENARIO 02</span>
+              <p class="exercise-scenario">
+                <strong>Scenario:</strong> A global conference announcement must reach attendees across 14 timezones simultaneously on Tuesday without sending during the middle of the night. Which node should be placed in Journey Builder?
+              </p>
+              <button type="button" class="reveal-btn" aria-expanded="false" data-target="ans-2">
+                <span>✦ Reveal Answer</span>
+              </button>
+              <div id="ans-2" class="reveal-answer">
+                <strong>Solution: Einstein Send Time Optimization (STO) with a 24-Hour Send Window.</strong>
+                <p>The 24-hour window allows Einstein to calculate the recipient's local timezone probability, ensuring arrival during wakeful hours without manual timezone splitting.</p>
+              </div>
+            </div>
+          </div>
+          <!-- END BLOCK: Exercises with Reveal Answer -->
+        </section>
+
+        <!-- ============================================================== -->
+        <!-- 10 · CLOSING CONTENT                                           -->
+        <!-- ============================================================== -->
+        <section id="closing-content" class="article-section" data-toc-title="Closing Content">
+          <div class="section-kicker">10 · CLOSING CONTENT</div>
+          <h2>Takeaways, Navigation & Related Study</h2>
+
+          <!-- BLOCK: Key Takeaways -->
+          <div class="takeaways-box">
+            <h3 class="takeaways-title">
+              <span>✦</span>
+              <span>Key Takeaways for the Initiate</span>
+            </h3>
+            <ul class="takeaways-list">
+              <li><strong>Engagement Scoring</strong> establishes four behavioral archetypes: Loyalists, Window Shoppers, Selective, and Dormant.</li>
+              <li><strong>Send Time Optimization</strong> models a 168-hour probability matrix rather than relying on uniform batch dispatch times.</li>
+              <li><strong>Engagement Frequency</strong> guards your deliverability reputation by suppressing oversaturated contacts before unsubscribes occur.</li>
+              <li><strong>Journey Builder</strong> acts as the central crucible, allowing AI scores to dynamically steer contacts along tailored paths.</li>
+            </ul>
+          </div>
+          <!-- END BLOCK: Key Takeaways -->
+
+          <!-- BLOCK: Related Documentation -->
+          <div class="related-grid">
+            <a href="#" class="related-card" onclick="return false;">
+              <div>
+                <div class="related-type">SALESFORCE DOCUMENTATION</div>
+                <h4 class="related-title">Einstein Engagement Scoring Implementation Guide</h4>
+              </div>
+              <div class="related-cta">
+                <span>help.salesforce.com</span>
+                <span>↗</span>
+              </div>
+            </a>
+
+            <a href="/article/apex-triggers-without-tears" class="related-card">
+              <div>
+                <div class="related-type">COVEN SCROLL · APEX</div>
+                <h4 class="related-title">The Apex Incantation: Triggers Without Tears</h4>
+              </div>
+              <div class="related-cta">
+                <span>Study scroll</span>
+                <span>→</span>
+              </div>
+            </a>
+          </div>
+          <!-- END BLOCK: Related Documentation -->
+
+          <!-- BLOCK: Next Article -->
+          <div class="article-nav-block">
+            <a href="/library" class="nav-back-link">
+              <span>← BACK TO THE GRIMOIRE</span>
+            </a>
+
+            <a href="/article/apex-triggers-without-tears" class="nav-next-card">
+              <div>
+                <div class="nav-next-label">NEXT SCROLL · APEX</div>
+                <div class="nav-next-title">The Apex Incantation: Triggers Without Tears</div>
+              </div>
+              <span class="nav-next-arrow">→</span>
+            </a>
+          </div>
+          <!-- END BLOCK: Next Article -->
+        </section>
+
+      </div>
+
+      <!-- Sticky Sidebar: ON THIS SCROLL (Desktop) -->
+      <aside class="article-sidebar" aria-label="Table of contents and scroll progress">
+        <div class="toc-panel">
+          <div class="toc-header">
+            <span class="toc-title">
+              <span>✦</span>
+              <span>ON THIS SCROLL</span>
+            </span>
+            <span class="toc-progress-indicator" id="reading-pct">0%</span>
+          </div>
+
+          <div class="toc-progress-bar-wrap" aria-hidden="true">
+            <div class="toc-progress-bar-fill" id="reading-bar"></div>
+          </div>
+
+          <div class="toc-scroll-area">
+            <nav aria-label="Table of contents">
+              <ul class="toc-nav-list" id="desktop-toc-list">
+                <!-- Populated dynamically by client-side script from .article-section[data-toc-title] -->
+              </ul>
+            </nav>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+
+  </article>
+
+  <!-- Interactive Client-side Script: Automated Dynamic TOC, Spy & Reveal -->
+  <script is:inline>
+    (function () {
+      function buildToc(container, sections) {
+        if (!container) return;
+        container.innerHTML = '';
+        sections.forEach(function (sec, idx) {
+          var id = sec.id;
+          var title = sec.getAttribute('data-toc-title') || ('Section ' + (idx + 1));
+          var numStr = String(idx + 1).padStart(2, '0');
+          var li = document.createElement('li');
+          var a = document.createElement('a');
+          a.href = '#' + id;
+          a.className = 'toc-link';
+          a.setAttribute('data-toc-target', id);
+          a.innerHTML = '<span class="toc-num">' + numStr + '</span><span>' + title + '</span>';
+          li.appendChild(a);
+          container.appendChild(li);
+        });
+      }
+
+      var observerInstance = null;
+
+      function setupToc() {
+        var sections = Array.from(document.querySelectorAll('.article-section[data-toc-title]'));
+        var desktopTocList = document.getElementById('desktop-toc-list');
+        var mobileTocList = document.getElementById('mobile-toc-list');
+
+        if (sections.length === 0) return;
+
+        // Defensive validations
+        var seenIds = new Set();
+        sections.forEach(function (sec, idx) {
+          var id = sec.id;
+          var title = sec.getAttribute('data-toc-title');
+          if (!id) {
+            console.warn('[TOC Defensive Warning] Section at index ' + idx + ' is missing an id attribute. Title: "' + title + '"');
+          } else if (seenIds.has(id)) {
+            console.warn('[TOC Defensive Warning] Duplicate section id detected: "' + id + '"');
+          } else {
+            seenIds.add(id);
+          }
+        });
+
+        // Build links for Desktop and Mobile from the exact same sections array
+        if (desktopTocList) {
+          buildToc(desktopTocList, sections);
+        }
+        if (mobileTocList) {
+          buildToc(mobileTocList, sections);
+        }
+
+        // Defensive count check
+        var desktopCount = desktopTocList ? desktopTocList.querySelectorAll('.toc-link').length : 0;
+        var mobileCount = mobileTocList ? mobileTocList.querySelectorAll('.toc-link').length : 0;
+        if (desktopCount !== sections.length || mobileCount !== sections.length) {
+          console.warn('[TOC Defensive Warning] Count mismatch! Sections: ' + sections.length + ', Desktop: ' + desktopCount + ', Mobile: ' + mobileCount);
+        }
+
+        // Active Section Spy for Sidebar TOC
+        var allTocLinks = document.querySelectorAll('.article-template .toc-link');
+
+        function scrollLinkIntoTocView(link) {
+          var container = link.closest('.toc-scroll-area');
+          if (!container) return;
+          var containerRect = container.getBoundingClientRect();
+          var linkRect = link.getBoundingClientRect();
+
+          if (linkRect.top < containerRect.top) {
+            container.scrollTo({
+              top: container.scrollTop + (linkRect.top - containerRect.top) - 10,
+              behavior: 'smooth'
+            });
+          } else if (linkRect.bottom > containerRect.bottom) {
+            container.scrollTo({
+              top: container.scrollTop + (linkRect.bottom - containerRect.bottom) + 10,
+              behavior: 'smooth'
+            });
+          }
+        }
+
+        if (observerInstance) {
+          observerInstance.disconnect();
+        }
+
+        if ('IntersectionObserver' in window && sections.length > 0) {
+          observerInstance = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                var activeId = entry.target.id;
+                allTocLinks.forEach(function (link) {
+                  if (link.getAttribute('data-toc-target') === activeId) {
+                    link.classList.add('active');
+                    scrollLinkIntoTocView(link);
+                  } else {
+                    link.classList.remove('active');
+                  }
+                });
+              }
+            });
+          }, {
+            rootMargin: '-10% 0px -70% 0px',
+            threshold: 0
+          });
+
+          sections.forEach(function (s) {
+            observerInstance.observe(s);
+          });
+        }
+      }
+
+      // Initial execution
+      setupToc();
+
+      // Ensure execution on DOM ready and window load
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupToc);
+      }
+      window.addEventListener('load', setupToc);
+
+      // DOM watcher: if React / DC-runtime mounts or clears #desktop-toc-list, repopulate immediately!
+      var checkInterval = setInterval(function () {
+        var dt = document.getElementById('desktop-toc-list');
+        var secs = document.querySelectorAll('.article-section[data-toc-title]');
+        if (dt && secs.length > 0 && dt.children.length === 0) {
+          setupToc();
+        }
+      }, 100);
+
+      // Stop polling after 4 seconds once stable
+      setTimeout(function () {
+        clearInterval(checkInterval);
+        setupToc();
+      }, 4000);
+
+      // Exercise Reveal Answer Buttons (delegated)
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.reveal-btn');
+        if (!btn) return;
+        var targetId = btn.getAttribute('data-target');
+        if (!targetId) return;
+        var ans = document.getElementById(targetId);
+        if (!ans) return;
+
+        var isExpanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', !isExpanded);
+        if (!isExpanded) {
+          ans.classList.add('visible');
+          btn.querySelector('span').textContent = 'Hide Answer';
+        } else {
+          ans.classList.remove('visible');
+          btn.querySelector('span').textContent = '✦ Reveal Answer';
+        }
+      });
+
+      // Auto-close mobile TOC on link click (delegated)
+      document.addEventListener('click', function (e) {
+        var mobileLink = e.target.closest('.mobile-toc a');
+        if (mobileLink) {
+          var mobileToc = mobileLink.closest('.mobile-toc');
+          if (mobileToc) mobileToc.removeAttribute('open');
+        }
+      });
+    })();
+  </script>
+</ArticleLayout>
