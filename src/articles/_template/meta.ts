@@ -10,8 +10,8 @@ import type { ArticleMeta } from '../../types/article';
  * Mantén `status: "draft"` hasta que tu contenido esté listo para publicarse.
  */
 const meta: ArticleMeta = {
-  title: "The Magic Science in SFMC's Einstein AI",
-  description: "An esoteric masterclass on predictive engagement scoring, send time optimization, frequency fatigue wards, and AI-driven journey orchestration.",
+  title: "H1 · FONT-FAMILY: METAMORPHOUS · SIZE: CLAMP(28PX, 6.5VW, 46PX) · WEIGHT: 700 · COLOR: #F3ECDF",
+  description: "LEAD / P · FONT-FAMILY: HELVETICA NEUE ROMAN · SIZE: CLAMP(19PX, 2.5VW, 22PX) · WEIGHT: 400 (ITALIC) · LINE-HEIGHT: 1.6 · COLOR: #CDC3B6",
   author: "Oracle of Orgs",
 
   category: "Architecture",

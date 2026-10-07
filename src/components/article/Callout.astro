@@ -43,9 +43,9 @@ const displayTitle = title ?? config.defaultTitle;
 <div class={`cov-callout cov-callout-${type}`} style={`border-left: 3px solid ${config.glyphColor}; border-top: 1px solid ${config.borderColor}; border-right: 1px solid ${config.borderColor}; border-bottom: 1px solid ${config.borderColor}; background: ${config.bgColor}; border-radius: 4px; padding: 18px 22px; margin: 28px 0; position: relative;`}>
   <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 8px;">
     <span style={`color: ${config.glyphColor}; font-size: 14px;`}>{config.glyph}</span>
-    <span style={`font-family: Cinzel, serif; font-size: 13px; font-weight: 600; letter-spacing: 1px; color: ${config.glyphColor}; text-transform: uppercase;`}>{displayTitle}</span>
+    <span style={`font-family: var(--font-display, 'Metamorphous', serif); font-size: 13px; font-weight: 600; letter-spacing: 1px; color: ${config.glyphColor}; text-transform: uppercase;`}>{displayTitle}</span>
   </div>
-  <div class="cov-callout-content" style="font-family: 'EB Garamond', serif; font-size: 17px; line-height: 1.6; color: #cdc3b6;">
+  <div class="cov-callout-content" style="font-family: var(--font-body, 'Helvetica Neue Roman', serif); font-size: 17px; line-height: 1.6; color: #cdc3b6;">
     <slot />
   </div>
 </div>

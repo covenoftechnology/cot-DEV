@@ -65,12 +65,12 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
       <header class="cov-header cov-section-pad article-top-header">
         <div onclick="{{ toLanding }}" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
           <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
-          <div class="cov-brand-text" style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{"{{ brand.name }}"}</div>
+          <div class="cov-brand-text" style="font-family:var(--font-display, 'Metamorphous', serif);font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{"{{ brand.name }}"}</div>
         </div>
-        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;max-width:100%">
+        <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:13px;color:#8f857a;max-width:100%">
           <span onclick="{{ toLibrary }}" style="cursor:pointer">The Grimoire</span> / {meta.category} / <span style="color:#c5b9a8">{meta.title}</span>
         </div>
-        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#e8cf95;border:1px solid rgba(216,181,107,.3);padding:7px 14px;border-radius:4px;white-space:nowrap">✦ {aetherReward} Aether on completion</div>
+        <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:13px;color:#e8cf95;border:1px solid rgba(216,181,107,.3);padding:7px 14px;border-radius:4px;white-space:nowrap">✦ {aetherReward} Aether on completion</div>
       </header>
 
       <!-- Sticky Reading Progress Bar (pins to viewport top during scroll) -->
@@ -81,13 +81,13 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
 
     <!-- ARTICLE WRAPPER -->
     <article id="coven-article-container" class="cov-section-pad" style={`max-width:${containerMaxWidth};margin:0 auto;padding:56px 48px 64px;position:relative;z-index:1`}>
-      <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:5px 10px;margin-bottom:22px">{tagDisplay}</div>
-      <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:clamp(28px,6.5vw,46px);line-height:1.12;color:#f3ecdf;margin:0 0 22px;text-shadow:0 0 40px rgba(139,92,196,.2);word-break:break-word">{meta.title}</h1>
+      <div style="display:inline-block;font-family:var(--font-mono, Consolas, monospace);font-size:11px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:5px 10px;margin-bottom:22px">{tagDisplay}</div>
+      <h1 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:700;font-size:clamp(28px,6.5vw,46px);line-height:1.12;color:#f3ecdf;margin:0 0 22px;text-shadow:0 0 40px rgba(139,92,196,.2);word-break:break-word">{meta.title}</h1>
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:34px;padding-bottom:26px;border-bottom:1px solid rgba(216,181,107,.12);flex-wrap:wrap">
-        <div style="width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;flex-shrink:0">{authorInitial}</div>
+        <div style="width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:var(--font-display, 'Metamorphous', serif);flex-shrink:0">{authorInitial}</div>
         <div>
-          <div style="font-family:'EB Garamond',serif;font-size:16px;color:#ece6dd">Inscribed by the {meta.author}</div>
-          <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+          <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:16px;color:#ece6dd">Inscribed by the {meta.author}</div>
+          <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:13px;color:#8f857a;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span>{readingTime}</span>
             {formattedPublishedDate && (
               <>
@@ -115,9 +115,9 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
 
     {!meta.hideTrial && (
       <div class="cov-banner" style={`margin:0 auto 48px;max-width:${containerMaxWidth};border:1px solid rgba(216,181,107,.18);border-radius:8px;padding:36px;text-align:center;background:radial-gradient(500px 200px at 50% 0%,rgba(139,92,196,.18),transparent 65%),#100d16;position:relative;z-index:1`}>
-        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:26px;color:#f3ecdf;margin:0 0 8px">You've reached the trial</h3>
-        <p style="font-family:'EB Garamond',serif;font-size:16px;color:#b3a99d;margin:0 0 24px">Prove your mastery to claim ✦ {aetherReward} Aether and advance toward {meta.rank || 'Mechanic'}.</p>
-        <div onclick="{{ startTrial }}" style="display:inline-block;padding:14px 32px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.34);cursor:pointer;max-width:100%">BEGIN THE TRIAL</div>
+        <h3 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:26px;color:#f3ecdf;margin:0 0 8px">You've reached the trial</h3>
+        <p style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:16px;color:#b3a99d;margin:0 0 24px">Prove your mastery to claim ✦ {aetherReward} Aether and advance toward {meta.rank || 'Mechanic'}.</p>
+        <div onclick="{{ startTrial }}" style="display:inline-block;padding:14px 32px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.34);cursor:pointer;max-width:100%">BEGIN THE TRIAL</div>
       </div>
     )}
   </div>
@@ -230,8 +230,9 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
   .article-body p,
   .article-content p,
   .article-markdown-body p {
-    font-family: 'EB Garamond', serif;
-    font-size: 19px;
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 18px;
+    font-weight: 400;
     line-height: 1.75;
     color: #cdc3b6;
     margin: 0 0 24px;
@@ -239,18 +240,20 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
   .article-body h2,
   .article-content h2,
   .article-markdown-body h2 {
-    font-family: Cinzel, serif;
+    font-family: var(--font-display, 'Metamorphous', serif);
     font-weight: 600;
     font-size: clamp(22px, 5vw, 26px);
+    line-height: 1.25;
     color: #ece6dd;
     margin: 38px 0 16px;
   }
   .article-body h3,
   .article-content h3,
   .article-markdown-body h3 {
-    font-family: Cinzel, serif;
+    font-family: var(--font-display, 'Metamorphous', serif);
     font-weight: 600;
     font-size: clamp(18px, 4.5vw, 22px);
+    line-height: 1.3;
     color: #ece6dd;
     margin: 30px 0 14px;
   }
@@ -265,7 +268,7 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
   .article-body blockquote p,
   .article-content blockquote p,
   .article-markdown-body blockquote p {
-    font-family: 'EB Garamond', serif;
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
     font-style: italic;
     font-size: clamp(17px, 4vw, 21px);
     line-height: 1.5;
@@ -280,7 +283,7 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
     border-radius: 6px;
     padding: clamp(14px, 3vw, 22px) clamp(16px, 3vw, 24px);
     margin: 28px 0;
-    font-family: 'IBM Plex Mono', monospace;
+    font-family: var(--font-mono, Consolas, monospace);
     font-size: 13px;
     line-height: 1.7;
     color: #cbbfae;
@@ -304,7 +307,7 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
   .article-body ol,
   .article-content ul,
   .article-content ol {
-    font-family: 'EB Garamond', serif;
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
     font-size: 18px;
     line-height: 1.7;
     color: #cdc3b6;

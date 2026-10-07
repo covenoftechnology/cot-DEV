@@ -421,9 +421,72 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/* ============================================================
+   COVEN OF TECHNOLOGY — DESIGN TOKENS
+   Centralized custom properties for colors, typography, spacing
+   ============================================================ */
+:root {
+  /* Color System */
+  --cov-bg: #08060e;
+  --cov-surface-1: #151121;
+  --cov-surface-2: #100d16;
+  --cov-surface-hover: #181326;
+  --cov-gold: #d8b56b;
+  --cov-gold-bright: #e8cf95;
+  --cov-gold-deep: #c49a4e;
+  --cov-gold-soft: #e3c47e;
+  --cov-purple: #b98fd8;
+  --cov-purple-glow: #7c4dc4;
+  --cov-text-primary: #f3ecdf;
+  --cov-text-body: #cdc3b6;
+  --cov-text-subtle: #ece6dd;
+  --cov-text-muted: #8f857a;
+  --cov-text-dim: #9b9189;
+  --cov-border: rgba(216, 181, 107, 0.18);
+  --cov-border-accent: rgba(216, 181, 107, 0.32);
+  --cov-border-purple: rgba(185, 143, 216, 0.28);
+  --cov-status-success: #a9e09a;
+  --cov-status-warning: #e8cf95;
+  --cov-status-disabled: #8f857a;
+
+  /* Typography Families */
+  --font-display: 'Metamorphous', serif;
+  --font-body: 'Helvetica Neue Roman', serif;
+  --font-mono: 'Consolas', monospace;
+
+  /* Harmonic Spacing Scale */
+  --space-3xs: 2px;
+  --space-2xs: 4px;
+  --space-xs: 8px;
+  --space-sm: 12px;
+  --space-md: 16px;
+  --space-lg: 20px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 40px;
+  --space-4xl: 48px;
+  --space-5xl: 64px;
+
+  /* Border Radii */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+
+  /* Transitions */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.2s ease;
+}
+
 /* ---- base reset + keyframes ---- */
 *, *::before, *::after {
   box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid var(--cov-gold-bright);
+  outline-offset: 2px;
 }
 
 html, body {

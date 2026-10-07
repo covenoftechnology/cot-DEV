@@ -28,6 +28,7 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
   <!-- Google Fonts prefetch -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet" />
 
   <!-- Articles metadata index from Content Collections -->
   <script is:inline define:vars={{ blogArticlesMeta }}>
@@ -43,7 +44,7 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
 </head>
 <body>
   <x-dc>
-    <div style="min-height:100vh;background:#08060e;font-family:'EB Garamond',serif;display:flex;flex-direction:column">
+    <div style="min-height:100vh;background:#08060e;font-family:var(--font-body, 'Helvetica Neue Roman', serif);display:flex;flex-direction:column">
       <div style="flex:1">
         <slot />
       </div>
