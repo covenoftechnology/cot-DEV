@@ -1,16 +1,10 @@
 ---
-import ArticleLayout from '../../layouts/ArticleLayout.astro';
 import './article.css';
-import meta from './meta';
 ---
 
-<ArticleLayout meta={meta}>
-  <div class="apex-illustration">[ illustration · 1280×640 ]</div>
+<div class="apex-illustration">[ illustration · 1280×640 ]</div>
 
-  <p>
-    Every trigger you write is a binding spell — speak it carelessly and it fires a thousand times in the dark, recursing until your governor limits collapse. Speak it with intent, and a single incantation governs every record that crosses your altar.
-  </p>
-
+<section id="the-first-law" class="article-section" data-toc-title="The First Law">
   <h2>One trigger per object</h2>
 
   <p>
@@ -29,4 +23,4 @@ trigger AccountTrigger on Account (before insert) {'{'}
   <p>
     Master this rite and the next scrolls — bulkification, recursion wards, and the trigger framework — will open to you.
   </p>
-</ArticleLayout>
+</section>

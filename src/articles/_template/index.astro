@@ -1,7 +1,5 @@
 ---
-import ArticleLayout from '../../layouts/ArticleLayout.astro';
 import './article.css';
-import meta from './meta';
 
 // Local images
 import coverImg from './images/cover.svg';
@@ -17,36 +15,7 @@ import Callout from '../../components/article/Callout.astro';
 import CodeBlock from '../../components/article/CodeBlock.astro';
 ---
 
-<ArticleLayout meta={meta} wide={true}>
-  <article class="article-template">
-
-    <!-- Hero-specific content -->
-    <p class="hero-lead">
-      {meta.description}
-    </p>
-
-    <figure class="hero-cover">
-      <img src={coverImg.src} alt="Article visual system showcase cover artwork" width="1200" height="560" loading="eager" />
-      <figcaption>Figure — Architectural overview and pattern showcase for Coven of Technology editorial scrolls.</figcaption>
-    </figure>
-
-    <!-- Mobile Table of Contents (visible on <= 980px) -->
-    <details class="mobile-toc">
-      <summary class="mobile-toc-summary">
-        <span>☰ ON THIS SCROLL</span>
-        <span style="font-size: 11px; opacity: 0.7;">EXPLORE</span>
-      </summary>
-      <div class="mobile-toc-content">
-        <ul class="toc-nav-list" id="mobile-toc-list">
-          <!-- Populated dynamically by client-side script from .article-section[data-toc-title] -->
-        </ul>
-      </div>
-    </details>
-
-    <div class="editorial-layout">
-
-      <!-- Main content column -->
-      <div class="main-content">
+<div class="article-template">
 
         <!-- ============================================================== -->
         <!-- 01 · BASIC TYPOGRAPHY                                          -->
@@ -54,7 +23,7 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
         <section id="basic-typography" class="article-section" data-toc-title="Basic Typography">
           <div class="section-kicker">01 · BASIC TYPOGRAPHY</div>
           <h2>H2 · FONT-FAMILY: METAMORPHOUS · SIZE: CLAMP(22PX, 5VW, 26PX) · WEIGHT: 600 · LH: 1.25 · COLOR: #ECE6DD</h2>
-
+          
           <!-- BLOCK: Title + Text -->
           <div class="block-typography-title-text">
             <div class="section-kicker">KICKER · FONT-FAMILY: CONSOLAS · SIZE: 11PX · WEIGHT: 600 · COLOR: #B98FD8</div>
@@ -68,6 +37,7 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
           </div>
           <!-- END BLOCK: Title + Text -->
 
+          
           <!-- BLOCK: Text + Title -->
           <div class="block-typography-text-title">
             <p class="text-intro">
@@ -482,12 +452,19 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
 
           <!-- BLOCK: Callouts (Info, Warning, Tip, Note) -->
           <div class="block-callouts-group">
+                      <h2>H2 · FONT-FAMILY: METAMORPHOUS · SIZE: CLAMP(22PX, 5VW, 26PX) · WEIGHT: 600 · LH: 1.25 · COLOR: #ECE6DD</h2>
+          <p>
+            P · FONT-FAMILY: HELVETICA NEUE ROMAN · SIZE: 18PX · WEIGHT: 400 · LINE-HEIGHT: 1.75 · COLOR: #CDC3B6 — Technical articles frequently demand comparative data specifications. Below is an example of a responsive table that preserves internal horizontal scrollability on narrow viewports:
+          </p>
             <Callout type="info" title="CALLOUT INFO · METAMORPHOUS · SIZE: 13PX · WEIGHT: 600 · COLOR: #B98FD8">
               <p>
                 CALLOUT BODY · FONT-FAMILY: HELVETICA NEUE ROMAN · SIZE: 17PX · WEIGHT: 400 · LINE-HEIGHT: 1.6 · COLOR: #CDC3B6 — Minimum threshold of 50,000 interactions across business unit over preceding 90 days.
               </p>
             </Callout>
-
+          <h2>H2 · FONT-FAMILY: METAMORPHOUS · SIZE: CLAMP(22PX, 5VW, 26PX) · WEIGHT: 600 · LH: 1.25 · COLOR: #ECE6DD</h2>
+          <p>
+            P · FONT-FAMILY: HELVETICA NEUE ROMAN · SIZE: 18PX · WEIGHT: 400 · LINE-HEIGHT: 1.75 · COLOR: #CDC3B6 — Technical articles frequently demand comparative data specifications. Below is an example of a responsive table that preserves internal horizontal scrollability on narrow viewports:
+          </p>
             <Callout type="warning" title="CALLOUT WARNING · METAMORPHOUS · SIZE: 13PX · WEIGHT: 600 · COLOR: #E8CF95">
               <p>
                 CALLOUT BODY · FONT-FAMILY: HELVETICA NEUE ROMAN · SIZE: 17PX · WEIGHT: 400 · LINE-HEIGHT: 1.6 · COLOR: #CDC3B6 — Never place an STO activity directly after a Wait Activity with a fixed hour.
@@ -680,7 +657,7 @@ public with sharing class EinsteinSyncHandler {
               </div>
             </a>
 
-            <a href="/article/apex-triggers-without-tears" class="related-card">
+            <a href="#" class="related-card" onclick="return false;">
               <div>
                 <div class="related-type">COVEN SCROLL · APEX</div>
                 <h4 class="related-title">The Apex Incantation: Triggers Without Tears</h4>
@@ -693,217 +670,6 @@ public with sharing class EinsteinSyncHandler {
           </div>
           <!-- END BLOCK: Related Documentation -->
 
-          <!-- BLOCK: Next Article -->
-          <div class="article-nav-block">
-            <a href="/library" class="nav-back-link">
-              <span>← BACK TO THE GRIMOIRE</span>
-            </a>
-
-            <a href="/article/apex-triggers-without-tears" class="nav-next-card">
-              <div>
-                <div class="nav-next-label">NEXT SCROLL · APEX</div>
-                <div class="nav-next-title">The Apex Incantation: Triggers Without Tears</div>
-              </div>
-              <span class="nav-next-arrow">→</span>
-            </a>
-          </div>
-          <!-- END BLOCK: Next Article -->
         </section>
+</div>
 
-        </div>
-
-      <!-- Sticky Sidebar: ON THIS SCROLL (Desktop) -->
-      <aside class="article-sidebar" aria-label="Table of contents and scroll progress">
-        <div class="toc-panel">
-          <div class="toc-header">
-            <span class="toc-title">
-              <span>✦</span>
-              <span>ON THIS SCROLL</span>
-            </span>
-            <span class="toc-progress-indicator" id="reading-pct">0%</span>
-          </div>
-
-          <div class="toc-progress-bar-wrap" aria-hidden="true">
-            <div class="toc-progress-bar-fill" id="reading-bar"></div>
-          </div>
-
-          <div class="toc-scroll-area">
-            <nav aria-label="Table of contents">
-              <ul class="toc-nav-list" id="desktop-toc-list">
-                <!-- Populated dynamically by client-side script from .article-section[data-toc-title] -->
-              </ul>
-            </nav>
-          </div>
-        </div>
-      </aside>
-
-    </div>
-
-  </article>
-
-  <!-- Interactive Client-side Script: Automated Dynamic TOC, Spy & Reveal -->
-  <script is:inline>
-    (function () {
-      function buildToc(container, sections) {
-        if (!container) return;
-        container.innerHTML = '';
-        sections.forEach(function (sec, idx) {
-          var id = sec.id;
-          var title = sec.getAttribute('data-toc-title') || ('Section ' + (idx + 1));
-          var numStr = String(idx + 1).padStart(2, '0');
-          var li = document.createElement('li');
-          var a = document.createElement('a');
-          a.href = '#' + id;
-          a.className = 'toc-link';
-          a.setAttribute('data-toc-target', id);
-          a.innerHTML = '<span class="toc-num">' + numStr + '</span><span>' + title + '</span>';
-          li.appendChild(a);
-          container.appendChild(li);
-        });
-      }
-
-      var observerInstance = null;
-
-      function setupToc() {
-        var sections = Array.from(document.querySelectorAll('.article-section[data-toc-title]'));
-        var desktopTocList = document.getElementById('desktop-toc-list');
-        var mobileTocList = document.getElementById('mobile-toc-list');
-
-        if (sections.length === 0) return;
-
-        // Defensive validations
-        var seenIds = new Set();
-        sections.forEach(function (sec, idx) {
-          var id = sec.id;
-          var title = sec.getAttribute('data-toc-title');
-          if (!id) {
-            console.warn('[TOC Defensive Warning] Section at index ' + idx + ' is missing an id attribute. Title: "' + title + '"');
-          } else if (seenIds.has(id)) {
-            console.warn('[TOC Defensive Warning] Duplicate section id detected: "' + id + '"');
-          } else {
-            seenIds.add(id);
-          }
-        });
-
-        // Build links for Desktop and Mobile from the exact same sections array
-        if (desktopTocList) {
-          buildToc(desktopTocList, sections);
-        }
-        if (mobileTocList) {
-          buildToc(mobileTocList, sections);
-        }
-
-        // Defensive count check
-        var desktopCount = desktopTocList ? desktopTocList.querySelectorAll('.toc-link').length : 0;
-        var mobileCount = mobileTocList ? mobileTocList.querySelectorAll('.toc-link').length : 0;
-        if (desktopCount !== sections.length || mobileCount !== sections.length) {
-          console.warn('[TOC Defensive Warning] Count mismatch! Sections: ' + sections.length + ', Desktop: ' + desktopCount + ', Mobile: ' + mobileCount);
-        }
-
-        // Active Section Spy for Sidebar TOC
-        var allTocLinks = document.querySelectorAll('.article-template .toc-link');
-
-        function scrollLinkIntoTocView(link) {
-          var container = link.closest('.toc-scroll-area');
-          if (!container) return;
-          var containerRect = container.getBoundingClientRect();
-          var linkRect = link.getBoundingClientRect();
-
-          if (linkRect.top < containerRect.top) {
-            container.scrollTo({
-              top: container.scrollTop + (linkRect.top - containerRect.top) - 10,
-              behavior: 'smooth'
-            });
-          } else if (linkRect.bottom > containerRect.bottom) {
-            container.scrollTo({
-              top: container.scrollTop + (linkRect.bottom - containerRect.bottom) + 10,
-              behavior: 'smooth'
-            });
-          }
-        }
-
-        if (observerInstance) {
-          observerInstance.disconnect();
-        }
-
-        if ('IntersectionObserver' in window && sections.length > 0) {
-          observerInstance = new IntersectionObserver(function (entries) {
-            entries.forEach(function (entry) {
-              if (entry.isIntersecting) {
-                var activeId = entry.target.id;
-                allTocLinks.forEach(function (link) {
-                  if (link.getAttribute('data-toc-target') === activeId) {
-                    link.classList.add('active');
-                    scrollLinkIntoTocView(link);
-                  } else {
-                    link.classList.remove('active');
-                  }
-                });
-              }
-            });
-          }, {
-            rootMargin: '-10% 0px -70% 0px',
-            threshold: 0
-          });
-
-          sections.forEach(function (s) {
-            observerInstance.observe(s);
-          });
-        }
-      }
-
-      // Initial execution
-      setupToc();
-
-      // Ensure execution on DOM ready and window load
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', setupToc);
-      }
-      window.addEventListener('load', setupToc);
-
-      // DOM watcher: if React / DC-runtime mounts or clears #desktop-toc-list, repopulate immediately!
-      var checkInterval = setInterval(function () {
-        var dt = document.getElementById('desktop-toc-list');
-        var secs = document.querySelectorAll('.article-section[data-toc-title]');
-        if (dt && secs.length > 0 && dt.children.length === 0) {
-          setupToc();
-        }
-      }, 100);
-
-      // Stop polling after 4 seconds once stable
-      setTimeout(function () {
-        clearInterval(checkInterval);
-        setupToc();
-      }, 4000);
-
-      // Exercise Reveal Answer Buttons (delegated)
-      document.addEventListener('click', function (e) {
-        var btn = e.target.closest('.reveal-btn');
-        if (!btn) return;
-        var targetId = btn.getAttribute('data-target');
-        if (!targetId) return;
-        var ans = document.getElementById(targetId);
-        if (!ans) return;
-
-        var isExpanded = btn.getAttribute('aria-expanded') === 'true';
-        btn.setAttribute('aria-expanded', !isExpanded);
-        if (!isExpanded) {
-          ans.classList.add('visible');
-          btn.querySelector('span').textContent = 'Hide Answer';
-        } else {
-          ans.classList.remove('visible');
-          btn.querySelector('span').textContent = '✦ Reveal Answer';
-        }
-      });
-
-      // Auto-close mobile TOC on link click (delegated)
-      document.addEventListener('click', function (e) {
-        var mobileLink = e.target.closest('.mobile-toc a');
-        if (mobileLink) {
-          var mobileToc = mobileLink.closest('.mobile-toc');
-          if (mobileToc) mobileToc.removeAttribute('open');
-        }
-      });
-    })();
-  </script>
-</ArticleLayout>

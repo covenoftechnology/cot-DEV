@@ -13,6 +13,7 @@ export interface ArticleMeta {
   order?: number;
   thumbBg?: string;
   cover?: string;
+  coverCaption?: string;
   publishedDate?: Date | string;
   updatedDate?: Date | string;
   readingTime?: string;
@@ -25,4 +26,9 @@ export interface Article {
   slug: string;
   meta: ArticleMeta;
   component: any;
+}
+
+export interface ArticleNavigation {
+  previous: Article | null;
+  next: Article | null;
 }

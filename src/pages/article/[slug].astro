@@ -1,16 +1,33 @@
 ---
-import { getPublishedArticles } from '../../lib/articles';
+import { getPublishedArticles, getArticleNavigation, getRelatedArticles } from '../../lib/articles';
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
 
 export async function getStaticPaths() {
   const articles = getPublishedArticles();
-  return articles.map((article) => ({
-    params: { slug: article.slug },
-    props: { article },
-  }));
+  return articles.map((article) => {
+    const { previous, next } = getArticleNavigation(article.slug);
+    const related = getRelatedArticles(article.slug, 3);
+    return {
+      params: { slug: article.slug },
+      props: {
+        article,
+        previous,
+        next,
+        related,
+      },
+    };
+  });
 }
 
-const { article } = Astro.props;
+const { article, previous, next, related } = Astro.props;
 const ArticleComponent = article.component;
 ---
 
-<ArticleComponent />
+<ArticleLayout
+  article={article}
+  previousArticle={previous}
+  nextArticle={next}
+  relatedArticles={related}
+>
+  <ArticleComponent />
+</ArticleLayout>

@@ -5,16 +5,33 @@ import '../styles/styles.css';
 
 interface Props {
   title?: string;
+  description?: string;
+  canonical?: string;
+  ogImage?: string;
+  ogType?: string;
 }
 
-const { title = "Coven of Technology" } = Astro.props;
+const {
+  title = "Coven of Technology",
+  description,
+  canonical,
+  ogImage,
+  ogType = "website",
+} = Astro.props;
 
 const publishedArticles = getPublishedArticles();
 const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, {
   id: a.slug,
+  slug: a.slug,
   title: a.meta.title,
+  description: a.meta.description,
+  category: a.meta.category,
+  rank: a.meta.rank || 'Mechanic',
+  readingTime: a.meta.readingTime || '12 min',
+  aetherReward: a.meta.aetherReward || 120,
   tag: (a.meta.tags && a.meta.tags.length > 0) ? a.meta.tags[0].toUpperCase() : (a.meta.category || '').toUpperCase(),
-  thumbBg: a.meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)'
+  thumbBg: a.meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)',
+  url: `/article/${a.slug}`
 }]));
 ---
 
@@ -24,6 +41,16 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title}</title>
+
+  {description && <meta name="description" content={description} />}
+  {canonical && <link rel="canonical" href={canonical} />}
+
+  <!-- Open Graph -->
+  <meta property="og:title" content={title} />
+  {description && <meta property="og:description" content={description} />}
+  {canonical && <meta property="og:url" content={canonical} />}
+  {ogImage && <meta property="og:image" content={ogImage} />}
+  <meta property="og:type" content={ogType} />
 
   <!-- Google Fonts prefetch -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />

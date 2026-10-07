@@ -1,14 +1,36 @@
 ---
 import BaseLayout from './BaseLayout.astro';
-import type { ArticleMeta } from '../types/article';
+import type { Article, ArticleMeta } from '../types/article';
 
 interface Props {
-  meta: ArticleMeta;
+  article?: {
+    slug: string;
+    meta: ArticleMeta;
+  };
+  meta?: ArticleMeta;
+  previousArticle?: Article | null;
+  nextArticle?: Article | null;
+  relatedArticles?: Article[];
   wide?: boolean;
+  isPreview?: boolean;
 }
 
-const { meta, wide = false } = Astro.props;
+const {
+  article,
+  previousArticle = null,
+  nextArticle = null,
+  relatedArticles = [],
+  wide = false,
+  isPreview = false,
+} = Astro.props;
 
+// Support both article object and standalone meta prop
+const meta = article?.meta || Astro.props.meta;
+if (!meta) {
+  throw new Error('[ArticleLayout Error] ArticleLayout requires an "article" or "meta" prop.');
+}
+
+const slug = article?.slug || '';
 const authorInitial = (meta.author || 'O').charAt(0).toUpperCase();
 const tagDisplay = (meta.tags && meta.tags.length > 0)
   ? meta.tags.join(' · ').toUpperCase()
@@ -49,9 +71,16 @@ const formattedUpdatedDate = formatDate(meta.updatedDate);
 
 const isWide = Boolean(wide || meta.wide);
 const containerMaxWidth = isWide ? '1220px' : '820px';
+const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : undefined;
 ---
 
-<BaseLayout title={`Coven of Technology — ${meta.title}`}>
+<BaseLayout
+  title={`Coven of Technology — ${meta.title}`}
+  description={meta.description}
+  canonical={canonicalUrl}
+  ogImage={meta.cover}
+  ogType="article"
+>
   <div style="position:relative;background:radial-gradient(1100px 640px at 50% -14%,rgba(124,77,196,.40),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.24),transparent 62%),#08060e">
     <div style="position:absolute;top:64px;left:0;right:0;height:300px;overflow:hidden;z-index:0;pointer-events:none">
       <div style="position:absolute;top:60px;right:7%;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#efe7d2,#cdbfae 58%,#6f6450);box-shadow:0 0 40px rgba(214,208,236,.38),inset -7px -5px 12px rgba(40,30,60,.55);opacity:.4;animation:covFloat 9s ease-in-out infinite"></div>
@@ -65,11 +94,18 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
       <header class="cov-header cov-section-pad article-top-header">
         <div onclick="{{ toLanding }}" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
           <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
-          <div class="cov-brand-text" style="font-family:var(--font-display, 'Metamorphous', serif);font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{"{{ brand.name }}"}</div>
+          <div class="cov-brand-text" style="font-family:var(--font-display, 'Metamorphous', serif);font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">COVEN · OF · TECHNOLOGY</div>
         </div>
+
+        <!-- Automatic Breadcrumb -->
         <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:13px;color:#8f857a;max-width:100%">
-          <span onclick="{{ toLibrary }}" style="cursor:pointer">The Grimoire</span> / {meta.category} / <span style="color:#c5b9a8">{meta.title}</span>
+          <a href="/library" style="color:inherit;text-decoration:none;cursor:pointer">The Grimoire</a>
+          <span> / </span>
+          <span style="color:#b3a99d">{meta.category}</span>
+          <span> / </span>
+          <span style="color:#c5b9a8">{meta.title}</span>
         </div>
+
         <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:13px;color:#e8cf95;border:1px solid rgba(216,181,107,.3);padding:7px 14px;border-radius:4px;white-space:nowrap">✦ {aetherReward} Aether on completion</div>
       </header>
 
@@ -80,7 +116,7 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
     </div>
 
     <!-- ARTICLE WRAPPER -->
-    <article id="coven-article-container" class="cov-section-pad" style={`max-width:${containerMaxWidth};margin:0 auto;padding:56px 48px 64px;position:relative;z-index:1`}>
+    <article id="coven-article-container" class="cov-section-pad article-template" style={`max-width:${containerMaxWidth};margin:0 auto;padding:56px 48px 64px;position:relative;z-index:1`}>
       <div style="display:inline-block;font-family:var(--font-mono, Consolas, monospace);font-size:11px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:5px 10px;margin-bottom:22px">{tagDisplay}</div>
       <h1 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:700;font-size:clamp(28px,6.5vw,46px);line-height:1.12;color:#f3ecdf;margin:0 0 22px;text-shadow:0 0 40px rgba(139,92,196,.2);word-break:break-word">{meta.title}</h1>
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:34px;padding-bottom:26px;border-bottom:1px solid rgba(216,181,107,.12);flex-wrap:wrap">
@@ -106,10 +142,87 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
           </div>
         </div>
       </div>
-      
-      <!-- ARTICLE BODY -->
-      <div class="article-body article-content article-markdown-body">
-        <slot />
+
+      <!-- Hero Lead from meta.description -->
+      {meta.description && (
+        <p class="hero-lead">
+          {meta.description}
+        </p>
+      )}
+
+      <!-- Hero Cover from meta.cover -->
+      {meta.cover && (
+        <figure class="hero-cover">
+          <img src={meta.cover} alt={meta.title} width="1200" height="560" loading="eager" />
+          {meta.coverCaption && <figcaption>{meta.coverCaption}</figcaption>}
+        </figure>
+      )}
+
+      <!-- Mobile Table of Contents (visible on <= 980px when sections exist) -->
+      <details class="mobile-toc" id="article-mobile-toc">
+        <summary class="mobile-toc-summary">
+          <span>☰ ON THIS SCROLL</span>
+          <span style="font-size: 11px; opacity: 0.7;">EXPLORE</span>
+        </summary>
+        <div class="mobile-toc-content">
+          <ul class="toc-nav-list" id="mobile-toc-list">
+            <!-- Populated dynamically by client-side script from .article-section[data-toc-title] -->
+          </ul>
+        </div>
+      </details>
+
+      <!-- Editorial Layout: Content + Sticky Sidebar -->
+      <div class="editorial-layout" id="article-editorial-layout">
+
+        <!-- Main content column -->
+        <div class="main-content">
+          <div class="article-body article-content article-markdown-body">
+            <slot />
+          </div>
+
+          <!-- BLOCK: Next Article / Navigation -->
+          <div class="article-nav-block">
+            <a href="/library" class="nav-back-link">
+              <span>← BACK TO THE GRIMOIRE</span>
+            </a>
+
+            {nextArticle && (
+              <a href={`/article/${nextArticle.slug}`} class="nav-next-card">
+                <div>
+                  <div class="nav-next-label">NEXT SCROLL · {nextArticle.meta.category.toUpperCase()}</div>
+                  <div class="nav-next-title">{nextArticle.meta.title}</div>
+                </div>
+                <span class="nav-next-arrow">→</span>
+              </a>
+            )}
+          </div>
+        </div>
+
+        <!-- Sticky Sidebar: ON THIS SCROLL (Desktop) -->
+        <aside class="article-sidebar" id="article-desktop-sidebar" aria-label="Table of contents and scroll progress">
+          <div class="toc-panel">
+            <div class="toc-header">
+              <span class="toc-title">
+                <span>✦</span>
+                <span>ON THIS SCROLL</span>
+              </span>
+              <span class="toc-progress-indicator" id="reading-pct">0%</span>
+            </div>
+
+            <div class="toc-progress-bar-wrap" aria-hidden="true">
+              <div class="toc-progress-bar-fill" id="reading-bar"></div>
+            </div>
+
+            <div class="toc-scroll-area">
+              <nav aria-label="Table of contents">
+                <ul class="toc-nav-list" id="desktop-toc-list">
+                  <!-- Populated dynamically by client-side script from .article-section[data-toc-title] -->
+                </ul>
+              </nav>
+            </div>
+          </div>
+        </aside>
+
       </div>
     </article>
 
@@ -160,12 +273,158 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
 
     window.addEventListener('scroll', updateUnifiedReadingProgress, { passive: true });
     window.addEventListener('resize', updateUnifiedReadingProgress, { passive: true });
-    // Run on initial load
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       updateUnifiedReadingProgress();
     } else {
       document.addEventListener('DOMContentLoaded', updateUnifiedReadingProgress);
     }
+
+    // Dynamic TOC builder and spy
+    (function () {
+      function buildToc(container, sections) {
+        if (!container) return;
+        container.innerHTML = '';
+        sections.forEach(function (sec, idx) {
+          var id = sec.id;
+          var title = sec.getAttribute('data-toc-title') || ('Section ' + (idx + 1));
+          var numStr = String(idx + 1).padStart(2, '0');
+          var li = document.createElement('li');
+          var a = document.createElement('a');
+          a.href = '#' + id;
+          a.className = 'toc-link';
+          a.setAttribute('data-toc-target', id);
+          a.innerHTML = '<span class="toc-num">' + numStr + '</span><span>' + title + '</span>';
+          li.appendChild(a);
+          container.appendChild(li);
+        });
+      }
+
+      var observerInstance = null;
+
+      function setupToc() {
+        var sections = Array.from(document.querySelectorAll('.article-section[data-toc-title]'));
+        var desktopTocList = document.getElementById('desktop-toc-list');
+        var mobileTocList = document.getElementById('mobile-toc-list');
+        var mobileTocDetails = document.getElementById('article-mobile-toc');
+        var desktopSidebar = document.getElementById('article-desktop-sidebar');
+        var layoutGrid = document.getElementById('article-editorial-layout');
+
+        // If no sections exist, collapse TOC gracefully
+        if (sections.length === 0) {
+          if (mobileTocDetails) mobileTocDetails.style.display = 'none';
+          if (desktopSidebar) desktopSidebar.style.display = 'none';
+          if (layoutGrid) layoutGrid.style.gridTemplateColumns = '1fr';
+          return;
+        }
+
+        if (mobileTocDetails) mobileTocDetails.style.display = '';
+        if (desktopSidebar) desktopSidebar.style.display = '';
+        if (layoutGrid && window.innerWidth > 980) {
+          layoutGrid.style.gridTemplateColumns = 'minmax(0, 1fr) 280px';
+        }
+
+        // Build lists
+        if (desktopTocList) buildToc(desktopTocList, sections);
+        if (mobileTocList) buildToc(mobileTocList, sections);
+
+        var allTocLinks = document.querySelectorAll('.toc-link');
+
+        function scrollLinkIntoTocView(link) {
+          var container = link.closest('.toc-scroll-area');
+          if (!container) return;
+          var containerRect = container.getBoundingClientRect();
+          var linkRect = link.getBoundingClientRect();
+
+          if (linkRect.top < containerRect.top) {
+            container.scrollTo({
+              top: container.scrollTop + (linkRect.top - containerRect.top) - 10,
+              behavior: 'smooth'
+            });
+          } else if (linkRect.bottom > containerRect.bottom) {
+            container.scrollTo({
+              top: container.scrollTop + (linkRect.bottom - containerRect.bottom) + 10,
+              behavior: 'smooth'
+            });
+          }
+        }
+
+        if (observerInstance) observerInstance.disconnect();
+
+        if ('IntersectionObserver' in window && sections.length > 0) {
+          observerInstance = new IntersectionObserver(function (entries) {
+            entries.forEach(function (entry) {
+              if (entry.isIntersecting) {
+                var activeId = entry.target.id;
+                allTocLinks.forEach(function (link) {
+                  if (link.getAttribute('data-toc-target') === activeId) {
+                    link.classList.add('active');
+                    scrollLinkIntoTocView(link);
+                  } else {
+                    link.classList.remove('active');
+                  }
+                });
+              }
+            });
+          }, {
+            rootMargin: '-10% 0px -70% 0px',
+            threshold: 0
+          });
+
+          sections.forEach(function (s) {
+            observerInstance.observe(s);
+          });
+        }
+      }
+
+      setupToc();
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', setupToc);
+      }
+      window.addEventListener('load', setupToc);
+
+      var checkInterval = setInterval(function () {
+        var dt = document.getElementById('desktop-toc-list');
+        var secs = document.querySelectorAll('.article-section[data-toc-title]');
+        if (dt && secs.length > 0 && dt.children.length === 0) {
+          setupToc();
+        }
+      }, 100);
+
+      setTimeout(function () {
+        clearInterval(checkInterval);
+        setupToc();
+      }, 4000);
+
+      // Exercise reveal buttons
+      document.addEventListener('click', function (e) {
+        var btn = e.target.closest('.reveal-btn');
+        if (!btn) return;
+        var targetId = btn.getAttribute('data-target');
+        if (!targetId) return;
+        var ans = document.getElementById(targetId);
+        if (!ans) return;
+
+        var isExpanded = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', !isExpanded);
+        if (!isExpanded) {
+          ans.classList.add('visible');
+          btn.querySelector('span').textContent = 'Hide Answer';
+        } else {
+          ans.classList.remove('visible');
+          btn.querySelector('span').textContent = '✦ Reveal Answer';
+        }
+      });
+
+      // Mobile TOC auto-close
+      document.addEventListener('click', function (e) {
+        var mobileLink = e.target.closest('.mobile-toc a');
+        if (mobileLink) {
+          var mobileToc = mobileLink.closest('.mobile-toc');
+          if (mobileToc) mobileToc.removeAttribute('open');
+        }
+      });
+    })();
   </script>
 </BaseLayout>
 
@@ -227,6 +486,330 @@ const containerMaxWidth = isWide ? '1220px' : '820px';
     transition: width 0.08s linear;
   }
 
+  /* ── Hero Lead & Cover ────────────────────────────────────────── */
+  .hero-lead {
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: clamp(19px, 2.5vw, 22px);
+    line-height: 1.6;
+    color: #cdc3b6;
+    margin: 0 0 32px;
+    font-style: italic;
+    border-left: 2px solid rgba(216, 181, 107, 0.4);
+    padding-left: 20px;
+  }
+
+  .hero-cover {
+    margin: 0 0 44px;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid rgba(216, 181, 107, 0.2);
+    background: #110d1a;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  }
+
+  .hero-cover img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+
+  .hero-cover figcaption {
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 13px;
+    color: #8f857a;
+    text-align: center;
+    padding: 10px 16px;
+    background: rgba(16, 13, 22, 0.8);
+    border-top: 1px solid rgba(216, 181, 107, 0.1);
+    font-style: italic;
+  }
+
+  /* ── Mobile TOC ──────────────────────────────────────────────── */
+  .mobile-toc {
+    display: none;
+    margin-bottom: 24px;
+    background: #151121;
+    border: 1px solid rgba(216, 181, 107, 0.25);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .mobile-toc-summary {
+    padding: 12px 16px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-family: var(--font-display, 'Metamorphous', serif);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: #e8cf95;
+    user-select: none;
+    background: rgba(216, 181, 107, 0.05);
+  }
+
+  .mobile-toc-summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mobile-toc-content {
+    padding: 12px 16px;
+    border-top: 1px solid rgba(216, 181, 107, 0.15);
+    max-height: 280px;
+    overflow-y: auto;
+  }
+
+  @media (max-width: 980px) {
+    .mobile-toc {
+      display: block;
+      position: sticky;
+      top: var(--article-sticky-height, 67px);
+      z-index: 998;
+    }
+  }
+
+  /* ── Editorial Two-Column Layout ──────────────────────────────── */
+  .editorial-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 48px;
+    align-items: start;
+    position: relative;
+  }
+
+  .main-content {
+    min-width: 0;
+  }
+
+  .article-sidebar {
+    position: sticky;
+    top: calc(var(--article-sticky-height, 75px) + 24px);
+    align-self: start;
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100vh - var(--article-sticky-height, 75px) - 48px);
+  }
+
+  @media (max-width: 980px) {
+    .editorial-layout {
+      grid-template-columns: 1fr !important;
+      gap: 0;
+    }
+    .article-sidebar {
+      display: none !important;
+    }
+  }
+
+  /* ── Sidebar: Table of Contents ──────────────────────────────── */
+  .toc-panel {
+    background: #151121;
+    border: 1px solid rgba(216, 181, 107, 0.18);
+    border-radius: 8px;
+    padding: 18px 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+    display: flex;
+    flex-direction: column;
+    height: auto;
+    max-height: inherit;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .toc-header {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(216, 181, 107, 0.14);
+  }
+
+  .toc-title {
+    font-family: var(--font-display, 'Metamorphous', serif);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: #e8cf95;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .toc-progress-indicator {
+    font-family: var(--font-mono, Consolas, monospace);
+    font-size: 11px;
+    color: #b98fd8;
+  }
+
+  .toc-progress-bar-wrap {
+    flex-shrink: 0;
+    height: 3px;
+    background: rgba(216, 181, 107, 0.12);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+
+  .toc-progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #c49a4e, #e3c47e);
+    border-radius: 2px;
+    transition: width 0.08s linear;
+  }
+
+  .toc-scroll-area {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(216, 181, 107, 0.3) transparent;
+  }
+
+  .toc-scroll-area::-webkit-scrollbar {
+    width: 4px;
+  }
+  .toc-scroll-area::-webkit-scrollbar-thumb {
+    background: rgba(216, 181, 107, 0.3);
+    border-radius: 2px;
+  }
+
+  .toc-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .toc-link {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 6px 8px;
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 13px;
+    color: #8f857a;
+    text-decoration: none;
+    border-radius: 4px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s ease;
+    line-height: 1.4;
+  }
+
+  .toc-link:hover {
+    color: #ece6dd;
+    background: rgba(216, 181, 107, 0.06);
+  }
+
+  .toc-link.active {
+    color: #e8cf95;
+    background: rgba(216, 181, 107, 0.12);
+    border-left-color: #d8b56b;
+    font-weight: 600;
+  }
+
+  .toc-num {
+    font-family: var(--font-mono, Consolas, monospace);
+    font-size: 10px;
+    color: #b98fd8;
+    flex-shrink: 0;
+    width: 18px;
+  }
+
+  /* ── Next Article / Navigation ───────────────────────────────── */
+  .article-nav-block {
+    margin: 48px 0 24px;
+    padding-top: 32px;
+    border-top: 1px solid rgba(216, 181, 107, 0.15);
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch;
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+
+  .nav-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-display, 'Metamorphous', serif);
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    color: #b98fd8;
+    text-decoration: none;
+    padding: 14px 20px;
+    border: 1px solid rgba(185, 143, 216, 0.25);
+    border-radius: 4px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .nav-back-link:hover {
+    border-color: rgba(185, 143, 216, 0.5);
+    background: rgba(185, 143, 216, 0.08);
+    color: #f3ecdf;
+  }
+
+  .nav-next-card {
+    flex: 1;
+    min-width: 260px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 22px;
+    background: #151121;
+    border: 1px solid rgba(216, 181, 107, 0.25);
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+  }
+
+  .nav-next-card:hover {
+    border-color: #d8b56b;
+    background: #181326;
+    transform: translateY(-2px);
+  }
+
+  .nav-next-label {
+    font-family: var(--font-mono, Consolas, monospace);
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: #8f857a;
+    text-transform: uppercase;
+  }
+
+  .nav-next-title {
+    font-family: var(--font-display, 'Metamorphous', serif);
+    font-size: 15px;
+    font-weight: 600;
+    color: #f3ecdf;
+    margin-top: 4px;
+  }
+
+  .nav-next-arrow {
+    color: #e8cf95;
+    font-size: 18px;
+    margin-left: 16px;
+    transition: transform 0.2s ease;
+  }
+
+  .nav-next-card:hover .nav-next-arrow {
+    transform: translateX(4px);
+  }
+
+  @media (max-width: 768px) {
+    .article-nav-block {
+      flex-direction: column;
+    }
+  }
+
+  /* ── Base Article Content Typography Defaults ─────────────────── */
   .article-body p,
   .article-content p,
   .article-markdown-body p {

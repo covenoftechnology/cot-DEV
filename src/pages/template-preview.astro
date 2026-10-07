@@ -1,11 +1,27 @@
 ---
 /**
- * TEMPORARY LOCAL PREVIEW
- * Renderiza src/articles/_template/index.astro para revisión visual local
+ * LOCAL TEMPLATE PREVIEW
+ * Renderiza src/articles/_template/index.astro mediante ArticleLayout en modo preview
  * Accesible en http://localhost:4321/template-preview
  * NO referenciado en Home, Library, Profile ni Navigation.
  */
+import ArticleLayout from '../layouts/ArticleLayout.astro';
 import TemplateArticle from '../articles/_template/index.astro';
+import templateMeta from '../articles/_template/meta';
+import { getPublishedArticles } from '../lib/articles';
+
+// Sample next article for preview demonstration
+const published = getPublishedArticles();
+const sampleNext = published.length > 0 ? published[0] : null;
 ---
 
-<TemplateArticle />
+<ArticleLayout
+  article={{ slug: '_template', meta: templateMeta, component: TemplateArticle }}
+  previousArticle={null}
+  nextArticle={sampleNext}
+  relatedArticles={published.slice(0, 3)}
+  wide={true}
+  isPreview={true}
+>
+  <TemplateArticle />
+</ArticleLayout>
