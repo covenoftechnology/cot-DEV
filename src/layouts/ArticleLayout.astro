@@ -1,5 +1,6 @@
 ---
 import BaseLayout from './BaseLayout.astro';
+import SpiritProgress from '../components/article/SpiritProgress.astro';
 import type { Article, ArticleMeta } from '../types/article';
 
 interface Props {
@@ -109,9 +110,12 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:13px;color:#e8cf95;border:1px solid rgba(216,181,107,.3);padding:7px 14px;border-radius:4px;white-space:nowrap">✦ {aetherReward} Aether on completion</div>
       </header>
 
-      <!-- Sticky Reading Progress Bar (pins to viewport top during scroll) -->
-      <div id="article-progress-track" class="cov-reading-progress-track">
-        <div id="article-progress-bar" class="cov-reading-progress-bar"></div>
+      <!-- Sticky Reading Progress Area with Spirit Markers -->
+      <div class="article-progress-area">
+        <div id="article-progress-track" class="cov-reading-progress-track">
+          <div id="article-progress-bar" class="cov-reading-progress-bar"></div>
+        </div>
+        <SpiritProgress />
       </div>
     </div>
 
@@ -236,7 +240,11 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
   </div>
 
   <script is:inline>
-    // Unified Reading Progress for Article (top sticky bar, sidebar bar, and sidebar percentage)
+    function getSpiritProgress() {
+      return document.getElementById('article-spirit-progress') || document.querySelector('spirit-progress');
+    }
+
+    // Unified Reading Progress for Article (top sticky bar, sidebar bar, sidebar percentage, and spirits)
     function updateUnifiedReadingProgress() {
       var articleEl = document.getElementById('coven-article-container') || document.querySelector('article');
       if (!articleEl) return;
@@ -269,10 +277,27 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
       // 3. Sidebar percentage indicator
       var sidebarPct = document.getElementById('reading-pct');
       if (sidebarPct) sidebarPct.textContent = progress + '%';
+
+      // 4. Arcane Spirits of Progress activation (1:1 with single progress percentage)
+      var sp = getSpiritProgress();
+      if (sp && typeof sp.update === 'function') {
+        sp.update(progress);
+      }
     }
 
-    window.addEventListener('scroll', updateUnifiedReadingProgress, { passive: true });
-    window.addEventListener('resize', updateUnifiedReadingProgress, { passive: true });
+    var ticking = false;
+    function handleScrollOrResize() {
+      if (!ticking) {
+        window.requestAnimationFrame(function () {
+          updateUnifiedReadingProgress();
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }
+
+    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
+    window.addEventListener('resize', handleScrollOrResize, { passive: true });
     if (document.readyState === 'complete' || document.readyState === 'interactive') {
       updateUnifiedReadingProgress();
     } else {
@@ -314,6 +339,8 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
           if (mobileTocDetails) mobileTocDetails.style.display = 'none';
           if (desktopSidebar) desktopSidebar.style.display = 'none';
           if (layoutGrid) layoutGrid.style.gridTemplateColumns = '1fr';
+          var sp = getSpiritProgress();
+          if (sp && typeof sp.build === 'function') sp.build([]);
           return;
         }
 
@@ -326,6 +353,13 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         // Build lists
         if (desktopTocList) buildToc(desktopTocList, sections);
         if (mobileTocList) buildToc(mobileTocList, sections);
+
+        // Build spirits (1:1 with sections)
+        var sp = getSpiritProgress();
+        if (sp && typeof sp.build === 'function') {
+          sp.build(sections);
+          updateUnifiedReadingProgress();
+        }
 
         var allTocLinks = document.querySelectorAll('.toc-link');
 
@@ -472,8 +506,14 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
     }
   }
 
+  .article-progress-area {
+    position: relative;
+    width: 100%;
+    height: var(--article-progress-height, 3px);
+  }
+
   .cov-reading-progress-track {
-    height: var(--article-progress-height);
+    height: 100%;
     background: rgba(216, 181, 107, 0.12);
     width: 100%;
     overflow: hidden;
@@ -482,7 +522,8 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
   .cov-reading-progress-bar {
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #c49a4e, #e3c47e);
+    background: linear-gradient(90deg, #b89038, #dcb358, #ffe55c);
+    box-shadow: 0 0 15px rgba(220, 179, 88, 0.8);
     transition: width 0.08s linear;
   }
 

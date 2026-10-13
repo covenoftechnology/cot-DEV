@@ -1,0 +1,537 @@
+---
+/**
+ * SPIRIT PROGRESS COMPONENT
+ * Subsistema visual y reactivo de los Espíritus Arcanos de Progreso.
+ * Encapsulado como un Custom Element autónomo ('spirit-progress').
+ * 
+ * Contrato de interfaz:
+ *   spiritProgress.build(sections: Element[])
+ *   spiritProgress.update(progress: number 0-100)
+ */
+---
+
+<spirit-progress id="article-spirit-progress">
+  <div id="spirits-track" class="markers-track" aria-hidden="true"></div>
+</spirit-progress>
+
+<script is:inline>
+  if (typeof customElements !== 'undefined' && !customElements.get('spirit-progress')) {
+    class SpiritProgressElement extends HTMLElement {
+      constructor() {
+        super();
+        this.cachedSpirits = [];
+        this.cachedTrack = null;
+      }
+
+      connectedCallback() {
+        this.track = this.querySelector('#spirits-track') || this;
+        this.cachedTrack = document.getElementById('article-progress-track');
+      }
+
+      createSpiritElement(idx, title) {
+        var scaler = document.createElement('div');
+        scaler.className = 'spirit-scaler';
+        scaler.innerHTML =
+          '<div class="spirit-container" role="img" aria-label="Espíritu arcano ' + (idx + 1) + ': ' + title + '" style="animation-delay:' + (idx * -0.6) + 's">' +
+            '<div class="aura"></div>' +
+            '<div class="flames-wrapper">' +
+              '<span class="little-flame little-flame--1"></span>' +
+              '<span class="little-flame little-flame--2"></span>' +
+              '<span class="little-flame little-flame--3"></span>' +
+              '<span class="little-flame little-flame--4"></span>' +
+              '<span class="little-flame little-flame--5"></span>' +
+              '<span class="little-flame little-flame--6"></span>' +
+              '<span class="little-flame little-flame--7"></span>' +
+              '<div class="flame-wisp-left"></div>' +
+              '<div class="flame-wisp-right"></div>' +
+              '<div class="flame-main"></div>' +
+              '<span class="smoke smoke--left"></span>' +
+              '<span class="smoke smoke--right"></span>' +
+            '</div>' +
+            '<div class="face">' +
+              '<div class="eye left"></div>' +
+              '<div class="eye right"></div>' +
+            '</div>' +
+            '<span class="spark" style="--x:30%;--y:36%;--dx:-26px;--dy:-55px;--duration:3.3s;--delay:-1s"></span>' +
+            '<span class="spark" style="--x:69%;--y:42%;--dx:31px;--dy:-67px;--duration:3.8s;--delay:-2.1s"></span>' +
+            '<span class="spark" style="--x:47%;--y:26%;--dx:11px;--dy:-45px;--duration:2.9s;--delay:-.5s"></span>' +
+            '<span class="spark" style="--x:22%;--y:65%;--dx:-45px;--dy:-52px;--duration:4.1s;--delay:-2.7s"></span>' +
+            '<span class="spark" style="--x:83%;--y:61%;--dx:38px;--dy:-68px;--duration:3.5s;--delay:-1.7s"></span>' +
+          '</div>';
+        return scaler;
+      }
+
+      build(sections) {
+        var track = this.querySelector('#spirits-track') || this;
+        track.innerHTML = '';
+        this.cachedSpirits = [];
+        this.cachedTrack = document.getElementById('article-progress-track');
+
+        if (!sections || sections.length === 0) return;
+
+        for (var idx = 0; idx < sections.length; idx++) {
+          var sec = sections[idx];
+          var title = sec.getAttribute('data-toc-title') || ('Section ' + (idx + 1));
+          var scaler = this.createSpiritElement(idx, title);
+          track.appendChild(scaler);
+          this.cachedSpirits.push(scaler);
+        }
+      }
+
+      update(progress) {
+        if (!this.cachedSpirits || this.cachedSpirits.length === 0) return;
+        var track = this.cachedTrack || document.getElementById('article-progress-track');
+        if (!track) return;
+        var trackRect = track.getBoundingClientRect();
+        var progressPixelX = trackRect.left + (progress / 100) * trackRect.width;
+
+        for (var i = 0; i < this.cachedSpirits.length; i++) {
+          var scaler = this.cachedSpirits[i];
+          var rect = scaler.getBoundingClientRect();
+          var spiritCenterX = rect.left + rect.width / 2;
+          var shouldBeActive = progressPixelX >= spiritCenterX;
+
+          if (shouldBeActive) {
+            if (!scaler.classList.contains('active')) {
+              scaler.classList.add('active');
+            }
+          } else {
+            if (scaler.classList.contains('active')) {
+              scaler.classList.remove('active');
+            }
+          }
+        }
+      }
+    }
+
+    customElements.define('spirit-progress', SpiritProgressElement);
+  }
+</script>
+
+<style is:global>
+  /* ── Arcane Spirits of Progress Scoped System ─────────────── */
+  spirit-progress {
+    display: contents;
+  }
+
+  spirit-progress .markers-track {
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 0;
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    z-index: 1001;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  spirit-progress .spirit-scaler {
+    position: relative;
+    transform: scale(0.18);
+    transform-origin: center center;
+    width: 0;
+    height: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    /* Espíritu dormido */
+    --glow-core: #2b233c;
+    --glow-neon: #171124;
+    --glow-dark: #0a0612;
+    --eye-color: #433d52;
+    --flame-tip: #693b89;
+    --flame-middle: #43235e;
+    --flame-base: #21132f;
+  }
+
+  @media (max-width: 980px) {
+    spirit-progress .spirit-scaler {
+      transform: scale(0.15);
+    }
+  }
+
+  @media (max-width: 640px) {
+    spirit-progress .spirit-scaler {
+      transform: scale(0.12);
+    }
+  }
+
+  @media (max-width: 420px) {
+    spirit-progress .spirit-scaler {
+      transform: scale(0.10);
+    }
+  }
+
+  /* Espíritu */
+  spirit-progress .spirit-container {
+    position: relative;
+    width: 200px;
+    height: 250px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: float 4s ease-in-out infinite;
+    isolation: isolate;
+  }
+
+  spirit-progress .aura {
+    position: absolute;
+    width: 190px;
+    height: 195px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(83, 45, 107, 0.19) 0%, rgba(43, 35, 60, 0.08) 40%, transparent 73%);
+    filter: blur(21px);
+    animation: pulseGlow 3s ease-in-out infinite alternate;
+    z-index: 0;
+  }
+
+  spirit-progress .flames-wrapper {
+    position: absolute;
+    width: 120px;
+    height: 120px;
+    z-index: 2;
+    filter: drop-shadow(0 0 7px rgba(76, 35, 110, .33));
+    transition: filter .65s ease;
+    animation: pulseBody 3s ease-in-out infinite alternate;
+  }
+
+  /* Llamitas animadas */
+  spirit-progress .little-flame {
+    position: absolute;
+    display: block;
+    z-index: 0;
+    width: var(--w);
+    height: var(--h);
+    left: var(--x);
+    top: var(--y);
+    transform-origin: 50% 100%;
+    transform: rotate(var(--angle));
+    opacity: var(--opacity, .65);
+    transition: opacity .65s ease;
+    filter: blur(var(--blur, 4px));
+    background: linear-gradient(0deg,
+      rgba(26, 13, 43, 0) 0%,
+      var(--flame-base) 19%,
+      var(--flame-middle) 62%,
+      var(--flame-tip) 100%);
+    animation: burn var(--speed, 2.3s) ease-in-out var(--delay, 0s) infinite alternate;
+  }
+
+  spirit-progress .little-flame::after {
+    content: "";
+    position: absolute;
+    inset: 20% 30% 14%;
+    background: linear-gradient(0deg, transparent, rgba(171, 105, 201, .28));
+    border-radius: 50% 50% 45% 45%;
+    filter: blur(7px);
+  }
+
+  spirit-progress .little-flame--1 { --x: 1px; --y: -38px; --w: 43px; --h: 97px; --angle: -24deg; --speed: 2.7s; --delay: -.7s; --opacity: .62; }
+  spirit-progress .little-flame--2 { --x: 71px; --y: -30px; --w: 40px; --h: 94px; --angle: 22deg; --speed: 2.4s; --delay: -1.4s; --opacity: .64; }
+  spirit-progress .little-flame--3 { --x: 43px; --y: -61px; --w: 38px; --h: 94px; --angle: -2deg; --speed: 3.1s; --delay: -2s; --opacity: .52; }
+  spirit-progress .little-flame--4 { --x: -29px; --y: 16px; --w: 45px; --h: 83px; --angle: -48deg; --speed: 2.8s; --delay: -1.8s; --opacity: .57; }
+  spirit-progress .little-flame--5 { --x: 101px; --y: 18px; --w: 43px; --h: 83px; --angle: 45deg; --speed: 3s; --delay: -.2s; --opacity: .59; }
+  spirit-progress .little-flame--6 { --x: 23px; --y: 54px; --w: 37px; --h: 87px; --angle: -24deg; --speed: 2.5s; --delay: -2s; --opacity: .42; }
+  spirit-progress .little-flame--7 { --x: 72px; --y: 55px; --w: 36px; --h: 87px; --angle: 24deg; --speed: 2.9s; --delay: -.9s; --opacity: .43; }
+
+  /* Mechones del espíritu */
+  spirit-progress .flame-wisp-left {
+    position: absolute;
+    z-index: 1;
+    width: 70px;
+    height: 80px;
+    left: -10px;
+    top: 30px;
+    border-radius: 50% 0 50% 50%;
+    background: linear-gradient(135deg, transparent 10%, var(--glow-neon) 50%, var(--glow-dark) 100%);
+    transform: rotate(-15deg) scale(.9);
+    opacity: .6;
+    transition: opacity .65s ease;
+    animation: flickerLeft 2.5s ease-in-out infinite alternate;
+  }
+
+  spirit-progress .flame-wisp-right {
+    position: absolute;
+    z-index: 1;
+    width: 60px;
+    height: 70px;
+    right: -5px;
+    top: 40px;
+    border-radius: 50% 0 50% 50%;
+    background: linear-gradient(135deg, transparent 10%, var(--glow-neon) 60%, var(--glow-dark) 100%);
+    transform: rotate(-75deg) scale(.9);
+    opacity: .6;
+    transition: opacity .65s ease;
+    animation: flickerRight 3.2s ease-in-out infinite alternate;
+  }
+
+  /* Silueta principal tipo gota */
+  spirit-progress .flame-main {
+    position: absolute;
+    z-index: 3;
+    width: 100px;
+    height: 100px;
+    left: 10px;
+    top: 20px;
+    border-radius: 50% 0 50% 50%;
+    transform: rotate(-45deg);
+    background: radial-gradient(circle at 30% 70%, var(--glow-core) 0%, var(--glow-neon) 45%, var(--glow-dark) 90%);
+    box-shadow: inset -5px 5px 15px rgba(5, 3, 10, .8);
+    animation: morphFlame 3s ease-in-out infinite alternate;
+  }
+
+  /* Humo violeta */
+  spirit-progress .smoke {
+    position: absolute;
+    z-index: 1;
+    width: 86px;
+    height: 100px;
+    border-radius: 52% 48% 58% 42%;
+    border: 7px solid transparent;
+    pointer-events: none;
+    filter: blur(6px);
+    opacity: .32;
+    transition: border-color .65s ease;
+  }
+
+  spirit-progress .smoke--left {
+    top: 56px;
+    left: -46px;
+    border-bottom-color: #70388d;
+    border-left-color: #4c2565;
+    animation: smokeLeft 3.4s ease-in-out infinite alternate;
+  }
+
+  spirit-progress .smoke--right {
+    top: 50px;
+    right: -48px;
+    border-bottom-color: #6d378b;
+    border-right-color: #4c2565;
+    animation: smokeRight 3.7s ease-in-out infinite alternate;
+  }
+
+  /* Cara */
+  spirit-progress .face {
+    position: absolute;
+    top: 58%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    gap: 18px;
+    z-index: 10;
+  }
+
+  spirit-progress .eye {
+    width: 10px;
+    height: 14px;
+    background-color: var(--eye-color);
+    border-radius: 50%;
+    box-shadow: inset 1px 1px 3px rgba(0, 0, 0, .6);
+    animation: blink 4s infinite;
+    transition: background-color .65s ease, box-shadow .65s ease, width .65s ease, height .65s ease;
+  }
+
+  spirit-progress .eye.left { rotate: 10deg; }
+  spirit-progress .eye.right { rotate: -10deg; }
+
+  /* Chispas */
+  spirit-progress .spark {
+    position: absolute;
+    z-index: 1;
+    width: 3px;
+    height: 3px;
+    left: var(--x);
+    top: var(--y);
+    border-radius: 50%;
+    background: #a875c6;
+    box-shadow: 0 0 7px 2px rgba(141, 76, 177, .4);
+    opacity: 0;
+    transition: background-color .65s ease, box-shadow .65s ease;
+    animation: sparkRise var(--duration, 3s) ease-out var(--delay, 0s) infinite;
+  }
+
+  /* Animación original de llamas */
+  @keyframes burn {
+    0% {
+      clip-path: polygon(50% 0%, 59% 14%, 57% 31%, 73% 20%, 68% 44%, 82% 39%, 78% 59%, 88% 72%, 73% 89%, 54% 100%, 32% 94%, 13% 79%, 22% 61%, 12% 48%, 33% 40%, 27% 23%, 44% 34%);
+      transform: rotate(calc(var(--angle) - 8deg)) scaleX(.91) scaleY(1.02);
+    }
+    50% {
+      clip-path: polygon(47% 0%, 64% 18%, 59% 37%, 75% 25%, 70% 48%, 86% 45%, 78% 62%, 87% 75%, 72% 92%, 51% 100%, 30% 91%, 14% 78%, 20% 57%, 10% 43%, 35% 36%, 30% 23%, 43% 39%);
+      transform: rotate(calc(var(--angle) + 3deg)) scaleX(1.03) scaleY(.94);
+    }
+    100% {
+      clip-path: polygon(54% 0%, 64% 12%, 60% 32%, 77% 18%, 70% 45%, 87% 42%, 76% 60%, 90% 71%, 74% 90%, 53% 100%, 31% 95%, 15% 80%, 23% 62%, 14% 47%, 32% 44%, 26% 24%, 44% 33%);
+      transform: rotate(calc(var(--angle) + 8deg)) scaleX(.96) scaleY(1.05);
+    }
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-15px); }
+  }
+
+  @keyframes pulseGlow {
+    0% { transform: scale(.9); opacity: .3; }
+    100% { transform: scale(1.1); opacity: .6; }
+  }
+
+  @keyframes pulseBody {
+    0% { transform: scale(.95); }
+    100% { transform: scale(1.01); }
+  }
+
+  @keyframes morphFlame {
+    0% { border-radius: 50% 0 50% 50%; }
+    100% { border-radius: 55% 5% 45% 55%; }
+  }
+
+  @keyframes flickerLeft {
+    0% { transform: rotate(-15deg) scale(.9) skew(0); }
+    100% { transform: rotate(-25deg) scale(.95) skew(5deg); }
+  }
+
+  @keyframes flickerRight {
+    0% { transform: rotate(-75deg) scale(.9) skew(0); }
+    100% { transform: rotate(-65deg) scale(.95) skew(-5deg); }
+  }
+
+  @keyframes smokeLeft {
+    0% { transform: translate(0, 0) rotate(-25deg); opacity: .20; }
+    100% { transform: translate(-10px, -8px) rotate(-39deg); opacity: .39; }
+  }
+
+  @keyframes smokeRight {
+    0% { transform: translate(0, 0) rotate(25deg); opacity: .22; }
+    100% { transform: translate(9px, -12px) rotate(39deg); opacity: .39; }
+  }
+
+  @keyframes sparkRise {
+    0% { transform: translate(0, 0) scale(.5); opacity: 0; }
+    20% { opacity: .65; }
+    100% { transform: translate(var(--dx), var(--dy)) scale(.1); opacity: 0; }
+  }
+
+  @keyframes blink {
+    0%, 95%, 100% { transform: scaleY(1); }
+    97% { transform: scaleY(.1); }
+  }
+
+  /* Estado iluminado */
+  spirit-progress .aura::after {
+    content: "";
+    position: absolute;
+    inset: -25px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(243, 196, 255, .95) 0%, rgba(214, 128, 255, .48) 32%, rgba(170, 88, 243, .14) 58%, transparent 76%);
+    opacity: 0;
+    transition: opacity .65s ease;
+  }
+
+  spirit-progress .flame-main::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: radial-gradient(circle at 30% 70%, #fff8ff 0%, #f4d3ff 18%, #d78eff 45%, #8e45d8 88%);
+    box-shadow: inset -10px 8px 18px rgba(145, 65, 214, .34), 0 0 18px rgba(221, 126, 255, .72), 0 0 42px rgba(197, 101, 255, .36);
+    opacity: 0;
+    transition: opacity .65s ease;
+  }
+
+  spirit-progress .flame-wisp-left::after,
+  spirit-progress .flame-wisp-right::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    opacity: 0;
+    transition: opacity .65s ease;
+  }
+
+  spirit-progress .flame-wisp-left::after {
+    background: linear-gradient(135deg, transparent 10%, rgba(233, 185, 255, .88) 18%, #d78eff 56%, #8e45d8 100%);
+  }
+
+  spirit-progress .flame-wisp-right::after {
+    background: linear-gradient(135deg, transparent 10%, rgba(233, 185, 255, .86) 20%, #d78eff 60%, #8e45d8 100%);
+  }
+
+  spirit-progress .little-flame::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(0deg, transparent 0%, #8a3ee0 19%, #d06cff 62%, #f5c1ff 100%);
+    opacity: 0;
+    transition: opacity .65s ease;
+  }
+
+  /* Activación al cruzar la línea dorada */
+  spirit-progress .spirit-scaler.active .aura::after,
+  spirit-progress .spirit-scaler.active .flame-main::after,
+  spirit-progress .spirit-scaler.active .flame-wisp-left::after,
+  spirit-progress .spirit-scaler.active .flame-wisp-right::after,
+  spirit-progress .spirit-scaler.active .little-flame::before {
+    opacity: 1;
+  }
+
+  spirit-progress .spirit-scaler.active .flames-wrapper {
+    filter: drop-shadow(0 0 12px rgba(190, 106, 255, .62));
+  }
+
+  spirit-progress .spirit-scaler.active .little-flame {
+    opacity: min(1, calc(var(--opacity, .65) + .22));
+  }
+
+  spirit-progress .spirit-scaler.active .flame-wisp-left,
+  spirit-progress .spirit-scaler.active .flame-wisp-right {
+    opacity: .87;
+  }
+
+  spirit-progress .spirit-scaler.active .smoke--left {
+    border-bottom-color: #d88dff;
+    border-left-color: #a14ce0;
+    animation-name: smokeLeftActive;
+  }
+
+  spirit-progress .spirit-scaler.active .smoke--right {
+    border-bottom-color: #d47dff;
+    border-right-color: #a14ce0;
+    animation-name: smokeRightActive;
+  }
+
+  spirit-progress .spirit-scaler.active .eye {
+    width: 12px;
+    height: 16px;
+    background-color: #ffffff;
+    box-shadow: 0 0 0 3px rgba(194, 112, 255, .35), 0 0 14px rgba(255, 255, 255, .95), 0 0 22px rgba(211, 115, 255, .75);
+  }
+
+  spirit-progress .spirit-scaler.active .spark {
+    background: #fff0ff;
+    box-shadow: 0 0 8px 3px rgba(193, 109, 255, .7), 0 0 18px 6px rgba(255, 255, 255, .48);
+  }
+
+  @keyframes smokeLeftActive {
+    0% { transform: translate(0, 0) rotate(-25deg); opacity: .40; }
+    100% { transform: translate(-10px, -8px) rotate(-39deg); opacity: .72; }
+  }
+
+  @keyframes smokeRightActive {
+    0% { transform: translate(0, 0) rotate(25deg); opacity: .42; }
+    100% { transform: translate(9px, -12px) rotate(39deg); opacity: .72; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    spirit-progress .spirit-scaler,
+    spirit-progress .spirit-scaler *,
+    spirit-progress .spirit-scaler *::before,
+    spirit-progress .spirit-scaler *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
