@@ -272,8 +272,8 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
           <!-- END BLOCK: Three Images Grid -->
 
           <!-- BLOCK: Horizontal Gallery Scroll -->
-          <div class="horizontal-scroll-wrap">
-            <div class="horizontal-scroll" role="region" aria-label="Horizontal image gallery" tabindex="0">
+          <div class="horizontal-scroll-wrap" id="gallery-carousel-wrap">
+            <div class="horizontal-scroll" id="gallery-carousel-scroll" role="region" aria-label="Horizontal image gallery" tabindex="0">
               <figure class="gallery-card">
                 <img src={gridItem1.src} alt="Gallery item 1 - Propensity Matrix" width="360" height="230" loading="lazy" />
                 <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
@@ -290,8 +290,401 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                 <img src={coverImg.src} alt="Gallery item 4 - Holistic Pipeline" width="360" height="230" loading="lazy" />
                 <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
               </figure>
+              {[1, 2, 3, 4].map(() => (
+                <>
+                  <figure class="gallery-card carousel-clone" aria-hidden="true">
+                    <img src={gridItem1.src} alt="" width="360" height="230" loading="lazy" />
+                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
+                  </figure>
+                  <figure class="gallery-card carousel-clone" aria-hidden="true">
+                    <img src={gridItem2.src} alt="" width="360" height="230" loading="lazy" />
+                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
+                  </figure>
+                  <figure class="gallery-card carousel-clone" aria-hidden="true">
+                    <img src={gridItem3.src} alt="" width="360" height="230" loading="lazy" />
+                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
+                  </figure>
+                  <figure class="gallery-card carousel-clone" aria-hidden="true">
+                    <img src={coverImg.src} alt="" width="360" height="230" loading="lazy" />
+                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
+                  </figure>
+                </>
+              ))}
             </div>
+            <div class="gallery-carousel-indicators" id="gallery-carousel-indicators" aria-label="Carousel pagination"></div>
             <div class="gallery-scroll-hint">✦ Scroll horizontally to inspect model artifacts</div>
+
+            <script>
+              (function () {
+                function init_carousel(wrap, scroller) {
+                  if (!wrap || !scroller) return;
+                  if (wrap.dataset.carouselReady === 'true') return;
+                  wrap.dataset.carouselReady = 'true';
+
+                  scroller.style['scrollSnapType'] = 'none';
+                  scroller.style['scrollBehavior'] = 'auto';
+
+                  // Dynamic count of real original items (exclude clones)
+                  var original_cards = scroller.querySelectorAll('.gallery-card:not(.carousel-clone)');
+                  var all_cards = scroller.querySelectorAll('.gallery-card');
+                  if (all_cards.length === 0) return;
+
+                  var original_count = original_cards.length > 0 ? original_cards.length : all_cards.length;
+
+                  var imgs = scroller.querySelectorAll('img');
+                  for (var m = 0; m < imgs.length; m++) {
+                    imgs[m].setAttribute('draggable', 'false');
+                    imgs[m].style['pointerEvents'] = 'none';
+                    imgs[m].style['userSelect'] = 'none';
+                  }
+
+                  // ── DYNAMIC INDICATORS SYSTEM (Mercado Libre Style Pills) ──
+                  var indicators_container = wrap.querySelector('#gallery-carousel-indicators');
+                  if (!indicators_container) {
+                    indicators_container = document.createElement('div');
+                    indicators_container.id = 'gallery-carousel-indicators';
+                    indicators_container.className = 'gallery-carousel-indicators';
+                    indicators_container.setAttribute('aria-label', 'Carousel pagination');
+                    var hint = wrap.querySelector('.gallery-scroll-hint');
+                    if (hint) {
+                      wrap.insertBefore(indicators_container, hint);
+                    } else {
+                      wrap.appendChild(indicators_container);
+                    }
+                  } else {
+                    indicators_container.removeAttribute('role');
+                    indicators_container.setAttribute('aria-label', 'Carousel pagination');
+                  }
+
+                  indicators_container.innerHTML = '';
+                  var pills = [];
+                  for (var p = 0; p < original_count; p++) {
+                    var pill = document.createElement('button');
+                    pill.type = 'button';
+                    pill.className = 'carousel-indicator-pill' + (p === 0 ? ' is-active' : '');
+                    pill.setAttribute('aria-label', 'Go to carousel item ' + (p + 1));
+                    pill.setAttribute('aria-current', p === 0 ? 'true' : 'false');
+                    pill.dataset.index = String(p);
+
+                    (function (idx) {
+                      pill.addEventListener('click', function (e) {
+                        e.preventDefault();
+                        navigate_to_slide(idx);
+                      });
+                    })(p);
+
+                    indicators_container.appendChild(pill);
+                    pills.push(pill);
+                  }
+
+                  // ── CACHED CARD GEOMETRY (Zero DOM reads during animation) ──
+                  var cached_card_centers = [];
+                  function measure_card_centers() {
+                    all_cards = scroller.querySelectorAll('.gallery-card');
+                    cached_card_centers = [];
+                    for (var k = 0; k < all_cards.length; k++) {
+                      cached_card_centers.push(all_cards[k].offsetLeft + all_cards[k].offsetWidth / 2);
+                    }
+                  }
+
+                  var current_active_indicator = 0;
+                  function update_active_indicator() {
+                    if (pills.length === 0 || cached_card_centers.length === 0) return;
+                    var viewport_center = scroller.scrollLeft + scroller.clientWidth / 2;
+                    var min_dist = Infinity;
+                    var active_idx = 0;
+
+                    for (var k = 0; k < cached_card_centers.length; k++) {
+                      var dist = Math.abs(cached_card_centers[k] - viewport_center);
+                      if (dist < min_dist) {
+                        min_dist = dist;
+                        active_idx = k % original_count;
+                      }
+                    }
+
+                    if (active_idx !== current_active_indicator) {
+                      if (pills[current_active_indicator]) {
+                        pills[current_active_indicator].classList.remove('is-active');
+                        pills[current_active_indicator].setAttribute('aria-current', 'false');
+                      }
+                      if (pills[active_idx]) {
+                        pills[active_idx].classList.add('is-active');
+                        pills[active_idx].setAttribute('aria-current', 'true');
+                      }
+                      current_active_indicator = active_idx;
+                    }
+                  }
+
+                  // ── METRICS & BOUNDARIES ──────────────────────────────
+                  var single_set_width = 0;
+                  function measure_metrics() {
+                    all_cards = scroller.querySelectorAll('.gallery-card');
+                    if (all_cards.length > original_count) {
+                      var r0 = all_cards[0].getBoundingClientRect();
+                      var r_next = all_cards[original_count].getBoundingClientRect();
+                      var diff_measured = r_next.left - r0.left;
+                      if (diff_measured > 50) {
+                        single_set_width = diff_measured;
+                      }
+                    }
+                    if (single_set_width <= 0) {
+                      single_set_width = original_count * (280 + 18);
+                    }
+                    measure_card_centers();
+                    update_active_indicator();
+                  }
+
+                  measure_metrics();
+                  window.addEventListener('resize', measure_metrics, { passive: true });
+                  window.addEventListener('load', measure_metrics, { passive: true });
+
+                  var current_scroll = single_set_width * 2;
+                  scroller['scrollLeft'] = current_scroll;
+
+                  // ── MOTION & DEVICE CAPABILITIES ───────────────────────
+                  var motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+                  var prefers_reduced_motion = motionQuery.matches;
+
+                  var hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+                  var has_hover = hoverQuery.matches;
+
+                  motionQuery.addEventListener('change', function (e) {
+                    prefers_reduced_motion = e.matches;
+                    if (prefers_reduced_motion) {
+                      target_speed = 0;
+                      current_speed = 0;
+                    } else if (!is_pointer_inside && has_hover) {
+                      target_speed = BASE_AUTOPLAY;
+                    }
+                  });
+
+                  hoverQuery.addEventListener('change', function (e) {
+                    has_hover = e.matches;
+                    if (!has_hover) {
+                      target_speed = 0;
+                      current_speed = 0;
+                    } else if (!is_pointer_inside && !prefers_reduced_motion) {
+                      target_speed = BASE_AUTOPLAY;
+                    }
+                  });
+
+                  // ── SPEED CONFIGURATION (REAL TIME PX/SEC) ─────────────
+                  var BASE_AUTOPLAY = 70; // 60–80 px/s reference
+                  var MAX_SPEED = 320;     // 280–360 px/s reference
+                  var MIN_SPEED = 25;
+                  var DEAD_ZONE = 0.15;    // Center dead-zone: 15% physical width
+
+                  var auto_speed = (has_hover && !prefers_reduced_motion) ? BASE_AUTOPLAY : 0;
+                  var target_speed = auto_speed;
+                  var current_speed = auto_speed;
+                  var is_pointer_inside = false;
+                  var is_internal_scroll = false;
+                  var is_navigating = false;
+                  var nav_target_scroll = 0;
+
+                  function navigate_to_slide(idx) {
+                    if (idx < 0 || idx >= original_count) return;
+                    if (cached_card_centers.length === 0) measure_card_centers();
+                    var target_center = cached_card_centers[original_count * 2 + idx];
+                    if (target_center === undefined) return;
+
+                    nav_target_scroll = target_center - scroller.clientWidth / 2;
+                    is_navigating = true;
+                    target_speed = 0;
+                    current_speed = 0;
+                  }
+
+                  function on_pointer_move(e) {
+                    if (!has_hover || prefers_reduced_motion) return;
+                    if (e.pointerType === 'touch') return;
+                    is_navigating = false;
+
+                    var rect = wrap.getBoundingClientRect();
+                    var mouse_x = e.clientX - rect.left;
+                    var width = rect.width;
+                    if (width <= 0) return;
+
+                    var ratio_x = mouse_x / width;
+                    var norm_x = Math.max(-1, Math.min(1, (ratio_x - 0.5) * 2));
+                    var abs_norm_x = Math.abs(norm_x);
+
+                    // When hovering directly over a card, decelerate naturally so initiate can inspect it
+                    var is_over_card = !!(e.target && e.target.closest && e.target.closest('.gallery-card'));
+                    var speed_cap = is_over_card ? 110 : MAX_SPEED;
+
+                    if (abs_norm_x <= DEAD_ZONE) {
+                      target_speed = 0;
+                      wrap.style.cursor = 'grab';
+                    } else if (norm_x < 0) {
+                      var progress_left = (abs_norm_x - DEAD_ZONE) / (1 - DEAD_ZONE);
+                      var speed_left = MIN_SPEED + Math.pow(progress_left, 1.4) * (speed_cap - MIN_SPEED);
+                      target_speed = -speed_left;
+                      wrap.style.cursor = 'w-resize';
+                    } else {
+                      var progress_right = (abs_norm_x - DEAD_ZONE) / (1 - DEAD_ZONE);
+                      var speed_right = MIN_SPEED + Math.pow(progress_right, 1.4) * (speed_cap - MIN_SPEED);
+                      target_speed = speed_right;
+                      wrap.style.cursor = 'e-resize';
+                    }
+                  }
+
+                  wrap.addEventListener('pointerenter', function (e) {
+                    if (!has_hover || prefers_reduced_motion) return;
+                    if (e.pointerType === 'touch') return;
+                    is_pointer_inside = true;
+                    on_pointer_move(e);
+                  });
+
+                  wrap.addEventListener('pointermove', function (e) {
+                    if (!has_hover || prefers_reduced_motion) return;
+                    if (e.pointerType === 'touch') return;
+                    is_pointer_inside = true;
+                    on_pointer_move(e);
+                  });
+
+                  wrap.addEventListener('pointerleave', function () {
+                    is_pointer_inside = false;
+                    is_navigating = false;
+                    target_speed = (has_hover && !prefers_reduced_motion) ? BASE_AUTOPLAY : 0;
+                    wrap.style.cursor = '';
+                  });
+
+                  scroller.addEventListener(
+                    'scroll',
+                    function () {
+                      if (is_internal_scroll) return;
+                      current_scroll = scroller['scrollLeft'];
+                      if (single_set_width > 0) {
+                        var upper = single_set_width * 3.5;
+                        var lower = single_set_width * 1.5;
+                        if (current_scroll >= upper) {
+                          current_scroll -= single_set_width;
+                          scroller['scrollLeft'] = current_scroll;
+                        } else if (current_scroll < lower) {
+                          current_scroll += single_set_width;
+                          scroller['scrollLeft'] = current_scroll;
+                        }
+                      }
+                      update_active_indicator();
+                    },
+                    { passive: true }
+                  );
+
+                  // ── VIEWPORT INTERSECTION & VISIBILITY (Pause offscreen) ──
+                  var is_carousel_visible = true;
+                  if ('IntersectionObserver' in window) {
+                    var carousel_observer = new IntersectionObserver(function (entries) {
+                      entries.forEach(function (entry) {
+                        var was_visible = is_carousel_visible;
+                        is_carousel_visible = entry.isIntersecting;
+                        if (is_carousel_visible && !was_visible) {
+                          last_timestamp = performance.now();
+                        }
+                      });
+                    }, { rootMargin: '50px 0px 50px 0px' });
+                    carousel_observer.observe(wrap);
+                  }
+
+                  document.addEventListener('visibilitychange', function () {
+                    if (!document.hidden) {
+                      last_timestamp = performance.now();
+                    }
+                  });
+
+                  var last_timestamp = performance.now();
+                  var is_animating = true;
+
+                  function step(now) {
+                    if (!document.body.contains(wrap)) {
+                      is_animating = false;
+                      return;
+                    }
+
+                    // Paused when offscreen or document is hidden
+                    if (!is_carousel_visible || document.hidden) {
+                      last_timestamp = now;
+                      return;
+                    }
+
+                    var dt = (now - last_timestamp) / 1000;
+                    last_timestamp = now;
+                    if (dt > 0.1) dt = 0.016;
+                    if (dt <= 0) return;
+
+                    // Indicator slide click animation
+                    if (is_navigating) {
+                      var dist = nav_target_scroll - current_scroll;
+                      if (Math.abs(dist) < 1.0) {
+                        current_scroll = nav_target_scroll;
+                        is_navigating = false;
+                      } else {
+                        current_scroll += dist * Math.min(1, 8.0 * dt);
+                      }
+                      is_internal_scroll = true;
+                      scroller['scrollLeft'] = current_scroll;
+                      setTimeout(function () {
+                        is_internal_scroll = false;
+                      }, 0);
+                      update_active_indicator();
+                      return;
+                    }
+
+                    // Desktop continuous autoplay & hover steering
+                    if (single_set_width > 0 && !prefers_reduced_motion && has_hover) {
+                      var lambda = (target_speed === 0) ? 4.5 : 3.0;
+                      current_speed += (target_speed - current_speed) * (1 - Math.exp(-lambda * dt));
+                      if (target_speed === 0 && Math.abs(current_speed) < 0.4) {
+                        current_speed = 0;
+                      }
+
+                      if (current_speed !== 0) {
+                        current_scroll += current_speed * dt;
+
+                        var upper_boundary = single_set_width * 3;
+                        var lower_boundary = single_set_width * 2;
+
+                        if (current_scroll >= upper_boundary) {
+                          current_scroll -= single_set_width;
+                        } else if (current_scroll < lower_boundary) {
+                          current_scroll += single_set_width;
+                        }
+
+                        is_internal_scroll = true;
+                        scroller['scrollLeft'] = current_scroll;
+                        setTimeout(function () {
+                          is_internal_scroll = false;
+                        }, 0);
+
+                        update_active_indicator();
+                      }
+                    }
+                  }
+
+                  function rAF_tick(now) {
+                    if (!is_animating) return;
+                    step(now);
+                    requestAnimationFrame(rAF_tick);
+                  }
+                  requestAnimationFrame(rAF_tick);
+                }
+
+                function check_and_init() {
+                  var wrap = document.getElementById('gallery-carousel-wrap');
+                  var scroller = document.getElementById('gallery-carousel-scroll');
+                  if (wrap && scroller && scroller.querySelectorAll('.gallery-card').length > 0) {
+                    if (wrap.dataset.carouselReady !== 'true') {
+                      init_carousel(wrap, scroller);
+                    }
+                  }
+                }
+
+                check_and_init();
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', check_and_init);
+                }
+                window.addEventListener('load', check_and_init);
+              })();
+            </script>
           </div>
           <!-- END BLOCK: Horizontal Gallery Scroll -->
         </section>

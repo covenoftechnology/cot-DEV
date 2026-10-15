@@ -81,6 +81,7 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
   canonical={canonicalUrl}
   ogImage={meta.cover}
   ogType="article"
+  disableDc={true}
 >
   <div style="position:relative;background:radial-gradient(1100px 640px at 50% -14%,rgba(124,77,196,.40),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.24),transparent 62%),#08060e">
     <div style="position:absolute;top:64px;left:0;right:0;height:300px;overflow:hidden;z-index:0;pointer-events:none">
@@ -91,9 +92,9 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
     </div>
 
     <!-- STICKY ARTICLE TOP ZONE (Header + Reading Progress Bar) -->
-    <div class="article-sticky-top-zone">
+    <div class="article-sticky-top-zone" id="article-sticky-zone" data-progress-ready="false">
       <header class="cov-header cov-section-pad article-top-header">
-        <div onclick="{{ toLanding }}" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+        <div onclick="window.location.href='/'" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
           <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
           <div class="cov-brand-text" style="font-family:var(--font-display, 'Metamorphous', serif);font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">COVEN · OF · TECHNOLOGY</div>
         </div>
@@ -203,7 +204,7 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         </div>
 
         <!-- Sticky Sidebar: ON THIS SCROLL (Desktop) -->
-        <aside class="article-sidebar" id="article-desktop-sidebar" aria-label="Table of contents and scroll progress">
+        <aside class="article-sidebar" id="article-desktop-sidebar" aria-label="Table of contents and scroll progress" data-progress-ready="false">
           <div class="toc-panel">
             <div class="toc-header">
               <span class="toc-title">
@@ -234,7 +235,7 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
       <div class="cov-banner" style={`margin:0 auto 48px;max-width:${containerMaxWidth};border:1px solid rgba(216,181,107,.18);border-radius:8px;padding:36px;text-align:center;background:radial-gradient(500px 200px at 50% 0%,rgba(139,92,196,.18),transparent 65%),#100d16;position:relative;z-index:1`}>
         <h3 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:26px;color:#f3ecdf;margin:0 0 8px">You've reached the trial</h3>
         <p style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:16px;color:#b3a99d;margin:0 0 24px">Prove your mastery to claim ✦ {aetherReward} Aether and advance toward {meta.rank || 'Mechanic'}.</p>
-        <div onclick="{{ startTrial }}" style="display:inline-block;padding:14px 32px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.34);cursor:pointer;max-width:100%">BEGIN THE TRIAL</div>
+        <div onclick="window.location.href='/quiz'" style="display:inline-block;padding:14px 32px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.34);cursor:pointer;max-width:100%">BEGIN THE TRIAL</div>
       </div>
     )}
   </div>
@@ -244,26 +245,33 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
       return document.getElementById('article-spirit-progress') || document.querySelector('spirit-progress');
     }
 
-    // Unified Reading Progress for Article (top sticky bar, sidebar bar, sidebar percentage, and spirits)
-    function updateUnifiedReadingProgress() {
+    // Cached article geometry (measured on init and window resize)
+    var cachedArticleTop = 0;
+    var cachedArticleHeight = 0;
+    var cachedViewportHeight = 0;
+    var cachedTotalDistance = 0;
+
+    function measureArticleGeometry() {
       var articleEl = document.getElementById('coven-article-container') || document.querySelector('article');
       if (!articleEl) return;
-
       var rect = articleEl.getBoundingClientRect();
       var scrollTop = window.scrollY || document.documentElement.scrollTop;
-      var articleTop = rect.top + scrollTop;
-      var articleHeight = rect.height;
-      var viewportHeight = window.innerHeight;
+      cachedArticleTop = rect.top + scrollTop;
+      cachedArticleHeight = rect.height;
+      cachedViewportHeight = window.innerHeight;
+      cachedTotalDistance = cachedArticleHeight - cachedViewportHeight;
+    }
 
-      // Distance from top of article until the bottom of the article enters the viewport
-      var totalDistance = articleHeight - viewportHeight;
+    // Unified Reading Progress for Article (top sticky bar, sidebar bar, sidebar percentage, and spirits)
+    function updateUnifiedReadingProgress() {
+      var scrollTop = window.scrollY || document.documentElement.scrollTop;
       var progress = 0;
 
-      if (totalDistance <= 0) {
-        progress = 100;
+      if (cachedTotalDistance <= 0) {
+        progress = 0;
       } else {
-        var scrolled = scrollTop - articleTop;
-        progress = Math.min(100, Math.max(0, Math.round((scrolled / totalDistance) * 100)));
+        var scrolled = scrollTop - cachedArticleTop;
+        progress = Math.min(100, Math.max(0, Math.round((scrolled / cachedTotalDistance) * 100)));
       }
 
       // 1. Sticky top reading progress bar
@@ -278,15 +286,16 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
       var sidebarPct = document.getElementById('reading-pct');
       if (sidebarPct) sidebarPct.textContent = progress + '%';
 
-      // 4. Arcane Spirits of Progress activation (1:1 with single progress percentage)
+      // 4. Arcane Spirits of Progress activation (numerical threshold comparison, 0 geometry reads)
       var sp = getSpiritProgress();
       if (sp && typeof sp.update === 'function') {
         sp.update(progress);
       }
     }
 
+    // Single Coordinator for Article Scroll & Resize
     var ticking = false;
-    function handleScrollOrResize() {
+    function handleScroll() {
       if (!ticking) {
         window.requestAnimationFrame(function () {
           updateUnifiedReadingProgress();
@@ -296,13 +305,17 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
       }
     }
 
-    window.addEventListener('scroll', handleScrollOrResize, { passive: true });
-    window.addEventListener('resize', handleScrollOrResize, { passive: true });
-    if (document.readyState === 'complete' || document.readyState === 'interactive') {
-      updateUnifiedReadingProgress();
-    } else {
-      document.addEventListener('DOMContentLoaded', updateUnifiedReadingProgress);
+    function handleResize() {
+      measureArticleGeometry();
+      var sp = getSpiritProgress();
+      if (sp && typeof sp.measureThresholds === 'function') {
+        sp.measureThresholds();
+      }
+      handleScroll();
     }
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleResize, { passive: true });
 
     // Dynamic TOC builder and spy
     (function () {
@@ -324,6 +337,75 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         });
       }
 
+      function scrollLinkIntoTocView(link) {
+        var container = link.closest('.toc-scroll-area');
+        if (!container) return;
+        var containerRect = container.getBoundingClientRect();
+        var linkRect = link.getBoundingClientRect();
+
+        if (linkRect.top < containerRect.top) {
+          container.scrollTo({
+            top: container.scrollTop + (linkRect.top - containerRect.top) - 10,
+            behavior: 'auto'
+          });
+        } else if (linkRect.bottom > containerRect.bottom) {
+          container.scrollTo({
+            top: container.scrollTop + (linkRect.bottom - containerRect.bottom) + 10,
+            behavior: 'auto'
+          });
+        }
+      }
+
+      function syncInitialActiveSection(sections, allTocLinks) {
+        if (!sections || sections.length === 0 || !allTocLinks || allTocLinks.length === 0) return;
+        var targetSection = null;
+
+        // 1. URL hash match
+        if (window.location.hash) {
+          var hashId = decodeURIComponent(window.location.hash.slice(1));
+          for (var h = 0; h < sections.length; h++) {
+            if (sections[h].id === hashId) {
+              targetSection = sections[h];
+              break;
+            }
+          }
+        }
+
+        // 2. Position-based probe
+        if (!targetSection) {
+          var probeY = window.innerHeight * 0.25;
+          for (var i = 0; i < sections.length; i++) {
+            var r = sections[i].getBoundingClientRect();
+            if (r.top <= probeY && r.bottom > probeY) {
+              targetSection = sections[i];
+              break;
+            }
+          }
+        }
+
+        // 3. Boundary fallbacks
+        if (!targetSection) {
+          var firstRect = sections[0].getBoundingClientRect();
+          if (firstRect.top > window.innerHeight * 0.25) {
+            targetSection = sections[0];
+          } else {
+            targetSection = sections[sections.length - 1];
+          }
+        }
+
+        if (targetSection) {
+          var activeId = targetSection.id;
+          allTocLinks.forEach(function (link) {
+            if (link.getAttribute('data-toc-target') === activeId) {
+              link.classList.add('active');
+              scrollLinkIntoTocView(link);
+            } else {
+              link.classList.remove('active');
+            }
+          });
+        }
+      }
+
       var observerInstance = null;
 
       function setupToc() {
@@ -334,7 +416,6 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         var desktopSidebar = document.getElementById('article-desktop-sidebar');
         var layoutGrid = document.getElementById('article-editorial-layout');
 
-        // If no sections exist, collapse TOC gracefully
         if (sections.length === 0) {
           if (mobileTocDetails) mobileTocDetails.style.display = 'none';
           if (desktopSidebar) desktopSidebar.style.display = 'none';
@@ -354,34 +435,25 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         if (desktopTocList) buildToc(desktopTocList, sections);
         if (mobileTocList) buildToc(mobileTocList, sections);
 
+        var allTocLinks = document.querySelectorAll('.toc-link');
+
         // Build spirits (1:1 with sections)
         var sp = getSpiritProgress();
         if (sp && typeof sp.build === 'function') {
           sp.build(sections);
-          updateUnifiedReadingProgress();
         }
 
-        var allTocLinks = document.querySelectorAll('.toc-link');
+        // Measure geometry & sync progress + initial active TOC section immediately
+        measureArticleGeometry();
+        updateUnifiedReadingProgress();
+        syncInitialActiveSection(sections, allTocLinks);
 
-        function scrollLinkIntoTocView(link) {
-          var container = link.closest('.toc-scroll-area');
-          if (!container) return;
-          var containerRect = container.getBoundingClientRect();
-          var linkRect = link.getBoundingClientRect();
+        // Mark progress & TOC state ready (reveals correct initial values without animation jump)
+        var stickyZone = document.getElementById('article-sticky-zone');
+        if (stickyZone) stickyZone.setAttribute('data-progress-ready', 'true');
+        if (desktopSidebar) desktopSidebar.setAttribute('data-progress-ready', 'true');
 
-          if (linkRect.top < containerRect.top) {
-            container.scrollTo({
-              top: container.scrollTop + (linkRect.top - containerRect.top) - 10,
-              behavior: 'smooth'
-            });
-          } else if (linkRect.bottom > containerRect.bottom) {
-            container.scrollTo({
-              top: container.scrollTop + (linkRect.bottom - containerRect.bottom) + 10,
-              behavior: 'smooth'
-            });
-          }
-        }
-
+        // Setup IntersectionObserver for continuous scrolling
         if (observerInstance) observerInstance.disconnect();
 
         if ('IntersectionObserver' in window && sections.length > 0) {
@@ -410,25 +482,18 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         }
       }
 
+      // Immediate synchronous initial setup
       setupToc();
 
       if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', setupToc);
       }
-      window.addEventListener('load', setupToc);
-
-      var checkInterval = setInterval(function () {
-        var dt = document.getElementById('desktop-toc-list');
-        var secs = document.querySelectorAll('.article-section[data-toc-title]');
-        if (dt && secs.length > 0 && dt.children.length === 0) {
-          setupToc();
-        }
-      }, 100);
-
-      setTimeout(function () {
-        clearInterval(checkInterval);
-        setupToc();
-      }, 4000);
+      window.addEventListener('load', function () {
+        measureArticleGeometry();
+        var sp = getSpiritProgress();
+        if (sp && typeof sp.measureThresholds === 'function') sp.measureThresholds();
+        updateUnifiedReadingProgress();
+      });
 
       // Exercise reveal buttons
       document.addEventListener('click', function (e) {
@@ -525,6 +590,29 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
     background: linear-gradient(90deg, #b89038, #dcb358, #ffe55c);
     box-shadow: 0 0 15px rgba(220, 179, 88, 0.8);
     transition: width 0.08s linear;
+  }
+
+  /* ── Initial Progress & TOC Flash Prevention ─────────────────── */
+  [data-progress-ready="false"] .cov-reading-progress-bar,
+  [data-progress-ready="false"] .toc-progress-bar-fill {
+    transition: none !important;
+    opacity: 0;
+  }
+  [data-progress-ready="false"] .toc-progress-indicator {
+    opacity: 0;
+  }
+  [data-progress-ready="false"] .toc-link.active {
+    transition: none !important;
+  }
+
+  [data-progress-ready="true"] .cov-reading-progress-bar,
+  [data-progress-ready="true"] .toc-progress-bar-fill {
+    opacity: 1;
+    transition: width 0.08s linear, opacity 0.15s ease;
+  }
+  [data-progress-ready="true"] .toc-progress-indicator {
+    opacity: 1;
+    transition: opacity 0.15s ease;
   }
 
   /* ── Hero Lead & Cover ────────────────────────────────────────── */

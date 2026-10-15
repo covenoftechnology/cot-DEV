@@ -21,6 +21,7 @@
         super();
         this.cachedSpirits = [];
         this.cachedTrack = null;
+        this.thresholds = [];
       }
 
       connectedCallback() {
@@ -61,10 +62,28 @@
         return scaler;
       }
 
+      measureThresholds() {
+        if (!this.cachedSpirits || this.cachedSpirits.length === 0) return;
+        var track = this.cachedTrack || document.getElementById('article-progress-track');
+        if (!track) return;
+        var trackRect = track.getBoundingClientRect();
+        if (trackRect.width <= 0) return;
+
+        this.thresholds = [];
+        for (var i = 0; i < this.cachedSpirits.length; i++) {
+          var scaler = this.cachedSpirits[i];
+          var rect = scaler.getBoundingClientRect();
+          var spiritCenterX = rect.left + rect.width / 2;
+          var threshold = ((spiritCenterX - trackRect.left) / trackRect.width) * 100;
+          this.thresholds.push(threshold);
+        }
+      }
+
       build(sections) {
         var track = this.querySelector('#spirits-track') || this;
         track.innerHTML = '';
         this.cachedSpirits = [];
+        this.thresholds = [];
         this.cachedTrack = document.getElementById('article-progress-track');
 
         if (!sections || sections.length === 0) return;
@@ -76,20 +95,22 @@
           track.appendChild(scaler);
           this.cachedSpirits.push(scaler);
         }
+
+        this.measureThresholds();
       }
 
       update(progress) {
         if (!this.cachedSpirits || this.cachedSpirits.length === 0) return;
-        var track = this.cachedTrack || document.getElementById('article-progress-track');
-        if (!track) return;
-        var trackRect = track.getBoundingClientRect();
-        var progressPixelX = trackRect.left + (progress / 100) * trackRect.width;
+        if (!this.thresholds || this.thresholds.length === 0) {
+          this.measureThresholds();
+        }
 
         for (var i = 0; i < this.cachedSpirits.length; i++) {
           var scaler = this.cachedSpirits[i];
-          var rect = scaler.getBoundingClientRect();
-          var spiritCenterX = rect.left + rect.width / 2;
-          var shouldBeActive = progressPixelX >= spiritCenterX;
+          var threshold = (this.thresholds && this.thresholds[i] !== undefined)
+            ? this.thresholds[i]
+            : ((i + 0.5) / this.cachedSpirits.length * 100);
+          var shouldBeActive = progress >= threshold;
 
           if (shouldBeActive) {
             if (!scaler.classList.contains('active')) {
