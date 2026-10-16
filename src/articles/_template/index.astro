@@ -290,26 +290,6 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                 <img src={coverImg.src} alt="Gallery item 4 - Holistic Pipeline" width="360" height="230" loading="lazy" />
                 <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
               </figure>
-              {[1, 2, 3, 4].map(() => (
-                <>
-                  <figure class="gallery-card carousel-clone" aria-hidden="true">
-                    <img src={gridItem1.src} alt="" width="360" height="230" loading="lazy" />
-                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
-                  </figure>
-                  <figure class="gallery-card carousel-clone" aria-hidden="true">
-                    <img src={gridItem2.src} alt="" width="360" height="230" loading="lazy" />
-                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
-                  </figure>
-                  <figure class="gallery-card carousel-clone" aria-hidden="true">
-                    <img src={gridItem3.src} alt="" width="360" height="230" loading="lazy" />
-                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
-                  </figure>
-                  <figure class="gallery-card carousel-clone" aria-hidden="true">
-                    <img src={coverImg.src} alt="" width="360" height="230" loading="lazy" />
-                    <figcaption>FIGCAPTION · HELVETICA NEUE ROMAN · 13PX · ITALIC</figcaption>
-                  </figure>
-                </>
-              ))}
             </div>
             <div class="gallery-carousel-indicators" id="gallery-carousel-indicators" aria-label="Carousel pagination"></div>
             <div class="gallery-scroll-hint">✦ Scroll horizontally to inspect model artifacts</div>
@@ -326,17 +306,8 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
 
                   // Dynamic count of real original items (exclude clones)
                   var original_cards = scroller.querySelectorAll('.gallery-card:not(.carousel-clone)');
-                  var all_cards = scroller.querySelectorAll('.gallery-card');
-                  if (all_cards.length === 0) return;
-
-                  var original_count = original_cards.length > 0 ? original_cards.length : all_cards.length;
-
-                  var imgs = scroller.querySelectorAll('img');
-                  for (var m = 0; m < imgs.length; m++) {
-                    imgs[m].setAttribute('draggable', 'false');
-                    imgs[m].style['pointerEvents'] = 'none';
-                    imgs[m].style['userSelect'] = 'none';
-                  }
+                  if (original_cards.length === 0) return;
+                  var original_count = original_cards.length;
 
                   // ── DYNAMIC INDICATORS SYSTEM (Mercado Libre Style Pills) ──
                   var indicators_container = wrap.querySelector('#gallery-carousel-indicators');
@@ -377,17 +348,21 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                     pills.push(pill);
                   }
 
-                  // ── CACHED CARD GEOMETRY (Zero DOM reads during animation) ──
+                  // ── CACHED CARD GEOMETRY & DYNAMIC CLONES ──
+                  var single_set_width = 0;
+                  var current_sets = 0;
                   var cached_card_centers = [];
+                  var current_scroll = 0;
+                  var current_active_indicator = 0;
+
                   function measure_card_centers() {
-                    all_cards = scroller.querySelectorAll('.gallery-card');
+                    var all_cards = scroller.querySelectorAll('.gallery-card');
                     cached_card_centers = [];
                     for (var k = 0; k < all_cards.length; k++) {
                       cached_card_centers.push(all_cards[k].offsetLeft + all_cards[k].offsetWidth / 2);
                     }
                   }
 
-                  var current_active_indicator = 0;
                   function update_active_indicator() {
                     if (pills.length === 0 || cached_card_centers.length === 0) return;
                     var viewport_center = scroller.scrollLeft + scroller.clientWidth / 2;
@@ -415,31 +390,107 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                     }
                   }
 
-                  // ── METRICS & BOUNDARIES ──────────────────────────────
-                  var single_set_width = 0;
-                  function measure_metrics() {
-                    all_cards = scroller.querySelectorAll('.gallery-card');
-                    if (all_cards.length > original_count) {
-                      var r0 = all_cards[0].getBoundingClientRect();
-                      var r_next = all_cards[original_count].getBoundingClientRect();
-                      var diff_measured = r_next.left - r0.left;
-                      if (diff_measured > 50) {
-                        single_set_width = diff_measured;
+                  function sync_clones() {
+                    var originals = scroller.querySelectorAll('.gallery-card:not(.carousel-clone)');
+                    if (originals.length === 0) return;
+                    original_count = originals.length;
+
+                    // Ensure images in originals are not draggable/selectable
+                    for (var m = 0; m < originals.length; m++) {
+                      var orig_img = originals[m].querySelector('img');
+                      if (orig_img) {
+                        orig_img.setAttribute('draggable', 'false');
+                        orig_img.style['pointerEvents'] = 'none';
+                        orig_img.style['userSelect'] = 'none';
+                      }
+                    }
+
+                    // Measure cycleWidth (width of 1 complete original cycle)
+                    if (originals.length >= 2) {
+                      var p0 = originals[0].getBoundingClientRect();
+                      var p1 = originals[1].getBoundingClientRect();
+                      var pitch = p1.left - p0.left;
+                      if (pitch > 50) {
+                        single_set_width = pitch * original_count;
                       }
                     }
                     if (single_set_width <= 0) {
                       single_set_width = original_count * (280 + 18);
                     }
+
+                    // Derive required sets mathematically from viewport & cycle geometry
+                    var vp_width = window.innerWidth || scroller.clientWidth;
+                    var needed_sets = Math.max(2, Math.ceil((vp_width * 2) / single_set_width));
+
+                    var existing_clones = scroller.querySelectorAll('.gallery-card.carousel-clone');
+                    var expected_clones = (needed_sets - 1) * original_count;
+
+                    if (current_sets === needed_sets && existing_clones.length === expected_clones) {
+                      measure_card_centers();
+                      update_active_indicator();
+                      return;
+                    }
+
+                    // Preserve relative cycle scroll position across rebuild
+                    var offset_in_cycle = single_set_width > 0 ? (current_scroll % single_set_width) : 0;
+
+                    // Clean existing clones
+                    for (var c = 0; c < existing_clones.length; c++) {
+                      existing_clones[c].remove();
+                    }
+
+                    // Generate only the mathematically required clone sets
+                    for (var s = 0; s < needed_sets - 1; s++) {
+                      for (var j = 0; j < original_count; j++) {
+                        var clone = originals[j].cloneNode(true);
+                        clone.className = 'gallery-card carousel-clone';
+                        clone.setAttribute('aria-hidden', 'true');
+                        var c_img = clone.querySelector('img');
+                        if (c_img) {
+                          c_img.setAttribute('alt', '');
+                          c_img.setAttribute('draggable', 'false');
+                          c_img.style['pointerEvents'] = 'none';
+                          c_img.style['userSelect'] = 'none';
+                        }
+                        scroller.appendChild(clone);
+                      }
+                    }
+
+                    current_sets = needed_sets;
                     measure_card_centers();
+
+                    var base_set = Math.floor(current_sets / 2);
+                    current_scroll = base_set * single_set_width + offset_in_cycle;
+                    is_internal_scroll = true;
+                    scroller['scrollLeft'] = current_scroll;
+                    setTimeout(function () {
+                      is_internal_scroll = false;
+                    }, 0);
+
                     update_active_indicator();
                   }
 
-                  measure_metrics();
-                  window.addEventListener('resize', measure_metrics, { passive: true });
-                  window.addEventListener('load', measure_metrics, { passive: true });
+                  sync_clones();
 
-                  var current_scroll = single_set_width * 2;
-                  scroller['scrollLeft'] = current_scroll;
+                  // Debounced resize handler to rebuild clones only when viewport width requires it
+                  var resize_timer = null;
+                  window.addEventListener(
+                    'resize',
+                    function () {
+                      if (resize_timer) clearTimeout(resize_timer);
+                      resize_timer = setTimeout(function () {
+                        sync_clones();
+                      }, 100);
+                    },
+                    { passive: true }
+                  );
+                  window.addEventListener(
+                    'load',
+                    function () {
+                      sync_clones();
+                    },
+                    { passive: true }
+                  );
 
                   // ── MOTION & DEVICE CAPABILITIES ───────────────────────
                   var motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -485,7 +536,8 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                   function navigate_to_slide(idx) {
                     if (idx < 0 || idx >= original_count) return;
                     if (cached_card_centers.length === 0) measure_card_centers();
-                    var target_center = cached_card_centers[original_count * 2 + idx];
+                    var base_set = Math.floor(current_sets / 2);
+                    var target_center = cached_card_centers[base_set * original_count + idx];
                     if (target_center === undefined) return;
 
                     nav_target_scroll = target_center - scroller.clientWidth / 2;
@@ -554,9 +606,11 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                     function () {
                       if (is_internal_scroll) return;
                       current_scroll = scroller['scrollLeft'];
-                      if (single_set_width > 0) {
-                        var upper = single_set_width * 3.5;
-                        var lower = single_set_width * 1.5;
+                      if (single_set_width > 0 && current_sets >= 2) {
+                        var lower_boundary = ((current_sets - 1) / 2) * single_set_width;
+                        var upper_boundary = ((current_sets + 1) / 2) * single_set_width;
+                        var upper = upper_boundary + single_set_width * 0.5;
+                        var lower = lower_boundary - single_set_width * 0.5;
                         if (current_scroll >= upper) {
                           current_scroll -= single_set_width;
                           scroller['scrollLeft'] = current_scroll;
@@ -630,7 +684,7 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                     }
 
                     // Desktop continuous autoplay & hover steering
-                    if (single_set_width > 0 && !prefers_reduced_motion && has_hover) {
+                    if (single_set_width > 0 && !prefers_reduced_motion && has_hover && current_sets >= 2) {
                       var lambda = (target_speed === 0) ? 4.5 : 3.0;
                       current_speed += (target_speed - current_speed) * (1 - Math.exp(-lambda * dt));
                       if (target_speed === 0 && Math.abs(current_speed) < 0.4) {
@@ -640,8 +694,8 @@ import CodeBlock from '../../components/article/CodeBlock.astro';
                       if (current_speed !== 0) {
                         current_scroll += current_speed * dt;
 
-                        var upper_boundary = single_set_width * 3;
-                        var lower_boundary = single_set_width * 2;
+                        var lower_boundary = ((current_sets - 1) / 2) * single_set_width;
+                        var upper_boundary = ((current_sets + 1) / 2) * single_set_width;
 
                         if (current_scroll >= upper_boundary) {
                           current_scroll -= single_set_width;

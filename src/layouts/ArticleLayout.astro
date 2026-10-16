@@ -295,7 +295,28 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
 
     // Single Coordinator for Article Scroll & Resize
     var ticking = false;
+    var isScrolling = false;
+    var scrollStopTimer = null;
+    var stickyZoneEl = null;
+
     function handleScroll() {
+      if (!stickyZoneEl) {
+        stickyZoneEl = document.getElementById('article-sticky-zone');
+      }
+      if (stickyZoneEl && !isScrolling) {
+        isScrolling = true;
+        stickyZoneEl.classList.add('is-scrolling');
+      }
+      if (scrollStopTimer) {
+        clearTimeout(scrollStopTimer);
+      }
+      scrollStopTimer = setTimeout(function () {
+        isScrolling = false;
+        if (stickyZoneEl) {
+          stickyZoneEl.classList.remove('is-scrolling');
+        }
+      }, 150);
+
       if (!ticking) {
         window.requestAnimationFrame(function () {
           updateUnifiedReadingProgress();
@@ -552,6 +573,12 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
     -webkit-backdrop-filter: blur(14px);
     border-bottom: 1px solid rgba(216, 181, 107, 0.15);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  }
+
+  .article-sticky-top-zone.is-scrolling {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    transition: none;
   }
 
   .article-top-header {
