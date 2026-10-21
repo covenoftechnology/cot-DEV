@@ -1,0 +1,550 @@
+---
+import '../../articles/_template/article.css';
+import Callout from './Callout.astro';
+import CodeBlock from './CodeBlock.astro';
+import ArticleTrial from './ArticleTrial.astro';
+import type { ArticleDocument, ArticleSection, ArticleBlock } from '../../types/article-document';
+
+interface Props {
+  document: ArticleDocument;
+}
+
+const { document: doc } = Astro.props;
+
+if (!doc || !doc.sections) {
+  throw new Error('[ArticleRenderer Error] Invalid ArticleDocument provided.');
+}
+
+function slugify(text: string): string {
+  return (text || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+function cleanHtml(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+  return input
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/\sstyle="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '');
+}
+---
+
+<div class="article-template">
+  {doc.sections.map((section: ArticleSection, sIndex: number) => {
+    const sectionId = slugify(section.title) || `section-${sIndex + 1}`;
+    return (
+      <section id={sectionId} class="article-section" data-toc-title={section.title}>
+        {section.kicker && <div class="section-kicker">{section.kicker}</div>}
+        {section.heading && <h2>{section.heading}</h2>}
+
+        {section.blocks.map((block: ArticleBlock, bIndex: number) => {
+          const d = block.data || {};
+
+          switch (block.type) {
+            case 'title-text': {
+              const paragraphs = Array.isArray(d.paragraphs)
+                ? d.paragraphs.map((p: any) => (typeof p === 'object' && p !== null ? p.text : p))
+                : (d.paragraph || d.text ? [d.paragraph || d.text] : []);
+              return (
+                <div class="block-typography-title-text">
+                  {d.kicker && <div class="section-kicker">{d.kicker}</div>}
+                  {d.heading && <h3>{d.heading}</h3>}
+                  {paragraphs.map((p: string) => (
+                    p ? <p><Fragment set:html={cleanHtml(p)} /></p> : null
+                  ))}
+                </div>
+              );
+            }
+
+            case 'text-title':
+              return (
+                <div class="block-typography-text-title">
+                  {d.kicker && <div class="section-kicker">{d.kicker}</div>}
+                  {d.intro && <p class="text-intro"><Fragment set:html={cleanHtml(d.intro)} /></p>}
+                  {d.heading && <h3 class="heading-subsequent">{d.heading}</h3>}
+                  {(d.paragraph || d.text) && <p><Fragment set:html={cleanHtml(d.paragraph || d.text)} /></p>}
+                </div>
+              );
+
+            case 'solo-text': {
+              const paragraphs = Array.isArray(d.paragraphs)
+                ? d.paragraphs.map((p: any) => (typeof p === 'object' && p !== null ? p.text : p))
+                : (d.paragraph || d.text ? [d.paragraph || d.text] : []);
+              return (
+                <div class="block-solo-text">
+                  {paragraphs.map((p: string) => (
+                    p ? <p><Fragment set:html={cleanHtml(p)} /></p> : null
+                  ))}
+                </div>
+              );
+            }
+
+            case 'bullet-list': {
+              const items = (Array.isArray(d.items) ? d.items : [])
+                .map((it: any) => (typeof it === 'object' && it !== null ? it.text : it))
+                .filter(Boolean);
+              return (
+                <div class="block-bullet-list">
+                  {d.title && <h3 class="list-title">{d.title}</h3>}
+                  <ul class="bullets-list">
+                    {items.map((item: string) => (
+                      <li><Fragment set:html={cleanHtml(item)} /></li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            }
+
+            case 'nested-bullets': {
+              const items = Array.isArray(d.items) ? d.items : [];
+              return (
+                <div class="block-nested-bullets">
+                  {d.title && <h3 class="list-title">{d.title}</h3>}
+                  <ul class="nested-bullets-list">
+                    {items.map((mainItem: any) => {
+                      const subItems = mainItem.children || mainItem.subItems || [];
+                      return (
+                        <li class="nested-bullet-main">
+                          <span class="bullet-text"><Fragment set:html={cleanHtml(mainItem.text || '')} /></span>
+                          {Array.isArray(subItems) && subItems.length > 0 && (
+                            <ul class="sub-bullets-list">
+                              {subItems.map((sub: any) => {
+                                const subText = typeof sub === 'object' && sub !== null ? sub.text : sub;
+                                return <li class="sub-bullet-item"><Fragment set:html={cleanHtml(subText)} /></li>;
+                              })}
+                            </ul>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            }
+
+            case 'numbered-steps': {
+              const steps = Array.isArray(d.steps) ? d.steps : [];
+              return (
+                <div class="block-numbered-steps">
+                  {d.title && <h3 class="list-title">{d.title}</h3>}
+                  <ol class="steps-list">
+                    {steps.map((step: any, idx: number) => (
+                      <li class="step-item">
+                        <div class="step-badge">{step.badge || String(idx + 1).padStart(2, '0')}</div>
+                        <div class="step-content">
+                          {step.title && <h4>{step.title}</h4>}
+                          {step.text && <p><Fragment set:html={cleanHtml(step.text)} /></p>}
+                        </div>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              );
+            }
+
+            case 'text-image':
+              return (
+                <div class="layout-text-media">
+                  <div class="layout-copy">
+                    {d.heading && <h3>{d.heading}</h3>}
+                    {d.text && <p><Fragment set:html={cleanHtml(d.text)} /></p>}
+                  </div>
+                  {d.imageSrc && (
+                    <figure class="layout-media">
+                      <img src={d.imageSrc} alt={d.alt || ''} loading="lazy" />
+                      {d.caption && <figcaption>{d.caption}</figcaption>}
+                    </figure>
+                  )}
+                </div>
+              );
+
+            case 'image-text':
+              return (
+                <div class="layout-media-text">
+                  {d.imageSrc && (
+                    <figure class="layout-media">
+                      <img src={d.imageSrc} alt={d.alt || ''} loading="lazy" />
+                      {d.caption && <figcaption>{d.caption}</figcaption>}
+                    </figure>
+                  )}
+                  <div class="layout-copy">
+                    {d.heading && <h3>{d.heading}</h3>}
+                    {d.text && <p><Fragment set:html={cleanHtml(d.text)} /></p>}
+                  </div>
+                </div>
+              );
+
+            case 'two-columns':
+              return (
+                <div class="layout-2col">
+                  <div class="col-box">
+                    {d.col1Title && <h3>{d.col1Title}</h3>}
+                    {d.col1Text && <p><Fragment set:html={cleanHtml(d.col1Text)} /></p>}
+                    {Array.isArray(d.col1List) && d.col1List.length > 0 && (
+                      <ul class="col-list">
+                        {d.col1List.map((li: string) => <li><Fragment set:html={cleanHtml(li)} /></li>)}
+                      </ul>
+                    )}
+                  </div>
+                  <div class="col-box">
+                    {d.col2Title && <h3>{d.col2Title}</h3>}
+                    {d.col2Text && <p><Fragment set:html={cleanHtml(d.col2Text)} /></p>}
+                    {Array.isArray(d.col2List) && d.col2List.length > 0 && (
+                      <ul class="col-list">
+                        {d.col2List.map((li: string) => <li><Fragment set:html={cleanHtml(li)} /></li>)}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              );
+
+            case 'three-columns':
+              return (
+                <div class="layout-3col">
+                  {(Array.isArray(d.columns) ? d.columns : []).map((col: any) => (
+                    <div class="col-box">
+                      {col.kicker && <div class="col-kicker">{col.kicker}</div>}
+                      {col.title && <h3>{col.title}</h3>}
+                      {col.text && <p><Fragment set:html={cleanHtml(col.text)} /></p>}
+                    </div>
+                  ))}
+                </div>
+              );
+
+            case 'single-image':
+              return d.src ? (
+                <figure class="figure-single">
+                  <img src={d.src} alt={d.alt || ''} loading="lazy" />
+                  {d.caption && <figcaption>{d.caption}</figcaption>}
+                </figure>
+              ) : null;
+
+            case 'full-image':
+              return d.src ? (
+                <figure class="figure-full">
+                  <img src={d.src} alt={d.alt || ''} loading="lazy" />
+                  {d.caption && <figcaption>{d.caption}</figcaption>}
+                </figure>
+              ) : null;
+
+            case 'two-images':
+              return (
+                <div class="image-grid-2">
+                  {d.img1Src && (
+                    <figure class="figure-item">
+                      <img src={d.img1Src} alt={d.img1Alt || ''} loading="lazy" />
+                      {d.img1Caption && <figcaption>{d.img1Caption}</figcaption>}
+                    </figure>
+                  )}
+                  {d.img2Src && (
+                    <figure class="figure-item">
+                      <img src={d.img2Src} alt={d.img2Alt || ''} loading="lazy" />
+                      {d.img2Caption && <figcaption>{d.img2Caption}</figcaption>}
+                    </figure>
+                  )}
+                </div>
+              );
+
+            case 'three-images':
+              return (
+                <div class="image-grid-3">
+                  {d.img1Src && (
+                    <figure class="figure-item">
+                      <img src={d.img1Src} alt={d.img1Alt || ''} loading="lazy" />
+                      {d.img1Caption && <figcaption>{d.img1Caption}</figcaption>}
+                    </figure>
+                  )}
+                  {d.img2Src && (
+                    <figure class="figure-item">
+                      <img src={d.img2Src} alt={d.img2Alt || ''} loading="lazy" />
+                      {d.img2Caption && <figcaption>{d.img2Caption}</figcaption>}
+                    </figure>
+                  )}
+                  {d.img3Src && (
+                    <figure class="figure-item">
+                      <img src={d.img3Src} alt={d.img3Alt || ''} loading="lazy" />
+                      {d.img3Caption && <figcaption>{d.img3Caption}</figcaption>}
+                    </figure>
+                  )}
+                </div>
+              );
+
+            case 'gallery-scroll':
+              return (
+                <div class="horizontal-scroll-wrap">
+                  <div class="horizontal-scroll" role="region" aria-label="Horizontal image gallery" tabindex="0">
+                    {(Array.isArray(d.cards) ? d.cards : []).map((card: any) => (
+                      card.src ? (
+                        <figure class="gallery-card">
+                          <img src={card.src} alt={card.alt || ''} loading="lazy" />
+                          {card.caption && <figcaption>{card.caption}</figcaption>}
+                        </figure>
+                      ) : null
+                    ))}
+                  </div>
+                  {d.hint && <div class="gallery-scroll-hint">{d.hint}</div>}
+                </div>
+              );
+
+            case 'card-grid-2':
+              return (
+                <div class="card-grid-2">
+                  <div class="pattern-card">
+                    {d.card1Icon && <div class="pattern-card-icon">{d.card1Icon}</div>}
+                    {d.card1Title && <h3 class="pattern-card-title">{d.card1Title}</h3>}
+                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card1Desc)} /></p>
+                  </div>
+                  <div class="pattern-card">
+                    {d.card2Icon && <div class="pattern-card-icon">{d.card2Icon}</div>}
+                    {d.card2Title && <h3 class="pattern-card-title">{d.card2Title}</h3>}
+                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card2Desc)} /></p>
+                  </div>
+                </div>
+              );
+
+            case 'card-grid-3':
+              return (
+                <div class="card-grid-3">
+                  <div class="pattern-card">
+                    {d.card1Icon && <div class="pattern-card-icon">{d.card1Icon}</div>}
+                    {d.card1Title && <h3 class="pattern-card-title">{d.card1Title}</h3>}
+                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card1Desc)} /></p>
+                  </div>
+                  <div class="pattern-card">
+                    {d.card2Icon && <div class="pattern-card-icon">{d.card2Icon}</div>}
+                    {d.card2Title && <h3 class="pattern-card-title">{d.card2Title}</h3>}
+                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card2Desc)} /></p>
+                  </div>
+                  <div class="pattern-card">
+                    {d.card3Icon && <div class="pattern-card-icon">{d.card3Icon}</div>}
+                    {d.card3Title && <h3 class="pattern-card-title">{d.card3Title}</h3>}
+                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card3Desc)} /></p>
+                  </div>
+                </div>
+              );
+
+            case 'comparison': {
+              const col1Items = (Array.isArray(d.col1Items) ? d.col1Items : [])
+                .map((it: any) => (typeof it === 'object' && it !== null ? it.text : it))
+                .filter(Boolean);
+              const col2Items = (Array.isArray(d.col2Items) ? d.col2Items : [])
+                .map((it: any) => (typeof it === 'object' && it !== null ? it.text : it))
+                .filter(Boolean);
+              return (
+                <div class="comparison-split">
+                  <div class="comparison-column">
+                    <div class="comparison-col-header">
+                      {d.col1Icon && <span class="comparison-col-icon">{d.col1Icon}</span>}
+                      <span>{d.col1Header}</span>
+                    </div>
+                    <ul class="comparison-list">
+                      {col1Items.map((item: string) => (
+                        <li><Fragment set:html={cleanHtml(item)} /></li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div class="comparison-column">
+                    <div class="comparison-col-header">
+                      {d.col2Icon && <span class="comparison-col-icon">{d.col2Icon}</span>}
+                      <span>{d.col2Header}</span>
+                    </div>
+                    <ul class="comparison-list">
+                      {col2Items.map((item: string) => (
+                        <li><Fragment set:html={cleanHtml(item)} /></li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              );
+            }
+
+            case 'stats-metrics':
+              return (
+                <div class="stats-grid">
+                  <div class="stat-card">
+                    <div class="stat-number">{d.stat1Num}</div>
+                    <div class="stat-label">{d.stat1Label}</div>
+                    {d.stat1Sub && <div class="stat-sub">{d.stat1Sub}</div>}
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number">{d.stat2Num}</div>
+                    <div class="stat-label">{d.stat2Label}</div>
+                    {d.stat2Sub && <div class="stat-sub">{d.stat2Sub}</div>}
+                  </div>
+                  <div class="stat-card">
+                    <div class="stat-number">{d.stat3Num}</div>
+                    <div class="stat-label">{d.stat3Label}</div>
+                    {d.stat3Sub && <div class="stat-sub">{d.stat3Sub}</div>}
+                  </div>
+                </div>
+              );
+
+            case 'technical-table': {
+              const hasStructuredCols = Array.isArray(d.columns) && d.columns.length > 0;
+              const columns = hasStructuredCols
+                ? d.columns
+                : (Array.isArray(d.headers) ? d.headers.map((h: string, i: number) => ({ id: `col_${i}`, label: h })) : []);
+              const rows = Array.isArray(d.rows) ? d.rows : [];
+
+              return (
+                <div class="table-wrap">
+                  <table class="coven-table">
+                    <thead>
+                      <tr>
+                        {columns.map((col: any) => <th>{col.label}</th>)}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((row: any) => (
+                        <tr>
+                          {columns.map((col: any, cIdx: number) => {
+                            let cellVal = '';
+                            if (row.cells && row.cells[col.id] !== undefined) {
+                              cellVal = row.cells[col.id];
+                            } else if (row[`col${cIdx + 1}`] !== undefined) {
+                              cellVal = row[`col${cIdx + 1}`];
+                            } else if (Array.isArray(row)) {
+                              cellVal = row[cIdx] || '';
+                            }
+                            return <td><Fragment set:html={cleanHtml(cellVal)} /></td>;
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            }
+
+            case 'callout':
+              return (
+                <Callout type={d.calloutType || 'info'} title={d.title}>
+                  <p><Fragment set:html={cleanHtml(d.text || '')} /></p>
+                </Callout>
+              );
+
+            case 'pullquote':
+              return (
+                <div class="pullquote">
+                  <p class="pullquote-text">"{d.quote}"</p>
+                  {d.author && <span class="pullquote-author">{d.author}</span>}
+                </div>
+              );
+
+            case 'code-block':
+              return (
+                <CodeBlock title={d.title} language={d.language || 'typescript'} code={d.code || ''} />
+              );
+
+            case 'faq':
+              return (
+                <div class="faq-list">
+                  {(Array.isArray(d.items) ? d.items : []).map((item: any) => (
+                    <details class="faq-item">
+                      <summary><Fragment set:html={cleanHtml(item.question)} /></summary>
+                      <div class="faq-body">
+                        <p><Fragment set:html={cleanHtml(item.answer)} /></p>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              );
+
+            case 'exercise': {
+              const targetId = `ans-${sIndex}-${bIndex}`;
+              return (
+                <div class="exercise-group">
+                  <div class="exercise-card">
+                    {d.badge && <span class="exercise-badge">{d.badge}</span>}
+                    <p class="exercise-scenario">
+                      <strong>Scenario:</strong> <Fragment set:html={cleanHtml(d.scenario || '')} />
+                    </p>
+                    <button type="button" class="reveal-btn" aria-expanded="false" data-target={targetId}>
+                      <span>{d.buttonText || '✦ Reveal Answer'}</span>
+                    </button>
+                    <div id={targetId} class="reveal-answer">
+                      {d.solutionTitle && <strong>{d.solutionTitle}</strong>}
+                      <p><Fragment set:html={cleanHtml(d.solutionText || '')} /></p>
+                    </div>
+                  </div>
+                </div>
+              );
+            }
+
+            case 'key-takeaways':
+              return (
+                <div class="takeaways-box">
+                  {d.title && (
+                    <h3 class="takeaways-title">
+                      <span>✦</span>
+                      <span>{d.title}</span>
+                    </h3>
+                  )}
+                  <div class="takeaways-table" role="list">
+                    {(Array.isArray(d.items) ? d.items : []).map((item: any) => (
+                      <div class="takeaway-row" role="listitem">
+                        <span class="takeaway-glyph" aria-hidden="true">✦</span>
+                        <span class="takeaway-term">{item.term}</span>
+                        <span class="takeaway-desc"><Fragment set:html={cleanHtml(item.desc)} /></span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+
+            case 'related-docs':
+              return (
+                <div class="related-grid">
+                  {(Array.isArray(d.items) ? d.items : []).map((item: any) => {
+                    const href = item.url || (item.slug ? `/article/${item.slug}` : '#');
+                    const isExt = item.type === 'external' || href.startsWith('http');
+                    const typeLabel = item.type === 'internal'
+                      ? 'COVEN SCROLL'
+                      : (item.type === 'external' ? 'EXTERNAL DOCUMENTATION' : (item.type || 'DOCUMENTATION'));
+                    const arrow = item.ctaArrow || (isExt ? '↗' : '→');
+
+                    return (
+                      <a href={href} class="related-card" target={isExt ? '_blank' : undefined} rel={isExt ? 'noopener noreferrer' : undefined}>
+                        <div>
+                          <div class="related-type">{typeLabel}</div>
+                          <h4 class="related-title">{item.title}</h4>
+                        </div>
+                        <div class="related-cta">
+                          <span>{item.ctaText || (isExt ? 'Official documentation' : 'Study scroll')}</span>
+                          <span>{arrow}</span>
+                        </div>
+                      </a>
+                    );
+                  })}
+                </div>
+              );
+
+            case 'article-trial':
+              return (
+                <ArticleTrial
+                  aetherReward={d.aetherReward ?? doc.meta.aetherReward ?? 120}
+                  rank={d.rank ?? doc.meta.rank ?? 'Mechanic'}
+                  title={d.title || "You've reached the trial"}
+                  description={d.description}
+                  intro={d.intro}
+                  buttonText={d.buttonText || 'BEGIN THE TRIAL'}
+                  quizUrl={d.quizUrl || '/quiz'}
+                  questions={d.questions}
+                  slug={doc.slug}
+                />
+              );
+
+            default:
+              return null;
+          }
+        })}
+      </section>
+    );
+  })}
+</div>

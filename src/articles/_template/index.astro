@@ -13,6 +13,7 @@ import gridItem3 from './images/grid-item-3.svg';
 // Reusable article components
 import Callout from '../../components/article/Callout.astro';
 import CodeBlock from '../../components/article/CodeBlock.astro';
+import ArticleTrial from '../../components/article/ArticleTrial.astro';
 ---
 
 <div class="article-template">
@@ -1051,6 +1052,17 @@ public with sharing class EinsteinSyncHandler {
             </div>
           </div>
           <!-- END BLOCK: Exercises with Reveal Answer -->
+
+          <!-- BLOCK: Article Trial -->
+          <ArticleTrial
+            aetherReward={120}
+            rank="Mechanic"
+            title="You've reached the trial"
+            description="Test your mastery of this knowledge scroll. Earn Aether and prove your standing among the initiates."
+            buttonText="BEGIN THE TRIAL"
+            quizUrl="/quiz"
+          />
+          <!-- END BLOCK: Article Trial -->
         </section>
 
         <!-- ============================================================== -->

@@ -23,5 +23,15 @@ const sampleNext = published.length > 0 ? published[0] : null;
   wide={true}
   isPreview={true}
 >
+  <div style="position:fixed;bottom:24px;right:24px;z-index:9999">
+    <a
+      href="/template-preview/studio"
+      style="display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:24px;background:rgba(16,13,22,0.92);border:1px solid rgba(216,181,107,0.4);color:#e8cf95;font-family:var(--font-display,'Metamorphous',serif);font-size:12px;font-weight:600;letter-spacing:1px;text-decoration:none;box-shadow:0 4px 20px rgba(0,0,0,0.5),0 0 15px rgba(216,181,107,0.2);backdrop-filter:blur(8px);transition:all 0.2s ease"
+    >
+      <span style="color:#d8b56b;font-size:14px">✦</span>
+      <span>ARTICLE STUDIO</span>
+      <span style="font-size:11px;opacity:0.8">↗</span>
+    </a>
+  </div>
   <TemplateArticle />
 </ArticleLayout>

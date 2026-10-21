@@ -230,14 +230,6 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
 
       </div>
     </article>
-
-    {!meta.hideTrial && (
-      <div class="cov-banner" style={`margin:0 auto 48px;max-width:${containerMaxWidth};border:1px solid rgba(216,181,107,.18);border-radius:8px;padding:36px;text-align:center;background:radial-gradient(500px 200px at 50% 0%,rgba(139,92,196,.18),transparent 65%),#100d16;position:relative;z-index:1`}>
-        <h3 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:26px;color:#f3ecdf;margin:0 0 8px">You've reached the trial</h3>
-        <p style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:16px;color:#b3a99d;margin:0 0 24px">Prove your mastery to claim ✦ {aetherReward} Aether and advance toward {meta.rank || 'Mechanic'}.</p>
-        <div onclick="window.location.href='/quiz'" style="display:inline-block;padding:14px 32px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.34);cursor:pointer;max-width:100%">BEGIN THE TRIAL</div>
-      </div>
-    )}
   </div>
 
   <script is:inline>

@@ -1,0 +1,3320 @@
+---
+import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES } from '../../lib/article-block-registry';
+import { getArticleCategories, getPublishedArticles } from '../../lib/articles';
+import '../../styles/article-studio.css';
+
+const blockRegistry = ARTICLE_BLOCK_REGISTRY;
+const blockCategories = ARTICLE_BLOCK_CATEGORIES;
+const existingCategories = getArticleCategories();
+const publishedArticles = getPublishedArticles().map(a => ({
+  slug: a.slug,
+  title: a.meta.title,
+  category: a.meta.category,
+}));
+const totalBlockCount = Object.keys(blockRegistry).length;
+---
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Coven Article Studio — Local Authoring CMS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;600&family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
+</head>
+<body class="coven-studio">
+
+  <!-- Top Sticky Toolbar -->
+  <header class="studio-topbar">
+    <a href="/" class="studio-brand" aria-label="Go to Coven of Technology home">
+      <div class="brand-icon">✶</div>
+      <div class="brand-title">Coven Article Studio</div>
+      <div class="brand-badge">V2 Authoring</div>
+      <div class="status-indicator">
+        <span class="status-dot" id="status-dot"></span>
+        <span id="status-indicator">Ready</span>
+      </div>
+    </a>
+
+    <div class="studio-actions">
+      <button class="studio-btn studio-btn--secondary" id="btn-new" title="Create a new article draft" type="button">+ New Article</button>
+      <button class="studio-btn studio-btn--ghost" id="btn-drafts" title="Open saved drafts" type="button">Saved Drafts</button>
+      <button class="studio-btn studio-btn--ghost" id="btn-duplicate-article" title="Duplicate current article" type="button">Duplicate</button>
+      <button class="studio-btn studio-btn--secondary" id="btn-save-draft" title="Save draft immediately" type="button">Save Draft</button>
+      <button class="studio-btn studio-btn--secondary" id="btn-preview" title="Live preview in single reusable tab" type="button">Preview ↗</button>
+      <button class="studio-btn studio-btn--primary" id="btn-publish" title="Publish article to src/articles" type="button">Publish ✦</button>
+    </div>
+  </header>
+
+  <!-- Main 3-Column Workspace -->
+  <main class="studio-workspace">
+
+    <!-- Column 1: Block Library -->
+    <aside class="studio-library-pane" id="pane-library">
+      <div class="library-header">
+        <span class="library-title">Block Library</span>
+        <span class="library-count-badge" id="block-library-count">{totalBlockCount} Patterns</span>
+      </div>
+
+      <div class="library-search-wrap">
+        <input type="text" id="library-search-input" class="studio-input" placeholder="Search blocks..." autocomplete="off" />
+      </div>
+
+      <div class="library-categories-list" id="palette-categories-container">
+        <!-- Rendered dynamically -->
+      </div>
+    </aside>
+
+    <!-- Column 2: Article Content Structure -->
+    <section class="studio-center-pane" id="pane-center">
+      <div class="center-header">
+        <span class="center-title">Article Content Structure</span>
+        <span class="section-counter-badge" id="section-counter-badge">0 Sections</span>
+      </div>
+
+      <div class="sections-container" id="sections-container">
+        <!-- Sections will be rendered here dynamically -->
+      </div>
+
+      <!-- Trailing Add Section Action (only visible when 1+ sections exist) -->
+      <div class="add-section-zone" id="trailing-add-section-zone" style="display:none">
+        <button type="button" class="studio-btn studio-btn--secondary" id="btn-add-section-trailing" style="padding:0 24px">
+          <span>✦ Add New Section</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Column 3: Article Settings -->
+    <aside class="studio-settings-pane" id="pane-settings">
+      <div class="settings-header">
+        <span class="settings-title">Article Settings</span>
+        <span class="settings-subtitle">Primary Metadata</span>
+      </div>
+
+      <!-- PRIMARY SETTINGS -->
+      <div class="studio-form-group">
+        <label class="studio-label">Title *</label>
+        <input type="text" id="meta-title" class="studio-input" placeholder="Sacred Title of the Scroll..." autocomplete="off" />
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label">
+          <span>Slug</span>
+          <span id="slug-toggle-btn" style="cursor:pointer;color:var(--studio-gold-dim);font-size:10px" title="Toggle slug manual editing">🔒 Auto</span>
+        </label>
+        <div class="slug-display-bar">
+          <span class="slug-text-preview" id="slug-text-preview">untitled-scroll</span>
+          <input type="text" id="meta-slug" class="slug-edit-input" placeholder="custom-slug" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label">Description / Excerpt *</label>
+        <textarea id="meta-desc" class="studio-textarea" style="min-height:95px" placeholder="Editorial excerpt for the library and hero lead..."></textarea>
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label">Author</label>
+        <input type="text" id="meta-author" class="studio-input" value="Oracle of Orgs" autocomplete="off" />
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label">Category *</label>
+        <div class="combobox-wrap">
+          <input type="text" id="meta-category" class="studio-input" placeholder="Type or choose category..." autocomplete="off" value="Architecture" />
+          <div class="combobox-dropdown" id="category-dropdown">
+            <!-- Populated via JS -->
+          </div>
+        </div>
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label">Tags</label>
+        <div class="tag-chips-container" id="tag-chips-container">
+          <input type="text" id="tag-inline-input" class="tag-input-inline" placeholder="Add a tag..." />
+        </div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted);margin-top:2px">Press Enter or comma to add tag</div>
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label">Status</label>
+        <div class="segmented-control" id="status-segmented">
+          <button type="button" class="segment-btn active" data-status="draft">Draft</button>
+          <button type="button" class="segment-btn" data-status="published">Published</button>
+        </div>
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label">Reading Time (Calculated)</label>
+        <div class="reading-time-pill" id="reading-time-pill">
+          <span>⏱</span>
+          <span id="reading-time-text">≈ 1 min</span>
+        </div>
+      </div>
+
+      <!-- ADVANCED SETTINGS (DISCLOSURE) -->
+      <div class="advanced-settings-box" id="adv-settings-box">
+        <button type="button" class="advanced-settings-toggle" id="adv-settings-toggle">
+          <span>Advanced Settings</span>
+          <span class="adv-arrow">▾</span>
+        </button>
+        <div class="advanced-settings-body" id="adv-settings-body">
+          <div class="studio-form-group">
+            <label class="studio-label">Rank</label>
+            <select id="meta-rank" class="studio-select">
+              <option value="Novice">Novice</option>
+              <option value="Initiate">Initiate</option>
+              <option value="Acolyte">Acolyte</option>
+              <option value="Mechanic" selected>Mechanic</option>
+              <option value="Architect">Architect</option>
+              <option value="Archmage">Archmage</option>
+            </select>
+          </div>
+
+          <div class="studio-form-group">
+            <label class="studio-label">Aether Reward</label>
+            <input type="number" id="meta-aether" class="studio-input" value="120" />
+          </div>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="meta-featured" />
+            <span>Featured Scroll</span>
+          </label>
+
+          <label class="checkbox-row">
+            <input type="checkbox" id="meta-wide" checked />
+            <span>Wide Editorial Layout</span>
+          </label>
+
+          <div class="studio-form-group">
+            <label class="studio-label">Cover Image URL / Upload</label>
+            <div class="image-picker-row">
+              <input type="text" id="meta-cover" class="studio-input" placeholder="Start empty or paste URL / upload" />
+              <input type="file" id="cover-file-upload" style="display:none" accept="image/*" />
+              <button type="button" class="studio-btn studio-btn--sm" id="btn-upload-cover">Upload</button>
+            </div>
+          </div>
+
+          <div class="studio-form-group" id="cover-caption-group" style="display:none">
+            <label class="studio-label">Cover Caption</label>
+            <input type="text" id="meta-cover-caption" class="studio-input" placeholder="Figure · Architectural overview..." />
+          </div>
+        </div>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- Modals -->
+  <!-- 1. Drafts Modal -->
+  <div class="studio-modal-backdrop" id="drafts-modal">
+    <div class="studio-modal">
+      <div class="studio-modal-title">SAVED DRAFTS</div>
+      <div id="drafts-list" style="display:flex;flex-direction:column;gap:10px;max-height:360px;overflow-y:auto;padding-right:6px">
+        <!-- Draft cards -->
+      </div>
+      <div class="studio-modal-actions">
+        <button type="button" class="studio-btn studio-btn--secondary" id="btn-close-drafts">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Delete Confirmation Modal (Replaces window.confirm) -->
+  <div class="studio-modal-backdrop" id="delete-confirm-modal">
+    <div class="studio-modal" style="width:420px">
+      <div class="studio-modal-title" id="delete-modal-title" style="color:var(--studio-gold-bright)">DELETE CONFIRMATION</div>
+      <div id="delete-modal-message" style="font-family:var(--font-body);font-size:15px;color:var(--studio-text-dim);line-height:1.5">
+        Are you sure you wish to proceed? This cannot be undone.
+      </div>
+      <div class="studio-modal-actions">
+        <button type="button" class="studio-btn studio-btn--secondary" id="btn-cancel-delete">Cancel</button>
+        <button type="button" class="studio-btn studio-btn--danger" id="btn-confirm-delete">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="studio-toast-container" id="toast-container"></div>
+
+  <!-- Client-side Logic -->
+  <script define:vars={{ blockRegistry, blockCategories, existingCategories, publishedArticles }}>
+    window.STUDIO_REGISTRY = blockRegistry;
+    window.STUDIO_CATEGORIES = blockCategories;
+    window.STUDIO_EXISTING_CATEGORIES = existingCategories;
+    window.STUDIO_PUBLISHED_ARTICLES = publishedArticles;
+
+    // Abstract glyphs for each block type in library and card headers
+    var BLOCK_GLYPHS = {
+      'title-text': '=',
+      'text-title': '≈',
+      'solo-text': '¶',
+      'bullet-list': '✦',
+      'nested-bullets': '◈',
+      'numbered-steps': '①',
+      'text-image': '◫',
+      'image-text': '◪',
+      'two-columns': '▥',
+      'three-columns': '▤',
+      'single-image': '📷',
+      'full-image': '🖼',
+      'two-images': '⚏',
+      'three-images': '⚌',
+      'gallery-scroll': '☷',
+      'card-grid-2': '⊞',
+      'card-grid-3': '⊟',
+      'comparison': '⚖',
+      'stats-metrics': '%',
+      'technical-table': '▦',
+      'callout': '▲',
+      'pullquote': '❝',
+      'code-block': '</>',
+      'faq': '?',
+      'exercise': '⚔',
+      'article-trial': '✶',
+      'key-takeaways': '★',
+      'related-docs': '↗'
+    };
+
+    (function() {
+      // ── Stable ID Generator ─────────────────────────────
+      function uid(prefix) {
+        return (prefix || 'id') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
+      }
+
+      function slugify(text) {
+        return (text || '')
+          .toLowerCase()
+          .trim()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+      }
+
+      function escapeHtml(str) {
+        if (!str && str !== 0) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;');
+      }
+
+      // ── State ───────────────────────────────────────────
+      var currentDoc = {
+        version: 1,
+        studioId: 'draft_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
+        slug: 'untitled-scroll',
+        meta: {
+          title: '',
+          description: '',
+          author: 'Oracle of Orgs',
+          category: 'Architecture',
+          tags: ['Architecture'],
+          rank: 'Mechanic',
+          readingTime: '1 min',
+          aetherReward: 120,
+          status: 'draft',
+          featured: false,
+          wide: true,
+          cover: '',
+          coverCaption: ''
+        },
+        sections: []
+      };
+
+      var activeSectionId = null;
+      var slugManual = false;
+      var isExistingPublished = false;
+      var isDirty = false;
+      var autosaveTimer = null;
+      var draggedBlockData = null;
+      var pendingDeleteCallback = null;
+
+      // ── Backward Compatibility Normalization ────────────
+      function normalizeDocument(doc) {
+        if (!doc) return;
+        if (!doc.sections) doc.sections = [];
+
+        // Check if slug matches an existing published article
+        var publishedSlugs = (window.STUDIO_PUBLISHED_ARTICLES || []).map(function(a) { return a.slug; });
+        if (publishedSlugs.includes(doc.slug)) {
+          isExistingPublished = true;
+          slugManual = true;
+        }
+
+        doc.sections.forEach(function(sec) {
+          if (!sec.id) sec.id = uid('sec');
+          if (!sec.blocks) sec.blocks = [];
+
+          sec.blocks.forEach(function(blk) {
+            if (!blk.id) blk.id = uid('blk');
+            var d = blk.data || {};
+
+            switch (blk.type) {
+              case 'title-text':
+              case 'solo-text':
+                if (!Array.isArray(d.paragraphs)) {
+                  d.paragraphs = d.paragraph || d.text ? [d.paragraph || d.text] : [''];
+                }
+                break;
+
+              case 'bullet-list':
+                if (Array.isArray(d.items)) {
+                  d.items = d.items.map(function(it) {
+                    if (typeof it === 'string') return { id: uid('item'), text: it };
+                    if (!it.id) it.id = uid('item');
+                    return it;
+                  });
+                } else {
+                  d.items = [{ id: uid('item'), text: '' }];
+                }
+                break;
+
+              case 'nested-bullets':
+                if (Array.isArray(d.items)) {
+                  d.items = d.items.map(function(main) {
+                    if (typeof main === 'string') main = { text: main };
+                    if (!main.id) main.id = uid('main');
+                    var rawSubs = main.children || main.subItems || [];
+                    main.children = rawSubs.map(function(sub) {
+                      if (typeof sub === 'string') return { id: uid('sub'), text: sub };
+                      if (!sub.id) sub.id = uid('sub');
+                      return sub;
+                    });
+                    return main;
+                  });
+                } else {
+                  d.items = [{ id: uid('main'), text: '', children: [] }];
+                }
+                break;
+
+              case 'numbered-steps':
+                if (Array.isArray(d.steps)) {
+                  d.steps = d.steps.map(function(s, idx) {
+                    if (!s.id) s.id = uid('step');
+                    s.badge = String(idx + 1).padStart(2, '0');
+                    return s;
+                  });
+                } else {
+                  d.steps = [{ id: uid('step'), badge: '01', title: '', text: '' }];
+                }
+                break;
+
+              case 'three-columns':
+                if (!Array.isArray(d.columns) || d.columns.length === 0) {
+                  d.columns = [
+                    { id: 'col_1', kicker: 'PILLAR I', title: '', text: '' },
+                    { id: 'col_2', kicker: 'PILLAR II', title: '', text: '' },
+                    { id: 'col_3', kicker: 'PILLAR III', title: '', text: '' }
+                  ];
+                } else {
+                  d.columns.forEach(function(c, i) {
+                    if (!c.id) c.id = 'col_' + (i + 1);
+                  });
+                }
+                break;
+
+              case 'gallery-scroll':
+                if (!Array.isArray(d.cards)) {
+                  d.cards = [];
+                } else {
+                  d.cards.forEach(function(c) {
+                    if (!c.id) c.id = uid('gcard');
+                  });
+                }
+                break;
+
+              case 'comparison':
+                if (Array.isArray(d.col1Items)) {
+                  d.col1Items = d.col1Items.map(function(it) {
+                    if (typeof it === 'string') return { id: uid('c1'), text: it };
+                    if (!it.id) it.id = uid('c1');
+                    return it;
+                  });
+                } else {
+                  d.col1Items = [];
+                }
+                if (Array.isArray(d.col2Items)) {
+                  d.col2Items = d.col2Items.map(function(it) {
+                    if (typeof it === 'string') return { id: uid('c2'), text: it };
+                    if (!it.id) it.id = uid('c2');
+                    return it;
+                  });
+                } else {
+                  d.col2Items = [];
+                }
+                break;
+
+              case 'technical-table':
+                if (!Array.isArray(d.columns) || d.columns.length === 0) {
+                  if (Array.isArray(d.headers) && d.headers.length > 0) {
+                    d.columns = d.headers.map(function(h, idx) {
+                      return { id: 'col_' + idx, label: h };
+                    });
+                    if (Array.isArray(d.rows)) {
+                      d.rows = d.rows.map(function(r) {
+                        var cells = {};
+                        d.columns.forEach(function(c, cIdx) {
+                          cells[c.id] = r.cells ? (r.cells[c.id] || '') : (r['col' + (cIdx + 1)] || (Array.isArray(r) ? r[cIdx] : ''));
+                        });
+                        return { id: r.id || uid('row'), cells: cells };
+                      });
+                    }
+                  } else {
+                    d.columns = [
+                      { id: 'col_1', label: 'Feature' },
+                      { id: 'col_2', label: 'Status' }
+                    ];
+                    d.rows = [
+                      { id: uid('row'), cells: { col_1: '', col_2: '' } }
+                    ];
+                  }
+                }
+                break;
+
+              case 'faq':
+                if (Array.isArray(d.items)) {
+                  d.items = d.items.map(function(it) {
+                    if (!it.id) it.id = uid('faq');
+                    return it;
+                  });
+                } else {
+                  d.items = [{ id: uid('faq'), question: '', answer: '' }];
+                }
+                break;
+
+              case 'article-trial':
+                if (!Array.isArray(d.questions) || d.questions.length === 0) {
+                  d.questions = [
+                    {
+                      id: uid('q'),
+                      question: '',
+                      answers: [
+                        { id: uid('ans'), text: '', correct: true },
+                        { id: uid('ans'), text: '', correct: false }
+                      ],
+                      explanation: ''
+                    }
+                  ];
+                } else {
+                  d.questions.forEach(function(q) {
+                    if (!q.id) q.id = uid('q');
+                    if (!Array.isArray(q.answers)) q.answers = [];
+                    q.answers.forEach(function(a) {
+                      if (!a.id) a.id = uid('ans');
+                    });
+                  });
+                }
+                break;
+
+              case 'key-takeaways':
+                if (Array.isArray(d.items)) {
+                  d.items = d.items.map(function(it) {
+                    if (!it.id) it.id = uid('t');
+                    return it;
+                  });
+                } else {
+                  d.items = [{ id: uid('t'), term: '', desc: '' }];
+                }
+                break;
+
+              case 'related-docs':
+                if (Array.isArray(d.items)) {
+                  d.items = d.items.map(function(it) {
+                    if (!it.id) it.id = uid('rd');
+                    it.type = it.type || (it.url && it.url.startsWith('http') ? 'external' : 'internal');
+                    return it;
+                  });
+                } else {
+                  d.items = [{ id: uid('rd'), type: 'internal', title: '', slug: '', url: '', ctaText: 'Study scroll' }];
+                }
+                break;
+            }
+          });
+        });
+      }
+
+      // ── Reading Time Auto Calculator ────────────────────
+      function calculateReadingTime() {
+        var totalWords = 0;
+
+        function addWords(str) {
+          if (!str || typeof str !== 'string') return;
+          var clean = str.replace(/<[^>]*>/g, ' ').trim();
+          if (clean) {
+            totalWords += clean.split(/\s+/).length;
+          }
+        }
+
+        addWords(currentDoc.meta.title);
+        addWords(currentDoc.meta.description);
+
+        (currentDoc.sections || []).forEach(function(sec) {
+          addWords(sec.title);
+          addWords(sec.kicker);
+          addWords(sec.heading);
+
+          (sec.blocks || []).forEach(function(blk) {
+            var d = blk.data || {};
+            addWords(d.heading);
+            addWords(d.intro);
+            addWords(d.text);
+            addWords(d.paragraph);
+            addWords(d.quote);
+            addWords(d.author);
+            addWords(d.caption);
+            addWords(d.solutionTitle);
+            addWords(d.solutionText);
+            addWords(d.scenario);
+            addWords(d.alt);
+            addWords(d.col1Title);
+            addWords(d.col1Text);
+            addWords(d.col2Title);
+            addWords(d.col2Text);
+            addWords(d.card1Title);
+            addWords(d.card1Desc);
+            addWords(d.card2Title);
+            addWords(d.card2Desc);
+            addWords(d.card3Title);
+            addWords(d.card3Desc);
+
+            if (Array.isArray(d.paragraphs)) {
+              d.paragraphs.forEach(function(p) { addWords(typeof p === 'object' ? p.text : p); });
+            }
+
+            if (Array.isArray(d.items)) {
+              d.items.forEach(function(it) {
+                if (typeof it === 'string') addWords(it);
+                else {
+                  addWords(it.term);
+                  addWords(it.desc);
+                  addWords(it.text);
+                  addWords(it.question);
+                  addWords(it.answer);
+                  addWords(it.title);
+                  if (Array.isArray(it.children)) {
+                    it.children.forEach(function(c) { addWords(typeof c === 'object' ? c.text : c); });
+                  }
+                }
+              });
+            }
+
+            if (Array.isArray(d.steps)) {
+              d.steps.forEach(function(s) {
+                addWords(s.title);
+                addWords(s.text);
+              });
+            }
+
+            if (Array.isArray(d.columns)) {
+              d.columns.forEach(function(c) {
+                addWords(c.title);
+                addWords(c.text);
+                addWords(c.label);
+              });
+            }
+
+            if (Array.isArray(d.rows)) {
+              d.rows.forEach(function(r) {
+                if (r.cells) {
+                  Object.values(r.cells).forEach(addWords);
+                }
+              });
+            }
+
+            if (Array.isArray(d.questions)) {
+              d.questions.forEach(function(q) {
+                addWords(q.question);
+                addWords(q.explanation);
+                if (Array.isArray(q.answers)) {
+                  q.answers.forEach(function(a) { addWords(a.text); });
+                }
+              });
+            }
+
+            if (Array.isArray(d.cards)) {
+              d.cards.forEach(function(c) {
+                addWords(c.caption);
+                addWords(c.alt);
+              });
+            }
+          });
+        });
+
+        var minutes = Math.max(1, Math.round(totalWords / 200));
+        var str = minutes + ' min';
+        currentDoc.meta.readingTime = str;
+
+        var el = document.getElementById('reading-time-text');
+        if (el) el.textContent = '≈ ' + str;
+
+        return str;
+      }
+
+      // ── Image Upload & Reusable Image Picker ────────────
+      function uploadImageFile(file, callback) {
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+          fetch('/__article-studio/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, base64: evt.target.result })
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.success && data.url) {
+              callback(null, data.url);
+            } else {
+              callback(new Error(data.error || 'Upload failed'));
+            }
+          })
+          .catch(function(err) {
+            callback(err);
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function openImageUploader(onUploaded) {
+        var fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        fileInput.style.display = 'none';
+        document.body.appendChild(fileInput);
+
+        fileInput.addEventListener('change', function(e) {
+          var file = e.target.files[0];
+          if (!file) {
+            fileInput.remove();
+            return;
+          }
+          showToast('Uploading image...', 'saving');
+          uploadImageFile(file, function(err, url) {
+            fileInput.remove();
+            if (err) {
+              showToast('Upload failed: ' + err.message, 'error');
+            } else {
+              showToast('Image uploaded successfully', 'success');
+              onUploaded(url, file.name);
+            }
+          });
+        });
+
+        fileInput.click();
+      }
+
+      function renderImageTileHtml(opts) {
+        var src = opts.src || '';
+        var alt = opts.alt || '';
+        var caption = opts.caption || '';
+        var showCaption = opts.showCaption !== false;
+        var propPrefix = opts.propPrefix || 'image';
+
+        if (!src) {
+          return (
+            '<div class="studio-img-picker" data-img-prop="' + propPrefix + '">' +
+              '<div class="studio-img-dropzone" data-act="trigger-upload" data-img-prop="' + propPrefix + '">' +
+                '<div style="font-size:22px;color:var(--studio-gold);opacity:0.8">🖼</div>' +
+                '<div style="font-size:13px;color:var(--studio-text-dim)">Drop image here or click to upload</div>' +
+                '<button type="button" class="studio-btn studio-btn--sm" data-act="trigger-upload" data-img-prop="' + propPrefix + '">Upload Image</button>' +
+                '<div style="font-size:11px;color:var(--studio-purple);cursor:pointer;margin-top:2px" data-act="toggle-ext-url" data-img-prop="' + propPrefix + '">+ Use External URL</div>' +
+                '<div class="ext-url-input-wrap" style="display:none;width:100%;margin-top:6px">' +
+                  '<input type="text" class="studio-input" placeholder="https://..." data-ext-url-input data-img-prop="' + propPrefix + '" />' +
+                '</div>' +
+              '</div>' +
+            '</div>'
+          );
+        }
+
+        return (
+          '<div class="studio-img-picker" data-img-prop="' + propPrefix + '">' +
+            '<div class="studio-img-preview-box">' +
+              '<div class="studio-img-thumbnail-wrap">' +
+                '<img src="' + escapeHtml(src) + '" alt="' + escapeHtml(alt) + '" class="studio-img-thumbnail" />' +
+              '</div>' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">' +
+                '<div style="font-family:var(--font-mono);font-size:11px;color:var(--studio-text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:260px">' + escapeHtml(src) + '</div>' +
+                '<div style="display:flex;gap:6px">' +
+                  '<button type="button" class="studio-btn studio-btn--sm" data-act="trigger-upload" data-img-prop="' + propPrefix + '">Replace</button>' +
+                  '<button type="button" class="studio-btn studio-btn--sm studio-btn--danger" data-act="remove-image" data-img-prop="' + propPrefix + '">Remove</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="studio-form-group">' +
+                '<label class="studio-label">Alt Text *</label>' +
+                '<input type="text" class="studio-input" data-img-subfield="alt" data-img-prop="' + propPrefix + '" value="' + escapeHtml(alt) + '" placeholder="Required descriptive text for accessibility" />' +
+              '</div>' +
+              (showCaption ? (
+                '<div class="studio-form-group">' +
+                  '<label class="studio-label">Caption (Optional)</label>' +
+                  '<input type="text" class="studio-input" data-img-subfield="caption" data-img-prop="' + propPrefix + '" value="' + escapeHtml(caption) + '" placeholder="Figure · Diagram explanation..." />' +
+                '</div>'
+              ) : '') +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      // ── Block Library Initialization ────────────────────
+      function initLibrary() {
+        var container = document.getElementById('palette-categories-container');
+        if (!container) return;
+        container.innerHTML = '';
+
+        var firstCategory = true;
+
+        window.STUDIO_CATEGORIES.forEach(function(cat) {
+          var accordion = document.createElement('div');
+          accordion.className = 'category-accordion' + (firstCategory ? ' open' : '');
+          firstCategory = false;
+          accordion.setAttribute('data-category', cat);
+
+          var header = document.createElement('button');
+          header.type = 'button';
+          header.className = 'category-accordion-header';
+
+          var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
+            return b.category === cat;
+          });
+
+          header.innerHTML = 
+            '<div class="category-accordion-title">' +
+              '<span class="category-arrow">▸</span>' +
+              '<span>' + escapeHtml(cat) + '</span>' +
+            '</div>' +
+            '<span class="category-items-count">' + matchingBlocks.length + '</span>';
+
+          header.addEventListener('click', function() {
+            accordion.classList.toggle('open');
+          });
+
+          var body = document.createElement('div');
+          body.className = 'category-accordion-body';
+
+          matchingBlocks.forEach(function(blk) {
+            var card = document.createElement('div');
+            card.className = 'library-block-card';
+            card.setAttribute('draggable', 'true');
+            card.setAttribute('data-block-type', blk.type);
+            card.setAttribute('data-keywords', (blk.label + ' ' + blk.description + ' ' + blk.category).toLowerCase());
+
+            var glyph = BLOCK_GLYPHS[blk.type] || '✦';
+
+            card.innerHTML = 
+              '<div class="lib-card-handle" title="Drag to insert into section">⋮⋮</div>' +
+              '<div class="lib-card-glyph">' + glyph + '</div>' +
+              '<div class="lib-card-content">' +
+                '<div class="lib-card-title">' + escapeHtml(blk.label) + '</div>' +
+                '<div class="lib-card-desc">' + escapeHtml(blk.description) + '</div>' +
+              '</div>' +
+              '<button type="button" class="studio-btn studio-btn--insert" data-block-type="' + blk.type + '" title="Insert into active section">+ Insert</button>';
+
+            card.querySelector('.studio-btn--insert').addEventListener('click', function(e) {
+              e.stopPropagation();
+              addBlockToActiveSection(blk.type);
+            });
+
+            card.addEventListener('click', function() {
+              addBlockToActiveSection(blk.type);
+            });
+
+            card.addEventListener('dragstart', function(e) {
+              draggedBlockData = { source: 'library', type: blk.type };
+              e.dataTransfer.setData('text/plain', JSON.stringify(draggedBlockData));
+              e.dataTransfer.effectAllowed = 'copy';
+            });
+
+            body.appendChild(card);
+          });
+
+          accordion.appendChild(header);
+          accordion.appendChild(body);
+          container.appendChild(accordion);
+        });
+      }
+
+      // Search Filter
+      document.getElementById('library-search-input').addEventListener('input', function(e) {
+        var query = (e.target.value || '').trim().toLowerCase();
+        var accordions = document.querySelectorAll('.category-accordion');
+
+        accordions.forEach(function(acc) {
+          var cards = acc.querySelectorAll('.library-block-card');
+          var hasMatch = false;
+
+          cards.forEach(function(c) {
+            var kw = c.getAttribute('data-keywords') || '';
+            if (!query || kw.includes(query)) {
+              c.style.display = 'flex';
+              hasMatch = true;
+            } else {
+              c.style.display = 'none';
+            }
+          });
+
+          if (query) {
+            if (hasMatch) {
+              acc.style.display = 'block';
+              acc.classList.add('open');
+            } else {
+              acc.style.display = 'none';
+            }
+          } else {
+            acc.style.display = 'block';
+          }
+        });
+      });
+
+      // ── Sections Management ─────────────────────────────
+      function addSection(title) {
+        var secId = uid('sec');
+        var secTitle = title || ('Section ' + (currentDoc.sections.length + 1));
+        var newSec = {
+          id: secId,
+          title: secTitle,
+          kicker: '',
+          heading: '',
+          blocks: []
+        };
+        currentDoc.sections.push(newSec);
+        activeSectionId = secId;
+        renderSections();
+        triggerAutosave();
+        showToast('Section added: ' + secTitle);
+      }
+
+      function duplicateSection(secId) {
+        var idx = currentDoc.sections.findIndex(function(s) { return s.id === secId; });
+        if (idx === -1) return;
+        var original = currentDoc.sections[idx];
+        var copy = JSON.parse(JSON.stringify(original));
+        copy.id = uid('sec');
+        copy.title = copy.title + ' — Copy';
+        copy.blocks.forEach(function(b) {
+          b.id = uid('blk');
+        });
+        currentDoc.sections.splice(idx + 1, 0, copy);
+        activeSectionId = copy.id;
+        renderSections();
+        triggerAutosave();
+        showToast('Section duplicated');
+      }
+
+      function deleteSection(secId) {
+        var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
+        if (!sec) return;
+        
+        confirmDelete(
+          'DELETE SECTION?',
+          'This section contains ' + sec.blocks.length + ' block(s). This cannot be undone.',
+          function() {
+            currentDoc.sections = currentDoc.sections.filter(function(s) { return s.id !== secId; });
+            if (activeSectionId === secId) {
+              activeSectionId = currentDoc.sections.length > 0 ? currentDoc.sections[0].id : null;
+            }
+            renderSections();
+            triggerAutosave();
+            showToast('Section deleted');
+          }
+        );
+      }
+
+      function moveSection(secId, direction) {
+        var idx = currentDoc.sections.findIndex(function(s) { return s.id === secId; });
+        if (idx === -1) return;
+        var targetIdx = idx + direction;
+        if (targetIdx < 0 || targetIdx >= currentDoc.sections.length) return;
+        var temp = currentDoc.sections[idx];
+        currentDoc.sections[idx] = currentDoc.sections[targetIdx];
+        currentDoc.sections[targetIdx] = temp;
+        renderSections();
+        triggerAutosave();
+      }
+
+      // ── Blocks Management ───────────────────────────────
+      function addBlockToActiveSection(type, secId) {
+        if (currentDoc.sections.length === 0) {
+          addSection('Primary Section');
+        }
+        var targetSecId = secId || activeSectionId || (currentDoc.sections[0] ? currentDoc.sections[0].id : null);
+        var sec = currentDoc.sections.find(function(s) { return s.id === targetSecId; }) || currentDoc.sections[0];
+        if (!sec) return;
+
+        var def = window.STUDIO_REGISTRY[type];
+        if (!def) return;
+
+        var newBlock = {
+          id: uid('blk'),
+          type: type,
+          data: JSON.parse(JSON.stringify(def.defaultData))
+        };
+        sec.blocks.push(newBlock);
+        activeSectionId = sec.id;
+        renderSections();
+        triggerAutosave();
+        showToast('Inserted: ' + def.label);
+      }
+
+      function duplicateBlock(secId, blockId) {
+        var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
+        if (!sec) return;
+        var bIdx = sec.blocks.findIndex(function(b) { return b.id === blockId; });
+        if (bIdx === -1) return;
+        var original = sec.blocks[bIdx];
+        var copy = JSON.parse(JSON.stringify(original));
+        copy.id = uid('blk');
+        sec.blocks.splice(bIdx + 1, 0, copy);
+        activeSectionId = secId;
+        renderSections();
+        triggerAutosave();
+        showToast('Block duplicated');
+      }
+
+      function deleteBlock(secId, blockId) {
+        var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
+        if (!sec) return;
+        
+        confirmDelete(
+          'DELETE BLOCK?',
+          'Remove this block from the scroll?',
+          function() {
+            sec.blocks = sec.blocks.filter(function(b) { return b.id !== blockId; });
+            renderSections();
+            triggerAutosave();
+            showToast('Block removed');
+          }
+        );
+      }
+
+      function moveBlock(secId, blockId, direction) {
+        var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
+        if (!sec) return;
+        var idx = sec.blocks.findIndex(function(b) { return b.id === blockId; });
+        if (idx === -1) return;
+        var targetIdx = idx + direction;
+        if (targetIdx < 0 || targetIdx >= sec.blocks.length) return;
+        var temp = sec.blocks[idx];
+        sec.blocks[idx] = sec.blocks[targetIdx];
+        sec.blocks[targetIdx] = temp;
+        renderSections();
+        triggerAutosave();
+      }
+
+      function moveBlockToSection(sourceSecId, blockId, targetSecId, insertIndex) {
+        var srcSec = currentDoc.sections.find(function(s) { return s.id === sourceSecId; });
+        var dstSec = currentDoc.sections.find(function(s) { return s.id === targetSecId; });
+        if (!srcSec || !dstSec) return;
+
+        var bIdx = srcSec.blocks.findIndex(function(b) { return b.id === blockId; });
+        if (bIdx === -1) return;
+
+        var [block] = srcSec.blocks.splice(bIdx, 1);
+        if (insertIndex !== undefined && insertIndex >= 0) {
+          dstSec.blocks.splice(insertIndex, 0, block);
+        } else {
+          dstSec.blocks.push(block);
+        }
+
+        activeSectionId = dstSec.id;
+        renderSections();
+        triggerAutosave();
+        showToast('Block moved');
+      }
+
+      // ── Render Structured Form Fields for All 28 Blocks ─
+      function renderBlockFields(sec, block) {
+        var d = block.data || {};
+        var html = '';
+
+        switch (block.type) {
+          // ── 01. BASIC TYPOGRAPHY ──
+          case 'title-text':
+            html += 
+              (d.kicker !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>Kicker</span><span class="field-label-remove" data-act="remove-field" data-opt-field="kicker">✕ Remove</span></label><input type="text" class="studio-input" data-field="kicker" value="' + escapeHtml(d.kicker) + '" placeholder="01 · Kicker text..." /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="kicker">+ Add Kicker</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Heading *</label><input type="text" class="studio-input" data-field="heading" value="' + escapeHtml(d.heading || '') + '" placeholder="Primary section heading..." /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Paragraphs</label><div class="studio-repeatable-list">';
+            (d.paragraphs || ['']).forEach(function(p, pIdx) {
+              html += 
+                '<div class="studio-repeatable-row">' +
+                  '<span class="studio-repeatable-handle">⋮⋮</span>' +
+                  '<div class="studio-repeatable-content">' +
+                    '<textarea class="studio-textarea" data-array-field="paragraphs" data-array-idx="' + pIdx + '" style="min-height:75px" placeholder="Write paragraph...">' + escapeHtml(typeof p === 'object' ? p.text : p) + '</textarea>' +
+                  '</div>' +
+                  '<div class="studio-repeatable-actions">' +
+                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-paragraph" data-idx="' + pIdx + '" ' + (d.paragraphs.length <= 1 ? 'disabled' : '') + ' title="Delete paragraph">✕</button>' +
+                  '</div>' +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:6px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-paragraph">+ Add Paragraph</button></div></div>';
+            break;
+
+          case 'text-title':
+            html += 
+              (d.kicker !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>Kicker</span><span class="field-label-remove" data-act="remove-field" data-opt-field="kicker">✕ Remove</span></label><input type="text" class="studio-input" data-field="kicker" value="' + escapeHtml(d.kicker) + '" /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="kicker">+ Add Kicker</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Intro Bridge Lead</label><textarea class="studio-textarea" data-field="intro" placeholder="Introductory bridge lead paragraph...">' + escapeHtml(d.intro || '') + '</textarea></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Subsequent Heading</label><input type="text" class="studio-input" data-field="heading" value="' + escapeHtml(d.heading || '') + '" placeholder="Subsequent heading..." /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Body Paragraph</label><textarea class="studio-textarea" data-field="paragraph" placeholder="Detailed technical narrative...">' + escapeHtml(d.paragraph || '') + '</textarea></div>';
+            break;
+
+          case 'solo-text':
+            html += '<div class="studio-form-group"><label class="studio-label">Editorial Paragraphs</label><div class="studio-repeatable-list">';
+            (d.paragraphs || ['']).forEach(function(p, pIdx) {
+              html += 
+                '<div class="studio-repeatable-row">' +
+                  '<span class="studio-repeatable-handle">⋮⋮</span>' +
+                  '<div class="studio-repeatable-content">' +
+                    '<textarea class="studio-textarea" data-array-field="paragraphs" data-array-idx="' + pIdx + '" style="min-height:85px" placeholder="Narrative paragraph text...">' + escapeHtml(typeof p === 'object' ? p.text : p) + '</textarea>' +
+                  '</div>' +
+                  '<div class="studio-repeatable-actions">' +
+                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-paragraph" data-idx="' + pIdx + '" ' + (d.paragraphs.length <= 1 ? 'disabled' : '') + ' title="Delete paragraph">✕</button>' +
+                  '</div>' +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:6px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-paragraph">+ Add Paragraph</button></div></div>';
+            break;
+
+          // ── 02. LISTS & STEPS ──
+          case 'bullet-list':
+            html += 
+              (d.title !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>List Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Optional list title..." /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Bullet Items</label><div class="studio-repeatable-list">';
+            (d.items || []).forEach(function(it, iIdx) {
+              html += 
+                '<div class="studio-repeatable-row">' +
+                  '<span class="studio-repeatable-handle">⋮⋮</span>' +
+                  '<div class="studio-repeatable-content">' +
+                    '<input type="text" class="studio-input" data-array-obj="items" data-item-id="' + it.id + '" data-prop="text" value="' + escapeHtml(it.text || '') + '" placeholder="Key bullet point..." />' +
+                  '</div>' +
+                  '<div class="studio-repeatable-actions">' +
+                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-bullet" data-item-id="' + it.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete bullet">✕</button>' +
+                  '</div>' +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:6px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-bullet">+ Add Bullet</button></div></div>';
+            break;
+
+          case 'nested-bullets':
+            html += 
+              (d.title !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>List Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Optional hierarchical title..." /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Hierarchical Items</label><div style="display:flex;flex-direction:column;gap:12px">';
+            (d.items || []).forEach(function(main, mIdx) {
+              html += 
+                '<div class="nested-parent-card">' +
+                  '<div style="display:flex;align-items:center;gap:8px">' +
+                    '<span class="studio-repeatable-handle">⋮⋮</span>' +
+                    '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-gold);font-weight:600">' + String(mIdx + 1).padStart(2, '0') + '</span>' +
+                    '<input type="text" class="studio-input" data-array-obj="items" data-item-id="' + main.id + '" data-prop="text" value="' + escapeHtml(main.text || '') + '" placeholder="Main invocation / parent item..." />' +
+                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-main" data-item-id="' + main.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete parent item">✕</button>' +
+                  '</div>' +
+                  '<div class="nested-sub-items-wrap">';
+              (main.children || []).forEach(function(sub, sIdx) {
+                html += 
+                  '<div class="studio-repeatable-row">' +
+                    '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-purple)">↳</span>' +
+                    '<div class="studio-repeatable-content">' +
+                      '<input type="text" class="studio-input" data-nested-sub="true" data-parent-id="' + main.id + '" data-sub-id="' + sub.id + '" value="' + escapeHtml(sub.text || '') + '" placeholder="Sub-item detail..." />' +
+                    '</div>' +
+                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-sub" data-parent-id="' + main.id + '" data-sub-id="' + sub.id + '" title="Delete sub-item">✕</button>' +
+                  '</div>';
+              });
+              html += 
+                  '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-nested-sub" data-parent-id="' + main.id + '">+ Add Sub-item</button></div>' +
+                '</div>' +
+              '</div>';
+            });
+            html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-nested-main">+ Add Main Item</button></div></div>';
+            break;
+
+          case 'numbered-steps':
+            html += 
+              (d.title !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>Steps Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Optional ritual/steps title..." /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Sequential Ritual Steps</label><div style="display:flex;flex-direction:column;gap:10px">';
+            (d.steps || []).forEach(function(st, sIdx) {
+              var badge = String(sIdx + 1).padStart(2, '0');
+              html += 
+                '<div class="studio-step-card">' +
+                  '<div class="studio-step-top">' +
+                    '<div style="display:flex;align-items:center;gap:10px">' +
+                      '<span class="studio-step-badge">' + badge + '</span>' +
+                      '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold-dim)">STEP ' + badge + '</span>' +
+                    '</div>' +
+                    '<div style="display:flex;gap:4px">' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="move-step" data-dir="-1" data-step-id="' + st.id + '" ' + (sIdx === 0 ? 'disabled' : '') + ' title="Move Up">▲</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="move-step" data-dir="1" data-step-id="' + st.id + '" ' + (sIdx === d.steps.length - 1 ? 'disabled' : '') + ' title="Move Down">▼</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="dup-step" data-step-id="' + st.id + '" title="Duplicate step">⧉</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-step" data-step-id="' + st.id + '" ' + (d.steps.length <= 1 ? 'disabled' : '') + ' title="Delete step">✕</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Step Title</label><input type="text" class="studio-input" data-array-obj="steps" data-item-id="' + st.id + '" data-prop="title" value="' + escapeHtml(st.title || '') + '" placeholder="e.g. Telemetry Verification" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-array-obj="steps" data-item-id="' + st.id + '" data-prop="text" style="min-height:70px" placeholder="Instructions or ritual breakdown...">' + escapeHtml(st.text || '') + '</textarea></div>' +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:6px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-step">+ Add Step</button></div></div>';
+            break;
+
+          // ── 03. COLUMN LAYOUTS ──
+          case 'text-image':
+          case 'image-text':
+            html += 
+              (d.heading !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>Heading</span><span class="field-label-remove" data-act="remove-field" data-opt-field="heading">✕ Remove</span></label><input type="text" class="studio-input" data-field="heading" value="' + escapeHtml(d.heading) + '" placeholder="Optional heading..." /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="heading">+ Add Heading</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Body Text</label><textarea class="studio-textarea" data-field="text" style="min-height:90px" placeholder="Technical copy accompanying the image...">' + escapeHtml(d.text || '') + '</textarea></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Visual Artifact</label>' +
+                renderImageTileHtml({ src: d.imageSrc, alt: d.alt, caption: d.caption, showCaption: true, propPrefix: 'imageSrc' }) +
+              '</div>';
+            break;
+
+          case 'two-columns':
+            html += 
+              '<div class="studio-cols-grid-2">' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Column 1 (Left)</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title (Optional)</label><input type="text" class="studio-input" data-field="col1Title" value="' + escapeHtml(d.col1Title || '') + '" placeholder="Column 1 header..." /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Body Text</label><textarea class="studio-textarea" data-field="col1Text" style="min-height:100px" placeholder="Primary copy...">' + escapeHtml(d.col1Text || '') + '</textarea></div>' +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Column 2 (Right)</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title (Optional)</label><input type="text" class="studio-input" data-field="col2Title" value="' + escapeHtml(d.col2Title || '') + '" placeholder="Column 2 header..." /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Body Text</label><textarea class="studio-textarea" data-field="col2Text" style="min-height:100px" placeholder="Complementary copy...">' + escapeHtml(d.col2Text || '') + '</textarea></div>' +
+                '</div>' +
+              '</div>';
+            break;
+
+          case 'three-columns':
+            html += '<div class="studio-cols-grid-3">';
+            (d.columns || []).forEach(function(col, cIdx) {
+              html += 
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Column ' + (cIdx + 1) + '</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Kicker</label><input type="text" class="studio-input" data-array-obj="columns" data-item-id="' + col.id + '" data-prop="kicker" value="' + escapeHtml(col.kicker || '') + '" placeholder="PILLAR ' + (cIdx + 1) + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-array-obj="columns" data-item-id="' + col.id + '" data-prop="title" value="' + escapeHtml(col.title || '') + '" placeholder="Pillar title..." /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Body</label><textarea class="studio-textarea" data-array-obj="columns" data-item-id="' + col.id + '" data-prop="text" style="min-height:90px" placeholder="Details...">' + escapeHtml(col.text || '') + '</textarea></div>' +
+                '</div>';
+            });
+            html += '</div>';
+            break;
+
+          // ── 04. IMAGES & MEDIA ──
+          case 'single-image':
+          case 'full-image':
+            html += renderImageTileHtml({ src: d.src, alt: d.alt, caption: d.caption, showCaption: true, propPrefix: 'src' });
+            break;
+
+          case 'two-images':
+            html += 
+              '<div class="studio-cols-grid-2">' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Image 1</div>' +
+                  renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1' }) +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Image 2</div>' +
+                  renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2' }) +
+                '</div>' +
+              '</div>';
+            break;
+
+          case 'three-images':
+            html += 
+              '<div class="studio-cols-grid-3">' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Image 1</div>' +
+                  renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1' }) +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Image 2</div>' +
+                  renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2' }) +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Image 3</div>' +
+                  renderImageTileHtml({ src: d.img3Src, alt: d.img3Alt, caption: d.img3Caption, showCaption: true, propPrefix: 'img3' }) +
+                '</div>' +
+              '</div>';
+            break;
+
+          case 'gallery-scroll':
+            html += 
+              '<div class="studio-form-group"><label class="studio-label">Scroll Hint</label><input type="text" class="studio-input" data-field="hint" value="' + escapeHtml(d.hint || '') + '" placeholder="✦ Scroll horizontally to inspect model artifacts" /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Gallery Artifacts (' + (d.cards || []).length + ')</label><div style="display:flex;flex-direction:column;gap:12px">';
+            (d.cards || []).forEach(function(c, cIdx) {
+              html += 
+                '<div class="nested-parent-card">' +
+                  '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.14);padding-bottom:6px">' +
+                    '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">CARD ' + String(cIdx + 1).padStart(2, '0') + '</span>' +
+                    '<div style="display:flex;gap:4px">' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="dup-gallery-card" data-card-id="' + c.id + '" title="Duplicate">⧉</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-gallery-card" data-card-id="' + c.id + '" title="Delete">✕</button>' +
+                    '</div>' +
+                  '</div>' +
+                  renderImageTileHtml({ src: c.src, alt: c.alt, caption: c.caption, showCaption: true, propPrefix: 'gcard_' + c.id }) +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-gallery-card">+ Add Image Card</button></div></div>';
+            break;
+
+          // ── 05. CARDS & COMPARISONS ──
+          case 'card-grid-2':
+            html += 
+              '<div class="studio-cols-grid-2">' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Card 1</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card1Title" value="' + escapeHtml(d.card1Title || '') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card1Desc" style="min-height:75px">' + escapeHtml(d.card1Desc || '') + '</textarea></div>' +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Card 2</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '◈') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card2Title" value="' + escapeHtml(d.card2Title || '') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card2Desc" style="min-height:75px">' + escapeHtml(d.card2Desc || '') + '</textarea></div>' +
+                '</div>' +
+              '</div>';
+            break;
+
+          case 'card-grid-3':
+            html += 
+              '<div class="studio-cols-grid-3">' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Card 1</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card1Title" value="' + escapeHtml(d.card1Title || '') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card1Desc" style="min-height:75px">' + escapeHtml(d.card1Desc || '') + '</textarea></div>' +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Card 2</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '⚙') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card2Title" value="' + escapeHtml(d.card2Title || '') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card2Desc" style="min-height:75px">' + escapeHtml(d.card2Desc || '') + '</textarea></div>' +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Card 3</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card3Icon" value="' + escapeHtml(d.card3Icon || '✦') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card3Title" value="' + escapeHtml(d.card3Title || '') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card3Desc" style="min-height:75px">' + escapeHtml(d.card3Desc || '') + '</textarea></div>' +
+                '</div>' +
+              '</div>';
+            break;
+
+          case 'comparison':
+            html += 
+              '<div class="studio-cols-grid-2">' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Side A</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Header</label><input type="text" class="studio-input" data-field="col1Header" value="' + escapeHtml(d.col1Header || '') + '" placeholder="e.g. INBOUND ARCHITECTURE" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col1Icon" value="' + escapeHtml(d.col1Icon || '✉') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Side A Items</label><div class="studio-repeatable-list">';
+            (d.col1Items || []).forEach(function(it) {
+              html += 
+                '<div class="studio-repeatable-row">' +
+                  '<input type="text" class="studio-input" data-array-obj="col1Items" data-item-id="' + it.id + '" data-prop="text" value="' + escapeHtml(it.text || '') + '" placeholder="Feature comparison point..." />' +
+                  '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="1" data-item-id="' + it.id + '">✕</button>' +
+                '</div>';
+            });
+            html += 
+                    '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-col-item" data-side="1">+ Add Item</button></div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Side B</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Header</label><input type="text" class="studio-input" data-field="col2Header" value="' + escapeHtml(d.col2Header || '') + '" placeholder="e.g. OUTBOUND DISPATCH" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col2Icon" value="' + escapeHtml(d.col2Icon || '◈') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Side B Items</label><div class="studio-repeatable-list">';
+            (d.col2Items || []).forEach(function(it) {
+              html += 
+                '<div class="studio-repeatable-row">' +
+                  '<input type="text" class="studio-input" data-array-obj="col2Items" data-item-id="' + it.id + '" data-prop="text" value="' + escapeHtml(it.text || '') + '" placeholder="Feature comparison point..." />' +
+                  '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="2" data-item-id="' + it.id + '">✕</button>' +
+                '</div>';
+            });
+            html += 
+                    '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-col-item" data-side="2">+ Add Item</button></div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>';
+            break;
+
+          case 'stats-metrics':
+            html += 
+              '<div class="studio-cols-grid-3">' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Metric 1</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Number / Metric</label><input type="text" class="studio-input" data-field="stat1Num" value="' + escapeHtml(d.stat1Num || '') + '" placeholder="e.g. 12" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Label</label><input type="text" class="studio-input" data-field="stat1Label" value="' + escapeHtml(d.stat1Label || '') + '" placeholder="e.g. Active Journeys" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Sub-label</label><input type="text" class="studio-input" data-field="stat1Sub" value="' + escapeHtml(d.stat1Sub || '') + '" placeholder="e.g. Multi-cloud orchestration" /></div>' +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Metric 2</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Number / Metric</label><input type="text" class="studio-input" data-field="stat2Num" value="' + escapeHtml(d.stat2Num || '') + '" placeholder="e.g. 89%" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Label</label><input type="text" class="studio-input" data-field="stat2Label" value="' + escapeHtml(d.stat2Label || '') + '" placeholder="e.g. Engagement Rate" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Sub-label</label><input type="text" class="studio-input" data-field="stat2Sub" value="' + escapeHtml(d.stat2Sub || '') + '" placeholder="e.g. Model-guided" /></div>' +
+                '</div>' +
+                '<div class="studio-col-panel">' +
+                  '<div class="studio-col-panel-title">Metric 3</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Number / Metric</label><input type="text" class="studio-input" data-field="stat3Num" value="' + escapeHtml(d.stat3Num || '') + '" placeholder="e.g. 42K" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Label</label><input type="text" class="studio-input" data-field="stat3Label" value="' + escapeHtml(d.stat3Label || '') + '" placeholder="e.g. Contacts Scored" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Sub-label</label><input type="text" class="studio-input" data-field="stat3Sub" value="' + escapeHtml(d.stat3Sub || '') + '" placeholder="e.g. Rolling window" /></div>' +
+                '</div>' +
+              '</div>';
+            break;
+
+          // ── 06. TECHNICAL TABLES ──
+          case 'technical-table':
+            var cols = d.columns || [];
+            var rows = d.rows || [];
+            html += 
+              '<div class="studio-form-group"><label class="studio-label">Excel-Style Table Builder (' + cols.length + ' cols × ' + rows.length + ' rows)</label>' +
+                '<div class="studio-table-builder">' +
+                  '<table class="studio-table-grid">' +
+                    '<thead><tr>';
+            cols.forEach(function(col) {
+              html += 
+                '<th>' +
+                  '<div style="display:flex;align-items:center;gap:4px">' +
+                    '<input type="text" class="studio-table-cell-input" style="font-weight:600;color:var(--studio-gold)" data-table-header="' + col.id + '" value="' + escapeHtml(col.label) + '" placeholder="Col Header" />' +
+                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-table-col" data-col-id="' + col.id + '" ' + (cols.length <= 1 ? 'disabled' : '') + ' title="Delete Column">✕</button>' +
+                  '</div>' +
+                '</th>';
+            });
+            html += '<th style="width:40px"></th></tr></thead><tbody>';
+            rows.forEach(function(r) {
+              html += '<tr>';
+              cols.forEach(function(col) {
+                var val = r.cells ? (r.cells[col.id] || '') : '';
+                html += '<td><input type="text" class="studio-table-cell-input" data-table-row="' + r.id + '" data-table-col="' + col.id + '" value="' + escapeHtml(val) + '" placeholder="..." /></td>';
+              });
+              html += 
+                '<td>' +
+                  '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-table-row" data-row-id="' + r.id + '" ' + (rows.length <= 1 ? 'disabled' : '') + ' title="Delete Row">✕</button>' +
+                '</td></tr>';
+            });
+            html += 
+                  '</tbody>' +
+                '</table>' +
+              '</div>' +
+              '<div style="display:flex;gap:8px;margin-top:8px">' +
+                '<button type="button" class="studio-btn studio-btn--sm" data-act="add-table-col">+ Add Column</button>' +
+                '<button type="button" class="studio-btn studio-btn--sm" data-act="add-table-row">+ Add Row</button>' +
+              '</div>' +
+            '</div>';
+            break;
+
+          // ── 07. CALLOUTS & QUOTES ──
+          case 'callout':
+            var activeType = d.calloutType || 'note';
+            html += 
+              '<div class="studio-form-group"><label class="studio-label">Callout Style Variant</label>' +
+                '<div class="callout-swatches-grid">' +
+                  '<div class="callout-swatch-item swatch-note' + (activeType === 'note' ? ' active' : '') + '" data-act="select-callout" data-val="note">Note</div>' +
+                  '<div class="callout-swatch-item swatch-info' + (activeType === 'info' ? ' active' : '') + '" data-act="select-callout" data-val="info">Info</div>' +
+                  '<div class="callout-swatch-item swatch-tip' + (activeType === 'tip' ? ' active' : '') + '" data-act="select-callout" data-val="tip">Tip</div>' +
+                  '<div class="callout-swatch-item swatch-warning' + (activeType === 'warning' ? ' active' : '') + '" data-act="select-callout" data-val="warning">Warning</div>' +
+                '</div>' +
+              '</div>' +
+              (d.title !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Advisory Title..." /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Content</label><textarea class="studio-textarea" data-field="text" placeholder="Advisory message body...">' + escapeHtml(d.text || '') + '</textarea></div>';
+            break;
+
+          case 'pullquote':
+            html += 
+              '<div class="studio-form-group"><label class="studio-label">Quote Inscription</label><textarea class="studio-textarea" data-field="quote" placeholder="Prominent doctrine quote...">' + escapeHtml(d.quote || '') + '</textarea></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Author / Attrib</label><input type="text" class="studio-input" data-field="author" value="' + escapeHtml(d.author || '') + '" placeholder="— Coven Doctrine Principle" /></div>';
+            break;
+
+          // ── 08. CODE INSCRIPTIONS ──
+          case 'code-block':
+            html += 
+              '<div class="studio-form-group"><label class="studio-label">Filename / Inscription Header</label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title || '') + '" placeholder="e.g. EinsteinSyncHandler.cls" /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Language</label>' +
+                '<select class="studio-select" data-field="language">' +
+                  '<option value="typescript"' + (d.language === 'typescript' ? ' selected' : '') + '>TypeScript</option>' +
+                  '<option value="apex"' + (d.language === 'apex' ? ' selected' : '') + '>Apex</option>' +
+                  '<option value="javascript"' + (d.language === 'javascript' ? ' selected' : '') + '>JavaScript</option>' +
+                  '<option value="json"' + (d.language === 'json' ? ' selected' : '') + '>JSON</option>' +
+                  '<option value="sql"' + (d.language === 'sql' ? ' selected' : '') + '>SQL</option>' +
+                  '<option value="html"' + (d.language === 'html' ? ' selected' : '') + '>HTML</option>' +
+                  '<option value="css"' + (d.language === 'css' ? ' selected' : '') + '>CSS</option>' +
+                '</select>' +
+              '</div>' +
+              '<div class="studio-form-group"><label class="studio-label">Code Inscription</label><textarea class="studio-textarea studio-code-area" data-field="code" placeholder="// Inscribe code here...">' + escapeHtml(d.code || '') + '</textarea></div>';
+            break;
+
+          // ── 09. INTERACTIVE BLOCKS ──
+          case 'faq':
+            html += '<div class="studio-form-group"><label class="studio-label">FAQ Inquiries</label><div style="display:flex;flex-direction:column;gap:10px">';
+            (d.items || []).forEach(function(item, iIdx) {
+              html += 
+                '<div class="nested-parent-card">' +
+                  '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.12);padding-bottom:6px">' +
+                    '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-purple)">INQUIRY ' + String(iIdx + 1).padStart(2, '0') + '</span>' +
+                    '<div style="display:flex;gap:4px">' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="dup-faq" data-item-id="' + item.id + '" title="Duplicate">⧉</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-faq" data-item-id="' + item.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete">✕</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Question</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + item.id + '" data-prop="question" value="' + escapeHtml(item.question || '') + '" placeholder="e.g. How long does training take?" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Answer</label><textarea class="studio-textarea" data-array-obj="items" data-item-id="' + item.id + '" data-prop="answer" style="min-height:70px" placeholder="Architectural resolution...">' + escapeHtml(item.answer || '') + '</textarea></div>' +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-faq">+ Add Question</button></div></div>';
+            break;
+
+          case 'exercise':
+            html += 
+              '<div class="studio-form-group"><label class="studio-label">Badge</label><input type="text" class="studio-input" data-field="badge" value="' + escapeHtml(d.badge || 'TRIAL SCENARIO 01') + '" /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Scenario Challenge</label><textarea class="studio-textarea" data-field="scenario" placeholder="Describe the practical challenge...">' + escapeHtml(d.scenario || '') + '</textarea></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Reveal Button Text</label><input type="text" class="studio-input" data-field="buttonText" value="' + escapeHtml(d.buttonText || '✦ Reveal Answer') + '" /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Solution Title</label><input type="text" class="studio-input" data-field="solutionTitle" value="' + escapeHtml(d.solutionTitle || 'Solution: Recommended Pattern') + '" /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Solution Text</label><textarea class="studio-textarea" data-field="solutionText" placeholder="Architectural pattern resolution...">' + escapeHtml(d.solutionText || '') + '</textarea></div>';
+            break;
+
+          case 'article-trial':
+            html += 
+              '<div class="studio-form-group"><label class="studio-label">Trial Title</label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title || "You've reached the trial") + '" /></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Intro / Instruction</label><textarea class="studio-textarea" data-field="intro" placeholder="Instructional lead...">' + escapeHtml(d.intro || d.description || '') + '</textarea></div>' +
+              '<div class="studio-form-group"><label class="studio-label">Trial Assessment Questions</label><div style="display:flex;flex-direction:column;gap:14px">';
+            (d.questions || []).forEach(function(q, qIdx) {
+              html += 
+                '<div class="trial-q-card">' +
+                  '<div class="trial-q-topbar">' +
+                    '<span class="trial-q-title">QUESTION ' + String(qIdx + 1).padStart(2, '0') + '</span>' +
+                    '<div style="display:flex;gap:4px">' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="dup-trial-q" data-q-id="' + q.id + '" title="Duplicate Question">⧉</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-trial-q" data-q-id="' + q.id + '" ' + (d.questions.length <= 1 ? 'disabled' : '') + ' title="Delete Question">✕</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Question Text *</label><input type="text" class="studio-input" data-trial-q="text" data-q-id="' + q.id + '" value="' + escapeHtml(q.question || '') + '" placeholder="e.g. Which engine determines batch quiet-hours?" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Answer Options (Select correct answer)</label><div style="display:flex;flex-direction:column;gap:6px">';
+              (q.answers || []).forEach(function(ans, aIdx) {
+                var letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                html += 
+                  '<div class="trial-ans-row' + (ans.correct ? ' is-correct' : '') + '">' +
+                    '<input type="radio" name="trial_correct_' + q.id + '" class="trial-radio" data-act="mark-correct" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (ans.correct ? 'checked' : '') + ' title="Mark as correct answer" />' +
+                    '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">' + (letters[aIdx] || String(aIdx + 1)) + '</span>' +
+                    '<input type="text" class="studio-input" data-trial-ans="text" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" value="' + escapeHtml(ans.text || '') + '" placeholder="Answer option text..." style="flex:1" />' +
+                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-trial-ans" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (q.answers.length <= 2 ? 'disabled' : '') + ' title="Remove option">✕</button>' +
+                  '</div>';
+              });
+              html += 
+                    '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-trial-ans" data-q-id="' + q.id + '">+ Add Answer Option</button></div>' +
+                  '</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Explanation / Guidance (Optional)</label><textarea class="studio-textarea" data-trial-q="explanation" data-q-id="' + q.id + '" style="min-height:65px" placeholder="Explained once answered...">' + escapeHtml(q.explanation || '') + '</textarea></div>' +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-trial-q">+ Add Question</button></div></div>';
+            break;
+
+          // ── 10. CLOSING CONTENT ──
+          case 'key-takeaways':
+            html += 
+              (d.title !== undefined ?
+                '<div class="studio-form-group"><label class="studio-label"><span>Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" /></div>' :
+                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
+              ) +
+              '<div class="studio-form-group"><label class="studio-label">Takeaway Doctrines</label><div style="display:flex;flex-direction:column;gap:10px">';
+            (d.items || []).forEach(function(item, tIdx) {
+              html += 
+                '<div class="nested-parent-card">' +
+                  '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.12);padding-bottom:6px">' +
+                    '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">DOCTRINE ' + String(tIdx + 1).padStart(2, '0') + '</span>' +
+                    '<div style="display:flex;gap:4px">' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="dup-takeaway" data-item-id="' + item.id + '" title="Duplicate">⧉</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-takeaway" data-item-id="' + item.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete">✕</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Term / Concept</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + item.id + '" data-prop="term" value="' + escapeHtml(item.term || '') + '" placeholder="e.g. Core Rule 1" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-array-obj="items" data-item-id="' + item.id + '" data-prop="desc" style="min-height:70px" placeholder="Principle summary...">' + escapeHtml(item.desc || '') + '</textarea></div>' +
+                '</div>';
+            });
+            html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-takeaway">+ Add Takeaway</button></div></div>';
+            break;
+
+          case 'related-docs':
+            var pubArticles = window.STUDIO_PUBLISHED_ARTICLES || [];
+            html += '<div class="studio-form-group"><label class="studio-label">Related Scrolls & External Docs</label><div style="display:flex;flex-direction:column;gap:12px">';
+            (d.items || []).forEach(function(rd, rIdx) {
+              var isInternal = rd.type !== 'external';
+              html += 
+                '<div class="nested-parent-card">' +
+                  '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.12);padding-bottom:6px">' +
+                    '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">DOC ' + String(rIdx + 1).padStart(2, '0') + '</span>' +
+                    '<div style="display:flex;gap:4px">' +
+                      '<button type="button" class="studio-btn studio-btn--icon" data-act="dup-doc" data-item-id="' + rd.id + '" title="Duplicate">⧉</button>' +
+                      '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-doc" data-item-id="' + rd.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete">✕</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="studio-form-group">' +
+                    '<label class="studio-label">Resource Type</label>' +
+                    '<div style="display:flex;gap:14px;align-items:center">' +
+                      '<label style="display:flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:14px;cursor:pointer">' +
+                        '<input type="radio" name="rd_type_' + rd.id + '" data-act="toggle-doc-type" data-doc-id="' + rd.id + '" data-val="internal" ' + (isInternal ? 'checked' : '') + ' />' +
+                        '<span>Internal Coven Scroll</span>' +
+                      '</label>' +
+                      '<label style="display:flex;align-items:center;gap:6px;font-family:var(--font-body);font-size:14px;cursor:pointer">' +
+                        '<input type="radio" name="rd_type_' + rd.id + '" data-act="toggle-doc-type" data-doc-id="' + rd.id + '" data-val="external" ' + (!isInternal ? 'checked' : '') + ' />' +
+                        '<span>External Documentation</span>' +
+                      '</label>' +
+                    '</div>' +
+                  '</div>';
+
+              if (isInternal) {
+                html += 
+                  '<div class="studio-form-group"><label class="studio-label">Select Published Scroll</label>' +
+                    '<select class="studio-select" data-doc-select-slug="' + rd.id + '">' +
+                      '<option value="">-- Choose scroll or keep custom --</option>';
+                pubArticles.forEach(function(pa) {
+                  var sel = (rd.slug === pa.slug || rd.url === '/article/' + pa.slug) ? ' selected' : '';
+                  html += '<option value="' + pa.slug + '"' + sel + '>' + escapeHtml(pa.title) + ' (' + escapeHtml(pa.category) + ')</option>';
+                });
+                html += 
+                    '</select>' +
+                  '</div>' +
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="title" value="' + escapeHtml(rd.title || '') + '" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">CTA Text</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="ctaText" value="' + escapeHtml(rd.ctaText || 'Study scroll') + '" /></div>';
+              } else {
+                html += 
+                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="title" value="' + escapeHtml(rd.title || '') + '" placeholder="e.g. Official Salesforce Documentation" /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">External URL</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="url" value="' + escapeHtml(rd.url || '') + '" placeholder="https://..." /></div>' +
+                  '<div class="studio-form-group"><label class="studio-label">CTA Text</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="ctaText" value="' + escapeHtml(rd.ctaText || 'Official documentation') + '" /></div>';
+              }
+
+              html += '</div>';
+            });
+            html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-doc">+ Add Documentation</button></div></div>';
+            break;
+
+          default:
+            html += '<div style="color:var(--studio-text-muted);font-size:12px">Block fields for ' + escapeHtml(block.type) + '</div>';
+            break;
+        }
+
+        return html;
+      }
+
+      // ── Attach Event Listeners to Block Fields ──────────
+      function attachBlockListeners(bBody, sec, block) {
+        var d = block.data;
+
+        // 1. Direct field inputs
+        bBody.querySelectorAll('[data-field]').forEach(function(input) {
+          var field = input.getAttribute('data-field');
+          input.addEventListener('input', function(e) {
+            d[field] = e.target.value;
+            calculateReadingTime();
+            triggerAutosave();
+          });
+        });
+
+        // 2. Array primitive fields (e.g. paragraphs)
+        bBody.querySelectorAll('[data-array-field]').forEach(function(input) {
+          var field = input.getAttribute('data-array-field');
+          var idx = parseInt(input.getAttribute('data-array-idx'), 10);
+          input.addEventListener('input', function(e) {
+            if (Array.isArray(d[field])) {
+              d[field][idx] = e.target.value;
+              calculateReadingTime();
+              triggerAutosave();
+            }
+          });
+        });
+
+        // 3. Array of objects fields (e.g. steps, items, columns)
+        bBody.querySelectorAll('[data-array-obj]').forEach(function(input) {
+          var arrayName = input.getAttribute('data-array-obj');
+          var itemId = input.getAttribute('data-item-id');
+          var prop = input.getAttribute('data-prop');
+          input.addEventListener('input', function(e) {
+            var arr = d[arrayName];
+            if (Array.isArray(arr)) {
+              var target = arr.find(function(it) { return it.id === itemId; });
+              if (target) {
+                target[prop] = e.target.value;
+                calculateReadingTime();
+                triggerAutosave();
+              }
+            }
+          });
+        });
+
+        // 4. Nested sub-items
+        bBody.querySelectorAll('[data-nested-sub="true"]').forEach(function(input) {
+          var parentId = input.getAttribute('data-parent-id');
+          var subId = input.getAttribute('data-sub-id');
+          input.addEventListener('input', function(e) {
+            var main = (d.items || []).find(function(m) { return m.id === parentId; });
+            if (main && Array.isArray(main.children)) {
+              var sub = main.children.find(function(s) { return s.id === subId; });
+              if (sub) {
+                sub.text = e.target.value;
+                calculateReadingTime();
+                triggerAutosave();
+              }
+            }
+          });
+        });
+
+        // 5. Image sub-fields (alt, caption)
+        bBody.querySelectorAll('[data-img-subfield]').forEach(function(input) {
+          var sub = input.getAttribute('data-img-subfield');
+          var propPrefix = input.getAttribute('data-img-prop');
+          input.addEventListener('input', function(e) {
+            if (propPrefix === 'imageSrc' || propPrefix === 'src') {
+              d[sub] = e.target.value;
+            } else if (propPrefix.startsWith('img') && propPrefix.length === 4) {
+              // e.g. img1, img2, img3
+              d[propPrefix + (sub === 'alt' ? 'Alt' : 'Caption')] = e.target.value;
+            } else if (propPrefix.startsWith('gcard_')) {
+              var cardId = propPrefix.replace('gcard_', '');
+              var card = (d.cards || []).find(function(c) { return c.id === cardId; });
+              if (card) card[sub] = e.target.value;
+            }
+            calculateReadingTime();
+            triggerAutosave();
+          });
+        });
+
+        // 6. External URL input for images
+        bBody.querySelectorAll('[data-ext-url-input]').forEach(function(input) {
+          var propPrefix = input.getAttribute('data-img-prop');
+          input.addEventListener('change', function(e) {
+            var url = (e.target.value || '').trim();
+            if (!url) return;
+            applyImageUrl(d, propPrefix, url);
+            renderSections();
+            triggerAutosave();
+          });
+        });
+
+        // 7. Table Builder cell inputs
+        bBody.querySelectorAll('[data-table-header]').forEach(function(input) {
+          var colId = input.getAttribute('data-table-header');
+          input.addEventListener('input', function(e) {
+            var col = (d.columns || []).find(function(c) { return c.id === colId; });
+            if (col) {
+              col.label = e.target.value;
+              triggerAutosave();
+            }
+          });
+        });
+
+        bBody.querySelectorAll('[data-table-row]').forEach(function(input) {
+          var rowId = input.getAttribute('data-table-row');
+          var colId = input.getAttribute('data-table-col');
+          input.addEventListener('input', function(e) {
+            var row = (d.rows || []).find(function(r) { return r.id === rowId; });
+            if (row) {
+              row.cells = row.cells || {};
+              row.cells[colId] = e.target.value;
+              calculateReadingTime();
+              triggerAutosave();
+            }
+          });
+        });
+
+        // 8. Trial Builder inputs
+        bBody.querySelectorAll('[data-trial-q]').forEach(function(input) {
+          var qId = input.getAttribute('data-q-id');
+          var prop = input.getAttribute('data-trial-q');
+          input.addEventListener('input', function(e) {
+            var q = (d.questions || []).find(function(it) { return it.id === qId; });
+            if (q) {
+              q[prop === 'text' ? 'question' : prop] = e.target.value;
+              calculateReadingTime();
+              triggerAutosave();
+            }
+          });
+        });
+
+        bBody.querySelectorAll('[data-trial-ans]').forEach(function(input) {
+          var qId = input.getAttribute('data-q-id');
+          var ansId = input.getAttribute('data-ans-id');
+          input.addEventListener('input', function(e) {
+            var q = (d.questions || []).find(function(it) { return it.id === qId; });
+            if (q && Array.isArray(q.answers)) {
+              var ans = q.answers.find(function(a) { return a.id === ansId; });
+              if (ans) {
+                ans.text = e.target.value;
+                calculateReadingTime();
+                triggerAutosave();
+              }
+            }
+          });
+        });
+
+        // 9. Related Docs Select dropdown
+        bBody.querySelectorAll('[data-doc-select-slug]').forEach(function(select) {
+          var docId = select.getAttribute('data-doc-select-slug');
+          select.addEventListener('change', function(e) {
+            var slug = e.target.value;
+            var docItem = (d.items || []).find(function(it) { return it.id === docId; });
+            if (docItem) {
+              var found = (window.STUDIO_PUBLISHED_ARTICLES || []).find(function(a) { return a.slug === slug; });
+              if (found) {
+                docItem.title = found.title;
+                docItem.slug = found.slug;
+                docItem.url = '/article/' + found.slug;
+                docItem.ctaText = 'Study scroll';
+              }
+              renderSections();
+              triggerAutosave();
+            }
+          });
+        });
+
+        // 10. Drag & Drop support for image dropzones inside block
+        bBody.querySelectorAll('.studio-img-dropzone').forEach(function(dz) {
+          var propPrefix = dz.getAttribute('data-img-prop');
+          dz.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dz.style.borderColor = 'var(--studio-gold)';
+          });
+          dz.addEventListener('dragleave', function(e) {
+            e.stopPropagation();
+            dz.style.borderColor = '';
+          });
+          dz.addEventListener('drop', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            dz.style.borderColor = '';
+            var file = e.dataTransfer.files && e.dataTransfer.files[0];
+            if (file && file.type.startsWith('image/')) {
+              showToast('Uploading image...', 'saving');
+              uploadImageFile(file, function(err, url) {
+                if (err) {
+                  showToast('Upload failed: ' + err.message, 'error');
+                } else {
+                  showToast('Image uploaded: ' + file.name, 'success');
+                  applyImageUrl(d, propPrefix, url);
+                  renderSections();
+                  triggerAutosave();
+                }
+              });
+            }
+          });
+        });
+
+        // 11. Unified Action Delegator for buttons
+        bBody.addEventListener('click', function(e) {
+          if (activeSectionId !== sec.id) {
+            setActiveSection(sec.id);
+          }
+          var actBtn = e.target.closest('[data-act]');
+          if (!actBtn) return;
+          var act = actBtn.getAttribute('data-act');
+
+          switch (act) {
+            // Optional Fields
+            case 'add-field':
+              var optField = actBtn.getAttribute('data-opt-field');
+              d[optField] = '';
+              renderSections();
+              triggerAutosave();
+              var blockEl = document.querySelector('[data-block-id="' + block.id + '"]');
+              if (blockEl) {
+                var newInput = blockEl.querySelector('[data-field="' + optField + '"]');
+                if (newInput) newInput.focus();
+              }
+              break;
+
+            case 'remove-field':
+              var remField = actBtn.getAttribute('data-opt-field');
+              delete d[remField];
+              renderSections();
+              triggerAutosave();
+              break;
+
+            // Paragraphs
+            case 'add-paragraph':
+              d.paragraphs = d.paragraphs || [];
+              d.paragraphs.push('');
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-paragraph':
+              var pIdx = parseInt(actBtn.getAttribute('data-idx'), 10);
+              if (d.paragraphs && d.paragraphs.length > 1) {
+                d.paragraphs.splice(pIdx, 1);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Bullets
+            case 'add-bullet':
+              d.items = d.items || [];
+              d.items.push({ id: uid('item'), text: '' });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-bullet':
+              var bId = actBtn.getAttribute('data-item-id');
+              if (d.items && d.items.length > 1) {
+                d.items = d.items.filter(function(it) { return it.id !== bId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Nested Bullets
+            case 'add-nested-main':
+              d.items = d.items || [];
+              d.items.push({ id: uid('main'), text: '', children: [] });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-nested-main':
+              var mId = actBtn.getAttribute('data-item-id');
+              if (d.items && d.items.length > 1) {
+                d.items = d.items.filter(function(m) { return m.id !== mId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'add-nested-sub':
+              var pId = actBtn.getAttribute('data-parent-id');
+              var parent = (d.items || []).find(function(m) { return m.id === pId; });
+              if (parent) {
+                parent.children = parent.children || [];
+                parent.children.push({ id: uid('sub'), text: '' });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'del-nested-sub':
+              var parentId = actBtn.getAttribute('data-parent-id');
+              var subId = actBtn.getAttribute('data-sub-id');
+              var pMain = (d.items || []).find(function(m) { return m.id === parentId; });
+              if (pMain && pMain.children) {
+                pMain.children = pMain.children.filter(function(s) { return s.id !== subId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Numbered Steps
+            case 'add-step':
+              d.steps = d.steps || [];
+              d.steps.push({ id: uid('step'), badge: String(d.steps.length + 1).padStart(2, '0'), title: '', text: '' });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-step':
+              var sId = actBtn.getAttribute('data-step-id');
+              if (d.steps && d.steps.length > 1) {
+                d.steps = d.steps.filter(function(s) { return s.id !== sId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'dup-step':
+              var stId = actBtn.getAttribute('data-step-id');
+              var sIdx = (d.steps || []).findIndex(function(s) { return s.id === stId; });
+              if (sIdx !== -1) {
+                var copyS = JSON.parse(JSON.stringify(d.steps[sIdx]));
+                copyS.id = uid('step');
+                d.steps.splice(sIdx + 1, 0, copyS);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'move-step':
+              var mvId = actBtn.getAttribute('data-step-id');
+              var dir = parseInt(actBtn.getAttribute('data-dir'), 10);
+              var curIdx = (d.steps || []).findIndex(function(s) { return s.id === mvId; });
+              if (curIdx !== -1) {
+                var tgtIdx = curIdx + dir;
+                if (tgtIdx >= 0 && tgtIdx < d.steps.length) {
+                  var tmp = d.steps[curIdx];
+                  d.steps[curIdx] = d.steps[tgtIdx];
+                  d.steps[tgtIdx] = tmp;
+                  renderSections();
+                  triggerAutosave();
+                }
+              }
+              break;
+
+            // Image Upload & Removal
+            case 'trigger-upload':
+              var prop = actBtn.getAttribute('data-img-prop');
+              openImageUploader(function(url, filename) {
+                applyImageUrl(d, prop, url);
+                renderSections();
+                triggerAutosave();
+              });
+              break;
+
+            case 'remove-image':
+              var remProp = actBtn.getAttribute('data-img-prop');
+              applyImageUrl(d, remProp, '');
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'toggle-ext-url':
+              var wrap = actBtn.parentElement.querySelector('.ext-url-input-wrap');
+              if (wrap) {
+                wrap.style.display = wrap.style.display === 'none' ? 'block' : 'none';
+              }
+              break;
+
+            // Gallery Scroll Cards
+            case 'add-gallery-card':
+              d.cards = d.cards || [];
+              d.cards.push({ id: uid('gcard'), src: '', alt: '', caption: '' });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-gallery-card':
+              var gcId = actBtn.getAttribute('data-card-id');
+              d.cards = (d.cards || []).filter(function(c) { return c.id !== gcId; });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'dup-gallery-card':
+              var gcDupId = actBtn.getAttribute('data-card-id');
+              var cIdx = (d.cards || []).findIndex(function(c) { return c.id === gcDupId; });
+              if (cIdx !== -1) {
+                var copyCard = JSON.parse(JSON.stringify(d.cards[cIdx]));
+                copyCard.id = uid('gcard');
+                d.cards.splice(cIdx + 1, 0, copyCard);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Comparison Items
+            case 'add-col-item':
+              var side = actBtn.getAttribute('data-side');
+              var key = side === '1' ? 'col1Items' : 'col2Items';
+              d[key] = d[key] || [];
+              d[key].push({ id: uid('cmp'), text: '' });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-col-item':
+              var dSide = actBtn.getAttribute('data-side');
+              var dKey = dSide === '1' ? 'col1Items' : 'col2Items';
+              var cItemId = actBtn.getAttribute('data-item-id');
+              d[dKey] = (d[dKey] || []).filter(function(it) { return it.id !== cItemId; });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            // Table Builder
+            case 'add-table-col':
+              d.columns = d.columns || [];
+              var newColId = uid('col');
+              d.columns.push({ id: newColId, label: 'Column ' + (d.columns.length + 1) });
+              (d.rows || []).forEach(function(r) {
+                r.cells = r.cells || {};
+                r.cells[newColId] = '';
+              });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-table-col':
+              var delColId = actBtn.getAttribute('data-col-id');
+              if (d.columns && d.columns.length > 1) {
+                d.columns = d.columns.filter(function(c) { return c.id !== delColId; });
+                (d.rows || []).forEach(function(r) {
+                  if (r.cells) delete r.cells[delColId];
+                });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'add-table-row':
+              d.rows = d.rows || [];
+              var newCells = {};
+              (d.columns || []).forEach(function(c) { newCells[c.id] = ''; });
+              d.rows.push({ id: uid('row'), cells: newCells });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-table-row':
+              var delRowId = actBtn.getAttribute('data-row-id');
+              if (d.rows && d.rows.length > 1) {
+                d.rows = d.rows.filter(function(r) { return r.id !== delRowId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Callout Swatch Select
+            case 'select-callout':
+              d.calloutType = actBtn.getAttribute('data-val');
+              bBody.querySelectorAll('.callout-swatch-item').forEach(function(sw) {
+                sw.classList.toggle('active', sw.getAttribute('data-val') === d.calloutType);
+              });
+              triggerAutosave();
+              break;
+
+            // FAQ
+            case 'add-faq':
+              d.items = d.items || [];
+              d.items.push({ id: uid('faq'), question: '', answer: '' });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-faq':
+              var fId = actBtn.getAttribute('data-item-id');
+              if (d.items && d.items.length > 1) {
+                d.items = d.items.filter(function(it) { return it.id !== fId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'dup-faq':
+              var fDupId = actBtn.getAttribute('data-item-id');
+              var fIdx = (d.items || []).findIndex(function(it) { return it.id === fDupId; });
+              if (fIdx !== -1) {
+                var copyFaq = JSON.parse(JSON.stringify(d.items[fIdx]));
+                copyFaq.id = uid('faq');
+                d.items.splice(fIdx + 1, 0, copyFaq);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Article Trial
+            case 'add-trial-q':
+              d.questions = d.questions || [];
+              d.questions.push({
+                id: uid('q'),
+                question: '',
+                answers: [
+                  { id: uid('ans'), text: '', correct: true },
+                  { id: uid('ans'), text: '', correct: false }
+                ],
+                explanation: ''
+              });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-trial-q':
+              var tqId = actBtn.getAttribute('data-q-id');
+              if (d.questions && d.questions.length > 1) {
+                d.questions = d.questions.filter(function(q) { return q.id !== tqId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'dup-trial-q':
+              var tqDupId = actBtn.getAttribute('data-q-id');
+              var qIdx = (d.questions || []).findIndex(function(q) { return q.id === tqDupId; });
+              if (qIdx !== -1) {
+                var copyQ = JSON.parse(JSON.stringify(d.questions[qIdx]));
+                copyQ.id = uid('q');
+                (copyQ.answers || []).forEach(function(a) { a.id = uid('ans'); });
+                d.questions.splice(qIdx + 1, 0, copyQ);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'add-trial-ans':
+              var aQId = actBtn.getAttribute('data-q-id');
+              var targetQ = (d.questions || []).find(function(q) { return q.id === aQId; });
+              if (targetQ) {
+                targetQ.answers = targetQ.answers || [];
+                targetQ.answers.push({ id: uid('ans'), text: '', correct: false });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'del-trial-ans':
+              var dQId = actBtn.getAttribute('data-q-id');
+              var dAnsId = actBtn.getAttribute('data-ans-id');
+              var qItem = (d.questions || []).find(function(q) { return q.id === dQId; });
+              if (qItem && qItem.answers && qItem.answers.length > 2) {
+                qItem.answers = qItem.answers.filter(function(a) { return a.id !== dAnsId; });
+                if (!qItem.answers.some(function(a) { return a.correct; })) {
+                  qItem.answers[0].correct = true;
+                }
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'mark-correct':
+              var cQId = actBtn.getAttribute('data-q-id');
+              var cAnsId = actBtn.getAttribute('data-ans-id');
+              var qObj = (d.questions || []).find(function(q) { return q.id === cQId; });
+              if (qObj && Array.isArray(qObj.answers)) {
+                qObj.answers.forEach(function(a) {
+                  a.correct = (a.id === cAnsId);
+                });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Key Takeaways
+            case 'add-takeaway':
+              d.items = d.items || [];
+              d.items.push({ id: uid('t'), term: '', desc: '' });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-takeaway':
+              var tId = actBtn.getAttribute('data-item-id');
+              if (d.items && d.items.length > 1) {
+                d.items = d.items.filter(function(it) { return it.id !== tId; });
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'dup-takeaway':
+              var tDupId = actBtn.getAttribute('data-item-id');
+              var tkIdx = (d.items || []).findIndex(function(it) { return it.id === tDupId; });
+              if (tkIdx !== -1) {
+                var copyTk = JSON.parse(JSON.stringify(d.items[tkIdx]));
+                copyTk.id = uid('t');
+                d.items.splice(tkIdx + 1, 0, copyTk);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            // Related Docs
+            case 'add-doc':
+              d.items = d.items || [];
+              d.items.push({ id: uid('rd'), type: 'internal', title: '', slug: '', url: '', ctaText: 'Study scroll' });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'del-doc':
+              var rdId = actBtn.getAttribute('data-item-id');
+              d.items = (d.items || []).filter(function(it) { return it.id !== rdId; });
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'dup-doc':
+              var rdDupId = actBtn.getAttribute('data-item-id');
+              var rdIdx = (d.items || []).findIndex(function(it) { return it.id === rdDupId; });
+              if (rdIdx !== -1) {
+                var copyDoc = JSON.parse(JSON.stringify(d.items[rdIdx]));
+                copyDoc.id = uid('rd');
+                d.items.splice(rdIdx + 1, 0, copyDoc);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'toggle-doc-type':
+              var tDocId = actBtn.getAttribute('data-doc-id');
+              var tVal = actBtn.getAttribute('data-val');
+              var docIt = (d.items || []).find(function(it) { return it.id === tDocId; });
+              if (docIt) {
+                docItemToggleType(docIt, tVal);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+          }
+        });
+      }
+
+      function docItemToggleType(docItem, typeVal) {
+        docItem.type = typeVal;
+        if (typeVal === 'internal') {
+          docItem.url = docItem.slug ? ('/article/' + docItem.slug) : '';
+          docItem.ctaText = 'Study scroll';
+        } else {
+          docItem.ctaText = 'Official documentation';
+        }
+      }
+
+      function applyImageUrl(dataObj, propPrefix, url) {
+        if (propPrefix === 'imageSrc') {
+          dataObj.imageSrc = url;
+        } else if (propPrefix === 'src') {
+          dataObj.src = url;
+        } else if (propPrefix === 'img1') {
+          dataObj.img1Src = url;
+        } else if (propPrefix === 'img2') {
+          dataObj.img2Src = url;
+        } else if (propPrefix === 'img3') {
+          dataObj.img3Src = url;
+        } else if (propPrefix.startsWith('gcard_')) {
+          var cardId = propPrefix.replace('gcard_', '');
+          var card = (dataObj.cards || []).find(function(c) { return c.id === cardId; });
+          if (card) card.src = url;
+        }
+      }
+
+      // ── Safe Section Activation (No DOM destruction) ─────
+      function setActiveSection(secId) {
+        if (activeSectionId === secId) return;
+        activeSectionId = secId;
+        var cards = document.querySelectorAll('.section-card');
+        for (var i = 0; i < cards.length; i++) {
+          var c = cards[i];
+          var isCardActive = c.getAttribute('data-sec-id') === secId;
+          c.classList.toggle('active-section', isCardActive);
+          var leftHeader = c.querySelector('.section-header-left');
+          if (leftHeader) {
+            var existingBadge = leftHeader.querySelector('.section-toc-badge');
+            if (isCardActive && !existingBadge) {
+              var badge = document.createElement('span');
+              badge.className = 'section-toc-badge';
+              badge.textContent = 'TOC ACTIVE';
+              leftHeader.appendChild(badge);
+            } else if (!isCardActive && existingBadge) {
+              existingBadge.remove();
+            }
+          }
+        }
+      }
+
+      // ── Render Sections & Blocks (Center Column) ────────
+      function renderSections() {
+        var container = document.getElementById('sections-container');
+        var trailingZone = document.getElementById('trailing-add-section-zone');
+        var counterBadge = document.getElementById('section-counter-badge');
+
+        if (!container) return;
+        container.innerHTML = '';
+
+        var totalSections = currentDoc.sections.length;
+        if (counterBadge) counterBadge.textContent = totalSections + (totalSections === 1 ? ' Section' : ' Sections');
+
+        // ZERO SECTIONS: render ONLY empty state, no trailing button
+        if (totalSections === 0) {
+          if (trailingZone) trailingZone.style.display = 'none';
+
+          var emptyState = document.createElement('div');
+          emptyState.className = 'empty-scroll-state';
+          emptyState.innerHTML = 
+            '<div class="empty-scroll-icon">✦</div>' +
+            '<h3 class="empty-scroll-title">BEGIN YOUR SCROLL</h3>' +
+            '<p class="empty-scroll-desc">Add your first section to start building the article structure.</p>' +
+            '<button type="button" class="studio-btn studio-btn--primary" id="btn-add-first-section">✦ Add First Section</button>';
+
+          emptyState.querySelector('#btn-add-first-section').addEventListener('click', function() {
+            addSection('Primary Section');
+          });
+
+          container.appendChild(emptyState);
+          return;
+        }
+
+        // 1+ SECTIONS: show single trailing button, hide empty state
+        if (trailingZone) trailingZone.style.display = 'flex';
+
+        currentDoc.sections.forEach(function(sec, sIndex) {
+          var isFirst = sIndex === 0;
+          var isLast = sIndex === totalSections - 1;
+          var isActive = sec.id === activeSectionId;
+          var formattedNum = String(sIndex + 1).padStart(2, '0');
+
+          var card = document.createElement('div');
+          card.className = 'section-card' + (isActive ? ' active-section' : '');
+          card.id = 'section-card-' + sec.id;
+          card.setAttribute('data-sec-id', sec.id);
+
+          // Section Card Header
+          var header = document.createElement('div');
+          header.className = 'section-card-header';
+
+          header.innerHTML = 
+            '<div class="section-card-topbar">' +
+              '<div class="section-header-left">' +
+                '<span class="section-drag-handle" title="Drag to reorder section" draggable="true">⋮⋮</span>' +
+                '<span class="section-number">SECTION ' + formattedNum + '</span>' +
+                (isActive ? '<span class="section-toc-badge">TOC ACTIVE</span>' : '') +
+              '</div>' +
+              '<div class="section-header-actions">' +
+                '<button type="button" class="studio-btn studio-btn--sm" data-action="dup" title="Duplicate section">Duplicate</button>' +
+                '<button type="button" class="studio-btn studio-btn--sm" data-action="up" title="Move section up" ' + (isFirst ? 'disabled' : '') + '>↑ Move</button>' +
+                '<button type="button" class="studio-btn studio-btn--sm" data-action="down" title="Move section down" ' + (isLast ? 'disabled' : '') + '>↓ Move</button>' +
+                '<button type="button" class="studio-btn studio-btn--sm studio-btn--danger" data-action="del" title="Delete section">Delete</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="section-card-body-header">' +
+              '<div class="studio-form-group" style="margin-bottom:0">' +
+                '<label class="studio-label" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+                  '<span>SECTION TITLE</span>' +
+                  '<span class="section-anchor-chip">#' + (slugify(sec.title) || 'section') + '</span>' +
+                '</label>' +
+                '<input type="text" class="studio-input section-title-input" value="' + escapeHtml(sec.title) + '" placeholder="Section title..." />' +
+              '</div>' +
+            '</div>';
+
+          // Active Section Selection (Safe Activation - No DOM destruction)
+          card.addEventListener('click', function() {
+            if (activeSectionId !== sec.id) {
+              setActiveSection(sec.id);
+            }
+          });
+
+          card.addEventListener('focusin', function() {
+            if (activeSectionId !== sec.id) {
+              setActiveSection(sec.id);
+            }
+          });
+
+          // Title input
+          var titleInput = header.querySelector('.section-title-input');
+          titleInput.addEventListener('input', function(e) {
+            sec.title = e.target.value;
+            var anchorChip = header.querySelector('.section-anchor-chip');
+            if (anchorChip) anchorChip.textContent = '#' + (slugify(sec.title) || 'section');
+            triggerAutosave();
+          });
+
+          // Header action buttons
+          header.querySelector('[data-action="dup"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            duplicateSection(sec.id);
+          });
+          header.querySelector('[data-action="up"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            moveSection(sec.id, -1);
+          });
+          header.querySelector('[data-action="down"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            moveSection(sec.id, 1);
+          });
+          header.querySelector('[data-action="del"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            deleteSection(sec.id);
+          });
+
+          // Section Drag and Drop Reordering
+          var secHandle = header.querySelector('.section-drag-handle');
+          secHandle.addEventListener('dragstart', function(e) {
+            card.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'section', secId: sec.id }));
+            e.dataTransfer.effectAllowed = 'move';
+          });
+          secHandle.addEventListener('dragend', function() {
+            card.classList.remove('dragging');
+          });
+
+          card.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            card.classList.add('drag-over');
+          });
+
+          card.addEventListener('dragleave', function() {
+            card.classList.remove('drag-over');
+          });
+
+          card.addEventListener('drop', function(e) {
+            e.preventDefault();
+            card.classList.remove('drag-over');
+            try {
+              var payload = JSON.parse(e.dataTransfer.getData('text/plain'));
+              if (payload.source === 'section' && payload.secId !== sec.id) {
+                var srcIdx = currentDoc.sections.findIndex(function(s) { return s.id === payload.secId; });
+                var dstIdx = currentDoc.sections.findIndex(function(s) { return s.id === sec.id; });
+                if (srcIdx !== -1 && dstIdx !== -1) {
+                  var [moved] = currentDoc.sections.splice(srcIdx, 1);
+                  currentDoc.sections.splice(dstIdx, 0, moved);
+                  renderSections();
+                  triggerAutosave();
+                  showToast('Sections reordered');
+                }
+              }
+            } catch (err) {}
+          });
+
+          card.appendChild(header);
+
+          // Blocks Container
+          var blocksWrap = document.createElement('div');
+          blocksWrap.className = 'section-blocks-wrap';
+
+          if (sec.blocks.length === 0) {
+            // Empty Dropzone
+            var dropzone = document.createElement('div');
+            dropzone.className = 'section-empty-dropzone';
+            dropzone.innerHTML = 
+              '<div class="dropzone-icon">✧</div>' +
+              '<div class="dropzone-text">+ DROP BLOCK HERE</div>' +
+              '<div class="dropzone-sub">or choose one from Block Library</div>';
+
+            dropzone.addEventListener('dragover', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              dropzone.classList.add('drag-over');
+            });
+            dropzone.addEventListener('dragleave', function(e) {
+              e.stopPropagation();
+              dropzone.classList.remove('drag-over');
+            });
+            dropzone.addEventListener('drop', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              dropzone.classList.remove('drag-over');
+              handleBlockDrop(e, sec.id, 0);
+            });
+
+            blocksWrap.appendChild(dropzone);
+          } else {
+            // Render Block Cards
+            sec.blocks.forEach(function(b, bIndex) {
+              var isFirstBlock = bIndex === 0;
+              var isLastBlock = bIndex === sec.blocks.length - 1;
+              var blkDef = window.STUDIO_REGISTRY[b.type] || { label: b.type };
+              var glyph = BLOCK_GLYPHS[b.type] || '✦';
+
+              var bCard = document.createElement('div');
+              bCard.className = 'block-editor-card';
+              bCard.setAttribute('draggable', 'true');
+              bCard.setAttribute('data-sec-id', sec.id);
+              bCard.setAttribute('data-block-id', b.id);
+
+              var bHeader = document.createElement('div');
+              bHeader.className = 'block-editor-header';
+              bHeader.innerHTML = 
+                '<div class="block-header-title">' +
+                  '<span class="block-drag-handle" title="Drag to reorder or move across sections">⋮⋮</span>' +
+                  '<span style="font-family:var(--font-mono);font-size:12px;color:var(--studio-gold);opacity:0.9">' + glyph + '</span>' +
+                  '<span class="block-type-badge">' + escapeHtml(blkDef.label) + '</span>' +
+                '</div>' +
+                '<div class="block-header-actions">' +
+                  '<button type="button" class="studio-btn studio-btn--icon" data-action="dup" title="Duplicate block">⧉</button>' +
+                  '<button type="button" class="studio-btn studio-btn--icon" data-action="up" title="Move up" ' + (isFirstBlock ? 'disabled' : '') + '>▲</button>' +
+                  '<button type="button" class="studio-btn studio-btn--icon" data-action="down" title="Move down" ' + (isLastBlock ? 'disabled' : '') + '>▼</button>' +
+                  '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-action="del" title="Delete block">×</button>' +
+                '</div>';
+
+              bHeader.querySelector('[data-action="dup"]').addEventListener('click', function(e) {
+                e.stopPropagation();
+                duplicateBlock(sec.id, b.id);
+              });
+              bHeader.querySelector('[data-action="up"]').addEventListener('click', function(e) {
+                e.stopPropagation();
+                moveBlock(sec.id, b.id, -1);
+              });
+              bHeader.querySelector('[data-action="down"]').addEventListener('click', function(e) {
+                e.stopPropagation();
+                moveBlock(sec.id, b.id, 1);
+              });
+              bHeader.querySelector('[data-action="del"]').addEventListener('click', function(e) {
+                e.stopPropagation();
+                deleteBlock(sec.id, b.id);
+              });
+
+              // Block Drag & Drop
+              bCard.addEventListener('dragstart', function(e) {
+                bCard.classList.add('dragging');
+                draggedBlockData = { source: 'block', secId: sec.id, blockId: b.id };
+                e.dataTransfer.setData('text/plain', JSON.stringify(draggedBlockData));
+                e.dataTransfer.effectAllowed = 'move';
+              });
+
+              bCard.addEventListener('dragend', function() {
+                bCard.classList.remove('dragging');
+              });
+
+              bCard.addEventListener('dragover', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var rect = bCard.getBoundingClientRect();
+                var relY = e.clientY - rect.top;
+                if (relY < rect.height / 2) {
+                  bCard.classList.add('drag-target-above');
+                  bCard.classList.remove('drag-target-below');
+                } else {
+                  bCard.classList.add('drag-target-below');
+                  bCard.classList.remove('drag-target-above');
+                }
+              });
+
+              bCard.addEventListener('dragleave', function() {
+                bCard.classList.remove('drag-target-above');
+                bCard.classList.remove('drag-target-below');
+              });
+
+              bCard.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                var insertIdx = bIndex;
+                if (bCard.classList.contains('drag-target-below')) insertIdx = bIndex + 1;
+                bCard.classList.remove('drag-target-above');
+                bCard.classList.remove('drag-target-below');
+                handleBlockDrop(e, sec.id, insertIdx);
+              });
+
+              // Block Fields Body
+              var bBody = document.createElement('div');
+              bBody.className = 'block-editor-body';
+              bBody.innerHTML = renderBlockFields(sec, b);
+
+              // Attach Structured Field Event Handlers
+              attachBlockListeners(bBody, sec, b);
+
+              bCard.appendChild(bHeader);
+              bCard.appendChild(bBody);
+              blocksWrap.appendChild(bCard);
+            });
+
+            // Container-level drop listener to append at end
+            blocksWrap.addEventListener('dragover', function(e) {
+              e.preventDefault();
+            });
+            blocksWrap.addEventListener('drop', function(e) {
+              if (e.target === blocksWrap) {
+                e.preventDefault();
+                handleBlockDrop(e, sec.id, sec.blocks.length);
+              }
+            });
+          }
+
+          card.appendChild(blocksWrap);
+          container.appendChild(card);
+        });
+      }
+
+      function handleBlockDrop(e, targetSecId, insertIdx) {
+        try {
+          var payload = JSON.parse(e.dataTransfer.getData('text/plain') || '{}');
+          if (payload.source === 'library') {
+            var def = window.STUDIO_REGISTRY[payload.type];
+            if (!def) return;
+            var targetSec = currentDoc.sections.find(function(s) { return s.id === targetSecId; });
+            if (!targetSec) return;
+
+            var newBlock = {
+              id: uid('blk'),
+              type: payload.type,
+              data: JSON.parse(JSON.stringify(def.defaultData))
+            };
+            if (insertIdx !== undefined && insertIdx >= 0) {
+              targetSec.blocks.splice(insertIdx, 0, newBlock);
+            } else {
+              targetSec.blocks.push(newBlock);
+            }
+            activeSectionId = targetSec.id;
+            renderSections();
+            triggerAutosave();
+            showToast('Inserted block: ' + def.label);
+          } else if (payload.source === 'block') {
+            moveBlockToSection(payload.secId, payload.blockId, targetSecId, insertIdx);
+          }
+        } catch (err) {}
+      }
+
+      // Trailing Add Section Event
+      document.getElementById('btn-add-section-trailing').addEventListener('click', function() {
+        addSection();
+      });
+
+      // ── Settings Sync ───────────────────────────────────
+      function syncMetaInputsFromState() {
+        var m = currentDoc.meta;
+        document.getElementById('meta-title').value = m.title || '';
+        document.getElementById('meta-desc').value = m.description || '';
+        document.getElementById('meta-author').value = m.author || 'Oracle of Orgs';
+        document.getElementById('meta-category').value = m.category || 'Architecture';
+        document.getElementById('meta-rank').value = m.rank || 'Mechanic';
+        document.getElementById('meta-aether').value = m.aetherReward || 120;
+        document.getElementById('meta-featured').checked = Boolean(m.featured);
+        document.getElementById('meta-wide').checked = m.wide !== false;
+        document.getElementById('meta-cover').value = m.cover || '';
+        document.getElementById('meta-cover-caption').value = m.coverCaption || '';
+
+        // Cover Caption visibility based on cover existence
+        var capGroup = document.getElementById('cover-caption-group');
+        if (capGroup) capGroup.style.display = m.cover ? 'flex' : 'none';
+
+        // Slug
+        document.getElementById('meta-slug').value = currentDoc.slug || '';
+        document.getElementById('slug-text-preview').textContent = currentDoc.slug || 'untitled-scroll';
+
+        // Status Segmented Control
+        var segBtns = document.querySelectorAll('#status-segmented .segment-btn');
+        segBtns.forEach(function(btn) {
+          if (btn.getAttribute('data-status') === m.status) {
+            btn.classList.add('active');
+          } else {
+            btn.classList.remove('active');
+          }
+        });
+        updatePublishButtonState();
+
+        // Tags
+        renderTagChips();
+
+        // Reading Time
+        calculateReadingTime();
+      }
+
+      function syncMetaStateFromInputs() {
+        var m = currentDoc.meta;
+        m.title = document.getElementById('meta-title').value;
+        currentDoc.slug = document.getElementById('meta-slug').value;
+        m.description = document.getElementById('meta-desc').value;
+        m.author = document.getElementById('meta-author').value;
+        m.category = document.getElementById('meta-category').value;
+        m.rank = document.getElementById('meta-rank').value;
+        m.aetherReward = parseInt(document.getElementById('meta-aether').value, 10) || 120;
+        m.cover = (document.getElementById('meta-cover').value || '').trim();
+        m.coverCaption = (document.getElementById('meta-cover-caption').value || '').trim();
+        m.featured = document.getElementById('meta-featured').checked;
+        m.wide = document.getElementById('meta-wide').checked;
+
+        var capGroup = document.getElementById('cover-caption-group');
+        if (capGroup) capGroup.style.display = m.cover ? 'flex' : 'none';
+
+        calculateReadingTime();
+      }
+
+      // Title & Slug Auto Sync (Rule 5)
+      document.getElementById('meta-title').addEventListener('input', function(e) {
+        currentDoc.meta.title = e.target.value;
+        if (!slugManual && !isExistingPublished) {
+          currentDoc.slug = slugify(e.target.value);
+          document.getElementById('meta-slug').value = currentDoc.slug;
+          document.getElementById('slug-text-preview').textContent = currentDoc.slug || 'untitled-scroll';
+        }
+        triggerAutosave();
+      });
+
+      document.getElementById('slug-toggle-btn').addEventListener('click', function() {
+        slugManual = !slugManual;
+        var btn = document.getElementById('slug-toggle-btn');
+        var preview = document.getElementById('slug-text-preview');
+        var input = document.getElementById('meta-slug');
+
+        if (slugManual) {
+          btn.textContent = '🔓 Edit';
+          preview.style.display = 'none';
+          input.style.display = 'block';
+          input.focus();
+        } else {
+          btn.textContent = '🔒 Auto';
+          if (!isExistingPublished) {
+            currentDoc.slug = slugify(currentDoc.meta.title);
+          }
+          input.value = currentDoc.slug;
+          preview.textContent = currentDoc.slug || 'untitled-scroll';
+          input.style.display = 'none';
+          preview.style.display = 'block';
+          triggerAutosave();
+        }
+      });
+
+      document.getElementById('meta-slug').addEventListener('input', function(e) {
+        currentDoc.slug = slugify(e.target.value);
+        e.target.value = currentDoc.slug;
+        document.getElementById('slug-text-preview').textContent = currentDoc.slug || 'untitled-scroll';
+        triggerAutosave();
+      });
+
+      // Status Segmented Control Click
+      document.querySelectorAll('#status-segmented .segment-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+          var val = btn.getAttribute('data-status');
+          currentDoc.meta.status = val;
+          document.querySelectorAll('#status-segmented .segment-btn').forEach(function(b) {
+            b.classList.toggle('active', b === btn);
+          });
+          updatePublishButtonState();
+          triggerAutosave();
+          showToast('Status set to: ' + val.toUpperCase());
+        });
+      });
+
+      function updatePublishButtonState() {
+        var btnPublish = document.getElementById('btn-publish');
+        if (!btnPublish) return;
+        if (currentDoc.meta.status !== 'published') {
+          btnPublish.style.opacity = '0.45';
+          btnPublish.style.cursor = 'not-allowed';
+          btnPublish.title = 'Set status to Published before publishing';
+        } else {
+          btnPublish.style.opacity = '1';
+          btnPublish.style.cursor = 'pointer';
+          btnPublish.title = 'Publish article to src/articles';
+        }
+      }
+
+      // ── Tag Chips Component ─────────────────────────────
+      function renderTagChips() {
+        var container = document.getElementById('tag-chips-container');
+        var inlineInput = document.getElementById('tag-inline-input');
+        if (!container || !inlineInput) return;
+
+        container.querySelectorAll('.tag-chip').forEach(function(c) { c.remove(); });
+
+        (currentDoc.meta.tags || []).forEach(function(tag, idx) {
+          var chip = document.createElement('span');
+          chip.className = 'tag-chip';
+          chip.innerHTML = '<span>' + escapeHtml(tag) + '</span><span class="tag-chip-remove" data-idx="' + idx + '">×</span>';
+
+          chip.querySelector('.tag-chip-remove').addEventListener('click', function(e) {
+            e.stopPropagation();
+            currentDoc.meta.tags.splice(idx, 1);
+            renderTagChips();
+            triggerAutosave();
+          });
+
+          container.insertBefore(chip, inlineInput);
+        });
+      }
+
+      function addTagsFromString(rawText) {
+        if (!rawText) return;
+        var existingLower = (currentDoc.meta.tags || []).map(function(t) { return t.toLowerCase(); });
+        var parts = rawText.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
+
+        parts.forEach(function(part) {
+          if (!existingLower.includes(part.toLowerCase())) {
+            currentDoc.meta.tags.push(part);
+            existingLower.push(part.toLowerCase());
+          }
+        });
+
+        renderTagChips();
+        triggerAutosave();
+      }
+
+      var tagInput = document.getElementById('tag-inline-input');
+      tagInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          var val = tagInput.value.trim().replace(/^,|,$/g, '');
+          if (val) {
+            addTagsFromString(val);
+            tagInput.value = '';
+          }
+        } else if (e.key === 'Backspace' && !tagInput.value) {
+          if (currentDoc.meta.tags.length > 0) {
+            currentDoc.meta.tags.pop();
+            renderTagChips();
+            triggerAutosave();
+          }
+        }
+      });
+
+      tagInput.addEventListener('paste', function(e) {
+        e.preventDefault();
+        var paste = (e.clipboardData || window.clipboardData).getData('text');
+        addTagsFromString(paste);
+      });
+
+      // ── Category Combobox ───────────────────────────────
+      function initCategoryCombobox() {
+        var input = document.getElementById('meta-category');
+        var dropdown = document.getElementById('category-dropdown');
+        if (!input || !dropdown) return;
+
+        var publishedCats = window.STUDIO_EXISTING_CATEGORIES || [];
+
+        function renderDropdown(filterText) {
+          dropdown.innerHTML = '';
+          var q = (filterText || '').trim().toLowerCase();
+          var matches = publishedCats.filter(function(cat) {
+            return !q || cat.toLowerCase().includes(q);
+          });
+
+          if (matches.length === 0) {
+            dropdown.style.display = 'none';
+            return;
+          }
+
+          matches.forEach(function(cat) {
+            var item = document.createElement('div');
+            item.className = 'combobox-item';
+            item.textContent = cat;
+            item.addEventListener('mousedown', function(e) {
+              e.preventDefault();
+              input.value = cat;
+              currentDoc.meta.category = cat;
+              dropdown.style.display = 'none';
+              triggerAutosave();
+            });
+            dropdown.appendChild(item);
+          });
+
+          dropdown.style.display = 'block';
+        }
+
+        input.addEventListener('focus', function() {
+          renderDropdown(input.value);
+        });
+
+        input.addEventListener('input', function() {
+          currentDoc.meta.category = input.value;
+          renderDropdown(input.value);
+          triggerAutosave();
+        });
+
+        input.addEventListener('blur', function() {
+          setTimeout(function() { dropdown.style.display = 'none'; }, 200);
+        });
+      }
+
+      // ── Advanced Settings Accordion ─────────────────────
+      document.getElementById('adv-settings-toggle').addEventListener('click', function() {
+        document.getElementById('adv-settings-box').classList.toggle('open');
+      });
+
+      // Cover upload handler
+      document.getElementById('btn-upload-cover').addEventListener('click', function() {
+        document.getElementById('cover-file-upload').click();
+      });
+
+      document.getElementById('cover-file-upload').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function(evt) {
+          fetch('/__article-studio/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ filename: file.name, base64: evt.target.result })
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            if (data.success && data.url) {
+              document.getElementById('meta-cover').value = data.url;
+              currentDoc.meta.cover = data.url;
+              document.getElementById('cover-caption-group').style.display = 'flex';
+              triggerAutosave();
+              showToast('Cover image uploaded: ' + file.name, 'success');
+            }
+          });
+        };
+        reader.readAsDataURL(file);
+      });
+
+      document.getElementById('meta-cover').addEventListener('input', function(e) {
+        var val = (e.target.value || '').trim();
+        currentDoc.meta.cover = val;
+        document.getElementById('cover-caption-group').style.display = val ? 'flex' : 'none';
+        triggerAutosave();
+      });
+
+      // Settings generic listeners
+      ['meta-desc', 'meta-author', 'meta-rank', 'meta-aether', 'meta-cover-caption', 'meta-featured', 'meta-wide'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('change', function() {
+            syncMetaStateFromInputs();
+            triggerAutosave();
+          });
+        }
+      });
+
+      // ── Autosave & Persistence ──────────────────────────
+      function saveDraft(quiet) {
+        syncMetaStateFromInputs();
+        setStatus('Saving…', 'saving');
+
+        return fetch('/__article-studio/draft', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentDoc)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            setStatus('Saved', 'saved');
+            isDirty = false;
+            try {
+              localStorage.setItem('covenArticleStudio:lastDraftId', currentDoc.studioId);
+            } catch (e) {}
+            if (!quiet) showToast('Draft saved successfully', 'success');
+          } else {
+            setStatus('Save failed', 'error');
+            showToast(data.error || 'Failed to save draft', 'error');
+          }
+        })
+        .catch(function(err) {
+          setStatus('Save error', 'error');
+          showToast('Save error: ' + err.message, 'error');
+        });
+      }
+
+      function triggerAutosave() {
+        isDirty = true;
+        setStatus('Unsaved changes', '');
+
+        if (autosaveTimer) clearTimeout(autosaveTimer);
+        autosaveTimer = setTimeout(function() {
+          saveDraft(true);
+        }, 800);
+      }
+
+      function setStatus(text, type) {
+        var indicator = document.getElementById('status-indicator');
+        var dot = document.getElementById('status-dot');
+        if (indicator) indicator.textContent = text;
+        if (dot) {
+          dot.className = 'status-dot' + (type ? ' ' + type : '');
+        }
+      }
+
+      function showToast(msg, type) {
+        var container = document.getElementById('toast-container');
+        if (!container) return;
+
+        var toast = document.createElement('div');
+        toast.className = 'studio-toast' + (type ? ' ' + type : '');
+        toast.innerHTML = '<span>✦</span><span>' + escapeHtml(msg) + '</span>';
+        container.appendChild(toast);
+
+        setTimeout(function() {
+          toast.style.opacity = '0';
+          toast.style.transform = 'translateY(10px)';
+          setTimeout(function() { toast.remove(); }, 300);
+        }, 3000);
+      }
+
+      // ── Delete Confirmation Modal ───────────────────────
+      function confirmDelete(title, message, onConfirm) {
+        var modal = document.getElementById('delete-confirm-modal');
+        var titleEl = document.getElementById('delete-modal-title');
+        var msgEl = document.getElementById('delete-modal-message');
+        if (!modal) {
+          if (confirm(message)) onConfirm();
+          return;
+        }
+
+        if (titleEl) titleEl.textContent = title;
+        if (msgEl) msgEl.textContent = message;
+        pendingDeleteCallback = onConfirm;
+        modal.style.display = 'flex';
+      }
+
+      document.getElementById('btn-cancel-delete').addEventListener('click', function() {
+        document.getElementById('delete-confirm-modal').style.display = 'none';
+        pendingDeleteCallback = null;
+      });
+
+      document.getElementById('btn-confirm-delete').addEventListener('click', function() {
+        document.getElementById('delete-confirm-modal').style.display = 'none';
+        if (typeof pendingDeleteCallback === 'function') {
+          pendingDeleteCallback();
+        }
+        pendingDeleteCallback = null;
+      });
+
+      // ── New Article Draft ───────────────────────────────
+      document.getElementById('btn-new').addEventListener('click', function() {
+        if (isDirty) {
+          confirmDelete(
+            'START NEW ARTICLE?',
+            'You have unsaved changes in the current scroll. Create a new blank draft?',
+            function() {
+              createNewArticle();
+            }
+          );
+        } else {
+          createNewArticle();
+        }
+      });
+
+      function createNewArticle() {
+        isExistingPublished = false;
+        slugManual = false;
+        var btn = document.getElementById('slug-toggle-btn');
+        if (btn) btn.textContent = '🔒 Auto';
+        document.getElementById('meta-slug').style.display = 'none';
+        document.getElementById('slug-text-preview').style.display = 'block';
+
+        currentDoc = {
+          version: 1,
+          studioId: uid('draft'),
+          slug: 'untitled-scroll',
+          meta: {
+            title: '',
+            description: '',
+            author: 'Oracle of Orgs',
+            category: 'Architecture',
+            tags: ['Architecture'],
+            rank: 'Mechanic',
+            readingTime: '1 min',
+            aetherReward: 120,
+            status: 'draft',
+            featured: false,
+            wide: true,
+            cover: '',
+            coverCaption: ''
+          },
+          sections: []
+        };
+        activeSectionId = null;
+        renderSections();
+        syncMetaInputsFromState();
+        saveDraft(true);
+        showToast('New article created', 'success');
+      }
+
+      // ── Drafts Modal ────────────────────────────────────
+      document.getElementById('btn-drafts').addEventListener('click', function() {
+        loadDraftsList();
+        document.getElementById('drafts-modal').style.display = 'flex';
+      });
+
+      document.getElementById('btn-close-drafts').addEventListener('click', function() {
+        document.getElementById('drafts-modal').style.display = 'none';
+      });
+
+      function loadDraftsList() {
+        var listContainer = document.getElementById('drafts-list');
+        listContainer.innerHTML = '<div style="color:var(--studio-text-muted);font-size:12px">Loading drafts…</div>';
+
+        fetch('/__article-studio/drafts')
+          .then(function(res) { return res.json(); })
+          .then(function(data) {
+            var drafts = data.drafts || [];
+            if (drafts.length === 0) {
+              listContainer.innerHTML = '<div style="color:var(--studio-text-muted);font-size:13px;padding:12px 0">No saved drafts found.</div>';
+              return;
+            }
+
+            listContainer.innerHTML = '';
+            drafts.forEach(function(d) {
+              var card = document.createElement('div');
+              card.style.cssText = 'background:rgba(21,18,28,0.8);border:1px solid var(--studio-border);border-radius:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px';
+              
+              var dateStr = new Date(d.updatedAt).toLocaleString();
+              card.innerHTML = 
+                '<div>' +
+                  '<div style="font-family:var(--font-display);font-size:13px;color:var(--studio-gold-bright);margin-bottom:3px">' + escapeHtml(d.title || 'Untitled Scroll') + '</div>' +
+                  '<div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-purple)">' + escapeHtml(d.category) + ' · ' + escapeHtml(d.status).toUpperCase() + ' · ' + dateStr + '</div>' +
+                '</div>' +
+                '<div style="display:flex;gap:6px">' +
+                  '<button type="button" class="studio-btn studio-btn--sm btn-open-draft" data-id="' + d.studioId + '">Open</button>' +
+                  '<button type="button" class="studio-btn studio-btn--sm studio-btn--danger btn-del-draft" data-id="' + d.studioId + '">✕</button>' +
+                '</div>';
+
+              card.querySelector('.btn-open-draft').addEventListener('click', function() {
+                openDraft(d.studioId);
+                document.getElementById('drafts-modal').style.display = 'none';
+              });
+
+              card.querySelector('.btn-del-draft').addEventListener('click', function() {
+                confirmDelete('DELETE DRAFT?', 'Permanently remove draft: "' + (d.title || 'Untitled') + '"?', function() {
+                  fetch('/__article-studio/drafts/' + d.studioId, { method: 'DELETE' })
+                    .then(function() {
+                      showToast('Draft deleted');
+                      loadDraftsList();
+                    });
+                });
+              });
+
+              listContainer.appendChild(card);
+            });
+          });
+      }
+
+      function openDraft(studioId) {
+        fetch('/__article-studio/drafts/' + studioId)
+          .then(function(res) { return res.json(); })
+          .then(function(doc) {
+            normalizeDocument(doc);
+            currentDoc = doc;
+            activeSectionId = doc.sections.length > 0 ? doc.sections[0].id : null;
+            renderSections();
+            syncMetaInputsFromState();
+            setStatus('Draft restored', 'saved');
+            showToast('Draft opened: ' + (doc.meta.title || 'Untitled'));
+          });
+      }
+
+      // ── Duplicate Article ───────────────────────────────
+      document.getElementById('btn-duplicate-article').addEventListener('click', function() {
+        var copyDoc = JSON.parse(JSON.stringify(currentDoc));
+        copyDoc.studioId = uid('draft');
+        copyDoc.slug = (copyDoc.slug || 'untitled') + '-copy';
+        copyDoc.meta.title = (copyDoc.meta.title || 'Untitled Scroll') + ' (Copy)';
+        copyDoc.meta.status = 'draft';
+
+        normalizeDocument(copyDoc);
+        currentDoc = copyDoc;
+        isExistingPublished = false;
+        activeSectionId = currentDoc.sections.length > 0 ? currentDoc.sections[0].id : null;
+        renderSections();
+        syncMetaInputsFromState();
+        saveDraft(false);
+        showToast('Article duplicated as new draft', 'success');
+      });
+
+      // ── Save Draft Button ───────────────────────────────
+      document.getElementById('btn-save-draft').addEventListener('click', function() {
+        saveDraft(false);
+      });
+
+      // ── Single-Tab Reusable Live Preview ────────────────
+      document.getElementById('btn-preview').addEventListener('click', function() {
+        syncMetaStateFromInputs();
+        showToast('Preparing preview…', 'saving');
+
+        fetch('/__article-studio/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentDoc)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            window.open('/template-preview/article', 'coven-article-preview');
+            showToast('Preview updated in tab', 'success');
+          } else {
+            showToast(data.error || 'Preview failed', 'error');
+          }
+        })
+        .catch(function(err) {
+          showToast('Preview error: ' + err.message, 'error');
+        });
+      });
+
+      // ── Publish Action ──────────────────────────────────
+      document.getElementById('btn-publish').addEventListener('click', function() {
+        syncMetaStateFromInputs();
+
+        // Validation
+        if (currentDoc.meta.status !== 'published') {
+          showToast('Set status to Published before publishing scroll', 'warning');
+          return;
+        }
+        if (!currentDoc.meta.title || !currentDoc.meta.title.trim()) {
+          showToast('Title is required to publish', 'error');
+          document.getElementById('meta-title').focus();
+          return;
+        }
+        if (currentDoc.sections.length === 0) {
+          showToast('Add at least one section before publishing', 'error');
+          return;
+        }
+
+        // Validate image alt texts and table minimums
+        var errors = [];
+        currentDoc.sections.forEach(function(sec, sIdx) {
+          (sec.blocks || []).forEach(function(blk, bIdx) {
+            var d = blk.data || {};
+            if ((d.src || d.imageSrc) && !d.alt) {
+              errors.push('Section ' + (sIdx + 1) + ' (' + blk.type + '): Alt text is required for image.');
+            }
+            if (blk.type === 'technical-table') {
+              if (!d.columns || d.columns.length === 0) {
+                errors.push('Section ' + (sIdx + 1) + ' (technical-table): At least 1 column is required.');
+              }
+            }
+          });
+        });
+
+        if (errors.length > 0) {
+          showToast(errors[0], 'error');
+          return;
+        }
+
+        showToast('Publishing scroll to archives…', 'saving');
+        fetch('/__article-studio/publish', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentDoc)
+        })
+        .then(function(res) { return res.json(); })
+        .then(function(data) {
+          if (data.success) {
+            isDirty = false;
+            isExistingPublished = true;
+            setStatus('Published', 'saved');
+            showToast('✦ Scroll published successfully: ' + data.slug, 'success');
+            setTimeout(function() {
+              window.open(data.articleUrl || ('/article/' + data.slug), 'coven-published-article');
+            }, 1000);
+          } else {
+            showToast('Publish failed: ' + (data.error || 'Server error'), 'error');
+          }
+        })
+        .catch(function(err) {
+          showToast('Publish error: ' + err.message, 'error');
+        });
+      });
+
+      // ── Initial Boot ────────────────────────────────────
+      initLibrary();
+      initCategoryCombobox();
+
+      // Restore last draft or create default
+      var lastDraftId = null;
+      try {
+        lastDraftId = localStorage.getItem('covenArticleStudio:lastDraftId');
+      } catch (e) {}
+
+      if (lastDraftId) {
+        fetch('/__article-studio/drafts/' + lastDraftId)
+          .then(function(res) {
+            if (res.ok) return res.json();
+            throw new Error('Not found');
+          })
+          .then(function(doc) {
+            normalizeDocument(doc);
+            currentDoc = doc;
+            activeSectionId = doc.sections.length > 0 ? doc.sections[0].id : null;
+            renderSections();
+            syncMetaInputsFromState();
+            setStatus('Draft restored', 'saved');
+          })
+          .catch(function() {
+            createNewArticle();
+          });
+      } else {
+        createNewArticle();
+      }
+
+      // Expose state globally for browser QA automation
+      window.currentDoc = currentDoc;
+      window.renderSections = renderSections;
+      window.renderMetadata = syncMetaInputsFromState;
+      window.calculateReadingTime = calculateReadingTime;
+      window.saveDraft = saveDraft;
+
+    })();
+  </script>
+
+</body>
+</html>
