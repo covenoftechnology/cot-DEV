@@ -1,3 +1,6 @@
+import type { ArticleDifficulty } from '../lib/article-taxonomy';
+
+export type { ArticleDifficulty };
 export type ArticleStatus = 'draft' | 'published' | 'hidden';
 
 export interface ArticleMeta {
@@ -5,6 +8,7 @@ export interface ArticleMeta {
   description: string;
   author: string;
   category: string;
+  difficulty?: ArticleDifficulty;
   tags: string[];
   rank?: string;
   meta?: string;

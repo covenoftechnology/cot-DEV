@@ -1,16 +1,33 @@
 ---
 import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES } from '../../lib/article-block-registry';
-import { getArticleCategories, getPublishedArticles } from '../../lib/articles';
+import {
+  ARTICLE_CATEGORIES,
+  ARTICLE_DIFFICULTIES,
+  ARTICLE_TAGS,
+  DIFFICULTY_GLYPHS,
+  mergeCategories,
+  mergeTags,
+} from '../../lib/article-taxonomy';
+import { getArticleCategories, getArticleTags, getPublishedArticles } from '../../lib/articles';
 import '../../styles/article-studio.css';
 
 const blockRegistry = ARTICLE_BLOCK_REGISTRY;
 const blockCategories = ARTICLE_BLOCK_CATEGORIES;
-const existingCategories = getArticleCategories();
+const publishedCats = getArticleCategories();
+const publishedTags = getArticleTags();
+const mergedCategories = mergeCategories(publishedCats);
+const mergedTags = mergeTags(publishedTags);
 const publishedArticles = getPublishedArticles().map(a => ({
   slug: a.slug,
   title: a.meta.title,
   category: a.meta.category,
+  difficulty: a.meta.difficulty,
+  tags: a.meta.tags,
 }));
+const canonicalCategories = ARTICLE_CATEGORIES;
+const canonicalDifficulties = ARTICLE_DIFFICULTIES;
+const canonicalTags = ARTICLE_TAGS;
+const difficultyGlyphs = DIFFICULTY_GLYPHS;
 const totalBlockCount = Object.keys(blockRegistry).length;
 ---
 
@@ -95,47 +112,89 @@ const totalBlockCount = Object.keys(blockRegistry).length;
 
       <!-- PRIMARY SETTINGS -->
       <div class="studio-form-group">
-        <label class="studio-label">Title *</label>
+        <label class="studio-label" for="meta-title">Title *</label>
         <input type="text" id="meta-title" class="studio-input" placeholder="Sacred Title of the Scroll..." autocomplete="off" />
       </div>
 
       <div class="studio-form-group">
-        <label class="studio-label">
-          <span>Slug</span>
-          <span id="slug-toggle-btn" style="cursor:pointer;color:var(--studio-gold-dim);font-size:10px" title="Toggle slug manual editing">🔒 Auto</span>
-        </label>
-        <div class="slug-display-bar">
-          <span class="slug-text-preview" id="slug-text-preview">untitled-scroll</span>
-          <input type="text" id="meta-slug" class="slug-edit-input" placeholder="custom-slug" autocomplete="off" />
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+          <label class="studio-label" for="meta-slug" style="margin-bottom:0">Slug</label>
+          <button type="button" class="studio-btn studio-btn--sm" id="btn-slug-generate" style="padding:2px 8px;font-size:10px;height:22px;letter-spacing:0.5px" title="Generate slug once from current title">Generate from Title</button>
+        </div>
+        <input type="text" id="meta-slug" class="studio-input slug-full-input" placeholder="my-custom-article-slug" autocomplete="off" />
+        <div class="slug-url-preview-bar">
+          <span class="slug-url-label">ARTICLE URL</span>
+          <span class="slug-url-path" id="slug-url-preview">/article/untitled-scroll</span>
+        </div>
+        <div id="slug-published-warning" class="slug-published-warning" style="display:none">
+          ⚠️ Changing the slug changes this article's public URL.
         </div>
       </div>
 
       <div class="studio-form-group">
-        <label class="studio-label">Description / Excerpt *</label>
+        <label class="studio-label" for="meta-desc">Description / Excerpt *</label>
         <textarea id="meta-desc" class="studio-textarea" style="min-height:95px" placeholder="Editorial excerpt for the library and hero lead..."></textarea>
       </div>
 
       <div class="studio-form-group">
-        <label class="studio-label">Author</label>
+        <label class="studio-label" for="meta-author">Author</label>
         <input type="text" id="meta-author" class="studio-input" value="Oracle of Orgs" autocomplete="off" />
       </div>
 
       <div class="studio-form-group">
-        <label class="studio-label">Category *</label>
-        <div class="combobox-wrap">
-          <input type="text" id="meta-category" class="studio-input" placeholder="Type or choose category..." autocomplete="off" value="Architecture" />
-          <div class="combobox-dropdown" id="category-dropdown">
-            <!-- Populated via JS -->
+        <label class="studio-label" id="category-label">Category *</label>
+        <div class="coven-combobox" id="category-combobox" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="category-label">
+          <button type="button" class="combobox-trigger" id="category-trigger" aria-controls="category-dropdown" aria-label="Select Category">
+            <span class="combobox-value" id="category-trigger-text">Salesforce</span>
+            <span class="combobox-caret">▾</span>
+          </button>
+          <div class="combobox-menu" id="category-dropdown" role="listbox" aria-labelledby="category-label" style="display:none">
+            <div class="combobox-search-box">
+              <input type="text" id="category-search-input" class="combobox-search-input" placeholder="Search category..." autocomplete="off" aria-autocomplete="list" />
+            </div>
+            <div class="combobox-options" id="category-options-list">
+              <!-- Populated via JS -->
+            </div>
+            <div class="combobox-create-option" id="category-create-row" style="display:none">
+              <!-- "+ Create ..." -->
+            </div>
           </div>
+          <input type="hidden" id="meta-category" value="Salesforce" />
         </div>
       </div>
 
       <div class="studio-form-group">
-        <label class="studio-label">Tags</label>
-        <div class="tag-chips-container" id="tag-chips-container">
-          <input type="text" id="tag-inline-input" class="tag-input-inline" placeholder="Add a tag..." />
+        <label class="studio-label" id="difficulty-label">Difficulty *</label>
+        <div class="coven-select-dropdown" id="difficulty-combobox" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="difficulty-label">
+          <button type="button" class="combobox-trigger" id="difficulty-trigger" aria-controls="difficulty-options-menu" aria-label="Select Difficulty">
+            <span class="combobox-value" id="difficulty-trigger-text">✦ Lv. 1 - Incantation</span>
+            <span class="combobox-caret">▾</span>
+          </button>
+          <div class="combobox-menu" id="difficulty-options-menu" role="listbox" aria-labelledby="difficulty-label" style="display:none">
+            <div class="combobox-options" id="difficulty-options-list">
+              <!-- Populated dynamically with Lv. 1, Lv. 2, Lv. 3 -->
+            </div>
+          </div>
+          <input type="hidden" id="meta-difficulty" value="Lv. 1 - Incantation" />
         </div>
-        <div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted);margin-top:2px">Press Enter or comma to add tag</div>
+      </div>
+
+      <div class="studio-form-group">
+        <label class="studio-label" id="tags-label">Tags</label>
+        <div class="coven-tags-combobox" id="tags-combobox-wrap" role="combobox" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="tags-label">
+          <div class="tag-chips-container" id="tag-chips-container" tabindex="-1">
+            <input type="text" id="tag-inline-input" class="tag-input-inline" placeholder="Search or add a tag..." autocomplete="off" aria-autocomplete="list" aria-controls="tags-dropdown-menu" />
+          </div>
+          <div class="combobox-menu tag-suggestions-menu" id="tags-dropdown-menu" role="listbox" aria-labelledby="tags-label" style="display:none">
+            <div class="combobox-options" id="tags-options-list">
+              <!-- Populated dynamically -->
+            </div>
+            <div class="combobox-create-option" id="tag-create-row" style="display:none">
+              <!-- "+ Create ..." -->
+            </div>
+          </div>
+        </div>
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted);margin-top:4px">Type to search, press Enter/comma or select suggestion</div>
       </div>
 
       <div class="studio-form-group">
@@ -240,10 +299,25 @@ const totalBlockCount = Object.keys(blockRegistry).length;
   <div class="studio-toast-container" id="toast-container"></div>
 
   <!-- Client-side Logic -->
-  <script define:vars={{ blockRegistry, blockCategories, existingCategories, publishedArticles }}>
+  <script define:vars={{
+    blockRegistry,
+    blockCategories,
+    canonicalCategories,
+    canonicalDifficulties,
+    canonicalTags,
+    difficultyGlyphs,
+    mergedCategories,
+    mergedTags,
+    publishedArticles
+  }}>
     window.STUDIO_REGISTRY = blockRegistry;
     window.STUDIO_CATEGORIES = blockCategories;
-    window.STUDIO_EXISTING_CATEGORIES = existingCategories;
+    window.STUDIO_CANONICAL_CATEGORIES = canonicalCategories;
+    window.STUDIO_CANONICAL_DIFFICULTIES = canonicalDifficulties;
+    window.STUDIO_CANONICAL_TAGS = canonicalTags;
+    window.STUDIO_DIFFICULTY_GLYPHS = difficultyGlyphs;
+    window.STUDIO_MERGED_CATEGORIES = mergedCategories;
+    window.STUDIO_MERGED_TAGS = mergedTags;
     window.STUDIO_PUBLISHED_ARTICLES = publishedArticles;
 
     // Abstract glyphs for each block type in library and card headers
@@ -284,12 +358,26 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         return (prefix || 'id') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 7);
       }
 
-      function slugify(text) {
-        return (text || '')
+      // ── Canonical Slug Normalization ────────────────────
+      function normalizeSlugClient(input, allowTrailingHyphen) {
+        if (!input || typeof input !== 'string') return '';
+        var normalized = input
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
           .toLowerCase()
-          .trim()
           .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '');
+          .replace(/-+/g, '-')
+          .replace(/^-+/g, '');
+
+        if (!allowTrailingHyphen) {
+          normalized = normalized.replace(/-+$/g, '');
+        }
+        return normalized;
+      }
+
+      function isValidSlugClient(slug) {
+        if (!slug || typeof slug !== 'string') return false;
+        return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
       }
 
       function escapeHtml(str) {
@@ -304,14 +392,15 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       // ── State ───────────────────────────────────────────
       var currentDoc = {
         version: 1,
-        studioId: 'draft_' + Date.now() + '_' + Math.random().toString(36).substring(2, 7),
-        slug: 'untitled-scroll',
+        studioId: uid('draft'),
+        slug: '',
         meta: {
           title: '',
           description: '',
           author: 'Oracle of Orgs',
-          category: 'Architecture',
-          tags: ['Architecture'],
+          category: 'Salesforce',
+          difficulty: 'Lv. 1 - Incantation',
+          tags: [],
           rank: 'Mechanic',
           readingTime: '1 min',
           aetherReward: 120,
@@ -325,8 +414,8 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       };
 
       var activeSectionId = null;
-      var slugManual = false;
       var isExistingPublished = false;
+      var originalPublishedSlug = '';
       var isDirty = false;
       var autosaveTimer = null;
       var draggedBlockData = null;
@@ -336,12 +425,30 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       function normalizeDocument(doc) {
         if (!doc) return;
         if (!doc.sections) doc.sections = [];
+        if (!doc.meta) doc.meta = {};
+
+        // Canonical defaults
+        if (!doc.meta.category) {
+          doc.meta.category = 'Salesforce';
+        }
+        if (!doc.meta.difficulty) {
+          doc.meta.difficulty = 'Lv. 1 - Incantation';
+        }
+        if (!Array.isArray(doc.meta.tags)) {
+          doc.meta.tags = [];
+        }
+        if (doc.slug === undefined || doc.slug === null) {
+          doc.slug = '';
+        }
 
         // Check if slug matches an existing published article
         var publishedSlugs = (window.STUDIO_PUBLISHED_ARTICLES || []).map(function(a) { return a.slug; });
-        if (publishedSlugs.includes(doc.slug)) {
+        if (doc.slug && publishedSlugs.includes(doc.slug)) {
           isExistingPublished = true;
-          slugManual = true;
+          originalPublishedSlug = doc.slug;
+        } else {
+          isExistingPublished = false;
+          originalPublishedSlug = '';
         }
 
         doc.sections.forEach(function(sec) {
@@ -2653,7 +2760,19 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         document.getElementById('meta-title').value = m.title || '';
         document.getElementById('meta-desc').value = m.description || '';
         document.getElementById('meta-author').value = m.author || 'Oracle of Orgs';
-        document.getElementById('meta-category').value = m.category || 'Architecture';
+
+        // Category
+        var catVal = m.category || 'Salesforce';
+        document.getElementById('meta-category').value = catVal;
+        document.getElementById('category-trigger-text').textContent = catVal;
+
+        // Difficulty
+        var diffVal = m.difficulty || 'Lv. 1 - Incantation';
+        document.getElementById('meta-difficulty').value = diffVal;
+        var diffGlyph = (window.STUDIO_DIFFICULTY_GLYPHS || {})[diffVal] || '✦';
+        document.getElementById('difficulty-trigger-text').textContent = diffGlyph + ' ' + diffVal;
+
+        // Rank & Advanced
         document.getElementById('meta-rank').value = m.rank || 'Mechanic';
         document.getElementById('meta-aether').value = m.aetherReward || 120;
         document.getElementById('meta-featured').checked = Boolean(m.featured);
@@ -2666,8 +2785,14 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         if (capGroup) capGroup.style.display = m.cover ? 'flex' : 'none';
 
         // Slug
-        document.getElementById('meta-slug').value = currentDoc.slug || '';
-        document.getElementById('slug-text-preview').textContent = currentDoc.slug || 'untitled-scroll';
+        var sVal = currentDoc.slug || '';
+        document.getElementById('meta-slug').value = sVal;
+        document.getElementById('slug-url-preview').textContent = '/article/' + (sVal || 'untitled-scroll');
+        if (isExistingPublished && originalPublishedSlug && originalPublishedSlug !== sVal) {
+          document.getElementById('slug-published-warning').style.display = 'block';
+        } else {
+          document.getElementById('slug-published-warning').style.display = 'none';
+        }
 
         // Status Segmented Control
         var segBtns = document.querySelectorAll('#status-segmented .segment-btn');
@@ -2681,7 +2806,9 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         updatePublishButtonState();
 
         // Tags
-        renderTagChips();
+        if (typeof window._renderTagChips === 'function') {
+          window._renderTagChips();
+        }
 
         // Reading Time
         calculateReadingTime();
@@ -2693,8 +2820,9 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         currentDoc.slug = document.getElementById('meta-slug').value;
         m.description = document.getElementById('meta-desc').value;
         m.author = document.getElementById('meta-author').value;
-        m.category = document.getElementById('meta-category').value;
-        m.rank = document.getElementById('meta-rank').value;
+        m.category = document.getElementById('meta-category').value || 'Salesforce';
+        m.difficulty = document.getElementById('meta-difficulty').value || 'Lv. 1 - Incantation';
+        m.rank = document.getElementById('meta-rank').value || 'Mechanic';
         m.aetherReward = parseInt(document.getElementById('meta-aether').value, 10) || 120;
         m.cover = (document.getElementById('meta-cover').value || '').trim();
         m.coverCaption = (document.getElementById('meta-cover-caption').value || '').trim();
@@ -2707,46 +2835,52 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         calculateReadingTime();
       }
 
-      // Title & Slug Auto Sync (Rule 5)
+      // Title Input (Does NOT alter Slug!)
       document.getElementById('meta-title').addEventListener('input', function(e) {
         currentDoc.meta.title = e.target.value;
-        if (!slugManual && !isExistingPublished) {
-          currentDoc.slug = slugify(e.target.value);
-          document.getElementById('meta-slug').value = currentDoc.slug;
-          document.getElementById('slug-text-preview').textContent = currentDoc.slug || 'untitled-scroll';
-        }
         triggerAutosave();
       });
 
-      document.getElementById('slug-toggle-btn').addEventListener('click', function() {
-        slugManual = !slugManual;
-        var btn = document.getElementById('slug-toggle-btn');
-        var preview = document.getElementById('slug-text-preview');
-        var input = document.getElementById('meta-slug');
+      // Slug Input (Live Safe URL Normalization)
+      var slugInput = document.getElementById('meta-slug');
+      slugInput.addEventListener('input', function(e) {
+        var raw = e.target.value;
+        var normalized = normalizeSlugClient(raw, true);
+        currentDoc.slug = normalized;
+        e.target.value = normalized;
+        document.getElementById('slug-url-preview').textContent = '/article/' + (normalized || 'untitled-scroll');
 
-        if (slugManual) {
-          btn.textContent = '🔓 Edit';
-          preview.style.display = 'none';
-          input.style.display = 'block';
-          input.focus();
+        if (isExistingPublished && originalPublishedSlug && originalPublishedSlug !== normalized) {
+          document.getElementById('slug-published-warning').style.display = 'block';
         } else {
-          btn.textContent = '🔒 Auto';
-          if (!isExistingPublished) {
-            currentDoc.slug = slugify(currentDoc.meta.title);
-          }
-          input.value = currentDoc.slug;
-          preview.textContent = currentDoc.slug || 'untitled-scroll';
-          input.style.display = 'none';
-          preview.style.display = 'block';
-          triggerAutosave();
+          document.getElementById('slug-published-warning').style.display = 'none';
         }
+        triggerAutosave();
       });
 
-      document.getElementById('meta-slug').addEventListener('input', function(e) {
-        currentDoc.slug = slugify(e.target.value);
-        e.target.value = currentDoc.slug;
-        document.getElementById('slug-text-preview').textContent = currentDoc.slug || 'untitled-scroll';
+      slugInput.addEventListener('blur', function(e) {
+        var finalSlug = normalizeSlugClient(currentDoc.slug, false);
+        currentDoc.slug = finalSlug;
+        e.target.value = finalSlug;
+        document.getElementById('slug-url-preview').textContent = '/article/' + (finalSlug || 'untitled-scroll');
         triggerAutosave();
+      });
+
+      // Generate from Title button
+      document.getElementById('btn-slug-generate').addEventListener('click', function() {
+        var titleVal = (document.getElementById('meta-title').value || '').trim();
+        var genSlug = normalizeSlugClient(titleVal, false);
+        currentDoc.slug = genSlug;
+        document.getElementById('meta-slug').value = genSlug;
+        document.getElementById('slug-url-preview').textContent = '/article/' + (genSlug || 'untitled-scroll');
+
+        if (isExistingPublished && originalPublishedSlug && originalPublishedSlug !== genSlug) {
+          document.getElementById('slug-published-warning').style.display = 'block';
+        } else {
+          document.getElementById('slug-published-warning').style.display = 'none';
+        }
+        triggerAutosave();
+        showToast('Slug generated from title');
       });
 
       // Status Segmented Control Click
@@ -2777,120 +2911,533 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         }
       }
 
-      // ── Tag Chips Component ─────────────────────────────
-      function renderTagChips() {
-        var container = document.getElementById('tag-chips-container');
-        var inlineInput = document.getElementById('tag-inline-input');
-        if (!container || !inlineInput) return;
+      // ── Category Custom Combobox ─────────────────────────
+      var availableCategories = (window.STUDIO_MERGED_CATEGORIES || [
+        'Business Analysis',
+        'Management',
+        'Mentoring',
+        'Salesforce'
+      ]).slice();
 
-        container.querySelectorAll('.tag-chip').forEach(function(c) { c.remove(); });
-
-        (currentDoc.meta.tags || []).forEach(function(tag, idx) {
-          var chip = document.createElement('span');
-          chip.className = 'tag-chip';
-          chip.innerHTML = '<span>' + escapeHtml(tag) + '</span><span class="tag-chip-remove" data-idx="' + idx + '">×</span>';
-
-          chip.querySelector('.tag-chip-remove').addEventListener('click', function(e) {
-            e.stopPropagation();
-            currentDoc.meta.tags.splice(idx, 1);
-            renderTagChips();
-            triggerAutosave();
-          });
-
-          container.insertBefore(chip, inlineInput);
-        });
-      }
-
-      function addTagsFromString(rawText) {
-        if (!rawText) return;
-        var existingLower = (currentDoc.meta.tags || []).map(function(t) { return t.toLowerCase(); });
-        var parts = rawText.split(',').map(function(t) { return t.trim(); }).filter(Boolean);
-
-        parts.forEach(function(part) {
-          if (!existingLower.includes(part.toLowerCase())) {
-            currentDoc.meta.tags.push(part);
-            existingLower.push(part.toLowerCase());
-          }
-        });
-
-        renderTagChips();
-        triggerAutosave();
-      }
-
-      var tagInput = document.getElementById('tag-inline-input');
-      tagInput.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' || e.key === ',') {
-          e.preventDefault();
-          var val = tagInput.value.trim().replace(/^,|,$/g, '');
-          if (val) {
-            addTagsFromString(val);
-            tagInput.value = '';
-          }
-        } else if (e.key === 'Backspace' && !tagInput.value) {
-          if (currentDoc.meta.tags.length > 0) {
-            currentDoc.meta.tags.pop();
-            renderTagChips();
-            triggerAutosave();
-          }
-        }
-      });
-
-      tagInput.addEventListener('paste', function(e) {
-        e.preventDefault();
-        var paste = (e.clipboardData || window.clipboardData).getData('text');
-        addTagsFromString(paste);
-      });
-
-      // ── Category Combobox ───────────────────────────────
       function initCategoryCombobox() {
-        var input = document.getElementById('meta-category');
+        var combobox = document.getElementById('category-combobox');
+        var trigger = document.getElementById('category-trigger');
         var dropdown = document.getElementById('category-dropdown');
-        if (!input || !dropdown) return;
+        var searchInput = document.getElementById('category-search-input');
+        var optionsList = document.getElementById('category-options-list');
+        var createRow = document.getElementById('category-create-row');
+        var hiddenInput = document.getElementById('meta-category');
+        var triggerText = document.getElementById('category-trigger-text');
+        if (!combobox || !trigger || !dropdown) return;
 
-        var publishedCats = window.STUDIO_EXISTING_CATEGORIES || [];
+        var highlightedIdx = -1;
+        var filteredList = [];
 
-        function renderDropdown(filterText) {
-          dropdown.innerHTML = '';
-          var q = (filterText || '').trim().toLowerCase();
-          var matches = publishedCats.filter(function(cat) {
-            return !q || cat.toLowerCase().includes(q);
+        function openDropdown() {
+          dropdown.style.display = 'flex';
+          trigger.classList.add('is-open');
+          combobox.setAttribute('aria-expanded', 'true');
+          searchInput.value = '';
+          renderList('');
+          setTimeout(function() { searchInput.focus(); }, 20);
+        }
+
+        function closeDropdown() {
+          dropdown.style.display = 'none';
+          trigger.classList.remove('is-open');
+          combobox.setAttribute('aria-expanded', 'false');
+          highlightedIdx = -1;
+        }
+
+        function selectCategory(cat) {
+          currentDoc.meta.category = cat;
+          hiddenInput.value = cat;
+          triggerText.textContent = cat;
+          closeDropdown();
+          trigger.focus();
+          triggerAutosave();
+        }
+
+        function renderList(query) {
+          optionsList.innerHTML = '';
+          createRow.style.display = 'none';
+          createRow.innerHTML = '';
+          highlightedIdx = -1;
+
+          var q = (query || '').trim().toLowerCase();
+          filteredList = availableCategories.filter(function(c) {
+            return !q || c.toLowerCase().includes(q);
           });
 
-          if (matches.length === 0) {
-            dropdown.style.display = 'none';
+          var currentCat = (currentDoc.meta.category || '').toLowerCase();
+          var hasExactMatch = false;
+
+          filteredList.forEach(function(cat, idx) {
+            if (cat.toLowerCase() === q) hasExactMatch = true;
+            var isSelected = cat.toLowerCase() === currentCat;
+            var opt = document.createElement('div');
+            opt.className = 'combobox-option' + (isSelected ? ' is-selected' : '');
+            opt.setAttribute('role', 'option');
+            opt.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+            opt.textContent = cat;
+
+            opt.addEventListener('mousedown', function(e) {
+              e.preventDefault();
+              selectCategory(cat);
+            });
+            optionsList.appendChild(opt);
+          });
+
+          var rawTrimmed = (query || '').trim();
+          if (rawTrimmed && !hasExactMatch) {
+            createRow.style.display = 'flex';
+            createRow.textContent = '+ Create "' + rawTrimmed + '"';
+            createRow.onmousedown = function(e) {
+              e.preventDefault();
+              var exists = availableCategories.some(function(c) {
+                return c.toLowerCase() === rawTrimmed.toLowerCase();
+              });
+              if (!exists) {
+                availableCategories.push(rawTrimmed);
+              }
+              selectCategory(rawTrimmed);
+            };
+          } else if (!rawTrimmed) {
+            createRow.style.display = 'flex';
+            createRow.textContent = '+ Create new category';
+            createRow.onmousedown = function(e) {
+              e.preventDefault();
+              searchInput.focus();
+            };
+          }
+
+          updateHighlight();
+        }
+
+        function updateHighlight() {
+          var opts = optionsList.querySelectorAll('.combobox-option');
+          opts.forEach(function(el, i) {
+            el.classList.toggle('is-highlighted', i === highlightedIdx);
+            if (i === highlightedIdx) el.scrollIntoView({ block: 'nearest' });
+          });
+          var isCreateHighlighted = (highlightedIdx === filteredList.length && createRow.style.display !== 'none');
+          createRow.classList.toggle('is-highlighted', isCreateHighlighted);
+        }
+
+        trigger.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (dropdown.style.display === 'flex') {
+            closeDropdown();
+          } else {
+            openDropdown();
+          }
+        });
+
+        trigger.addEventListener('keydown', function(e) {
+          if (dropdown.style.display !== 'flex') {
+            if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openDropdown();
+            }
+          }
+        });
+
+        searchInput.addEventListener('input', function(e) {
+          renderList(e.target.value);
+        });
+
+        searchInput.addEventListener('keydown', function(e) {
+          var totalItems = filteredList.length + (createRow.style.display !== 'none' ? 1 : 0);
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (totalItems > 0) {
+              highlightedIdx = (highlightedIdx + 1) % totalItems;
+              updateHighlight();
+            }
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (totalItems > 0) {
+              highlightedIdx = (highlightedIdx - 1 + totalItems) % totalItems;
+              updateHighlight();
+            }
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIdx >= 0 && highlightedIdx < filteredList.length) {
+              selectCategory(filteredList[highlightedIdx]);
+            } else if (highlightedIdx === filteredList.length && createRow.style.display !== 'none') {
+              var typedVal = searchInput.value.trim();
+              if (typedVal) {
+                var exists = availableCategories.some(function(c) { return c.toLowerCase() === typedVal.toLowerCase(); });
+                if (!exists) availableCategories.push(typedVal);
+                selectCategory(typedVal);
+              }
+            } else if (filteredList.length > 0) {
+              selectCategory(filteredList[0]);
+            } else {
+              var manual = searchInput.value.trim();
+              if (manual) {
+                if (!availableCategories.some(function(c) { return c.toLowerCase() === manual.toLowerCase(); })) {
+                  availableCategories.push(manual);
+                }
+                selectCategory(manual);
+              }
+            }
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeDropdown();
+            trigger.focus();
+          }
+        });
+
+        document.addEventListener('click', function(e) {
+          if (!combobox.contains(e.target)) {
+            closeDropdown();
+          }
+        });
+      }
+
+      // ── Difficulty Custom Dropdown ───────────────────────
+      function initDifficultyDropdown() {
+        var combobox = document.getElementById('difficulty-combobox');
+        var trigger = document.getElementById('difficulty-trigger');
+        var menu = document.getElementById('difficulty-options-menu');
+        var optionsList = document.getElementById('difficulty-options-list');
+        var hiddenInput = document.getElementById('meta-difficulty');
+        var triggerText = document.getElementById('difficulty-trigger-text');
+        if (!combobox || !trigger || !menu) return;
+
+        var difficulties = window.STUDIO_CANONICAL_DIFFICULTIES || [
+          'Lv. 1 - Incantation',
+          'Lv. 2 - Scroll',
+          'Lv. 3 - Ritual'
+        ];
+        var glyphs = window.STUDIO_DIFFICULTY_GLYPHS || {
+          'Lv. 1 - Incantation': '✦',
+          'Lv. 2 - Scroll': '◆',
+          'Lv. 3 - Ritual': '✧'
+        };
+
+        var highlightedIdx = -1;
+
+        function renderList() {
+          optionsList.innerHTML = '';
+          var currentDiff = currentDoc.meta.difficulty || 'Lv. 1 - Incantation';
+
+          difficulties.forEach(function(diff, idx) {
+            var isSelected = diff === currentDiff;
+            var opt = document.createElement('div');
+            opt.className = 'combobox-option' + (isSelected ? ' is-selected' : '');
+            opt.setAttribute('role', 'option');
+            opt.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+            opt.innerHTML = '<span class="combobox-option-icon">' + (glyphs[diff] || '✦') + '</span><span>' + escapeHtml(diff) + '</span>';
+
+            opt.addEventListener('mousedown', function(e) {
+              e.preventDefault();
+              selectDifficulty(diff);
+            });
+            optionsList.appendChild(opt);
+          });
+        }
+
+        function selectDifficulty(diff) {
+          currentDoc.meta.difficulty = diff;
+          hiddenInput.value = diff;
+          triggerText.textContent = (glyphs[diff] || '✦') + ' ' + diff;
+          closeMenu();
+          trigger.focus();
+          triggerAutosave();
+        }
+
+        function openMenu() {
+          renderList();
+          menu.style.display = 'flex';
+          trigger.classList.add('is-open');
+          combobox.setAttribute('aria-expanded', 'true');
+          highlightedIdx = difficulties.indexOf(currentDoc.meta.difficulty || 'Lv. 1 - Incantation');
+          updateHighlight();
+        }
+
+        function closeMenu() {
+          menu.style.display = 'none';
+          trigger.classList.remove('is-open');
+          combobox.setAttribute('aria-expanded', 'false');
+          highlightedIdx = -1;
+        }
+
+        function updateHighlight() {
+          var opts = optionsList.querySelectorAll('.combobox-option');
+          opts.forEach(function(el, i) {
+            el.classList.toggle('is-highlighted', i === highlightedIdx);
+            if (i === highlightedIdx) el.scrollIntoView({ block: 'nearest' });
+          });
+        }
+
+        trigger.addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (menu.style.display === 'flex') {
+            closeMenu();
+          } else {
+            openMenu();
+          }
+        });
+
+        trigger.addEventListener('keydown', function(e) {
+          if (menu.style.display !== 'flex') {
+            if (e.key === 'ArrowDown' || e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              openMenu();
+            }
             return;
           }
 
-          matches.forEach(function(cat) {
-            var item = document.createElement('div');
-            item.className = 'combobox-item';
-            item.textContent = cat;
-            item.addEventListener('mousedown', function(e) {
-              e.preventDefault();
-              input.value = cat;
-              currentDoc.meta.category = cat;
-              dropdown.style.display = 'none';
-              triggerAutosave();
-            });
-            dropdown.appendChild(item);
-          });
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            highlightedIdx = (highlightedIdx + 1) % difficulties.length;
+            updateHighlight();
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            highlightedIdx = (highlightedIdx - 1 + difficulties.length) % difficulties.length;
+            updateHighlight();
+          } else if (e.key === 'Enter') {
+            e.preventDefault();
+            if (highlightedIdx >= 0 && highlightedIdx < difficulties.length) {
+              selectDifficulty(difficulties[highlightedIdx]);
+            }
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeMenu();
+            trigger.focus();
+          }
+        });
 
-          dropdown.style.display = 'block';
+        document.addEventListener('click', function(e) {
+          if (!combobox.contains(e.target)) {
+            closeMenu();
+          }
+        });
+      }
+
+      // ── Canonical Tags Combobox ──────────────────────────
+      var availableTags = (window.STUDIO_MERGED_TAGS || []).slice();
+      var canonicalTagsList = window.STUDIO_CANONICAL_TAGS || [];
+
+      function getCanonicalTagCasing(raw) {
+        var trimmed = raw.trim();
+        var match = canonicalTagsList.find(function(c) {
+          return c.toLowerCase() === trimmed.toLowerCase();
+        });
+        return match || trimmed;
+      }
+
+      function initTagsCombobox() {
+        var wrap = document.getElementById('tags-combobox-wrap');
+        var container = document.getElementById('tag-chips-container');
+        var input = document.getElementById('tag-inline-input');
+        var dropdown = document.getElementById('tags-dropdown-menu');
+        var optionsList = document.getElementById('tags-options-list');
+        var createRow = document.getElementById('tag-create-row');
+        if (!wrap || !container || !input || !dropdown) return;
+
+        var highlightedIdx = -1;
+        var currentFilteredTags = [];
+
+        function openDropdown() {
+          dropdown.style.display = 'flex';
+          wrap.setAttribute('aria-expanded', 'true');
+          renderSuggestions(input.value);
         }
 
+        function closeDropdown() {
+          dropdown.style.display = 'none';
+          wrap.setAttribute('aria-expanded', 'false');
+          highlightedIdx = -1;
+        }
+
+        function addTag(raw) {
+          if (!raw) return;
+          var trimmed = raw.trim().replace(/^,|,$/g, '');
+          if (!trimmed) return;
+
+          var resolvedTag = getCanonicalTagCasing(trimmed);
+
+          // Case-insensitive duplicate prevention
+          var exists = (currentDoc.meta.tags || []).some(function(t) {
+            return t.toLowerCase() === resolvedTag.toLowerCase();
+          });
+
+          if (!exists) {
+            if (!currentDoc.meta.tags) currentDoc.meta.tags = [];
+            currentDoc.meta.tags.push(resolvedTag);
+
+            var inAvailable = availableTags.some(function(t) {
+              return t.toLowerCase() === resolvedTag.toLowerCase();
+            });
+            if (!inAvailable) {
+              availableTags.push(resolvedTag);
+            }
+
+            renderTagChips();
+            triggerAutosave();
+          }
+
+          input.value = '';
+          renderSuggestions('');
+        }
+
+        function removeTag(idx) {
+          currentDoc.meta.tags.splice(idx, 1);
+          renderTagChips();
+          renderSuggestions(input.value);
+          triggerAutosave();
+        }
+
+        function renderTagChips() {
+          container.querySelectorAll('.tag-chip').forEach(function(c) { c.remove(); });
+
+          (currentDoc.meta.tags || []).forEach(function(tag, idx) {
+            var chip = document.createElement('span');
+            chip.className = 'tag-chip';
+            chip.innerHTML = '<span>' + escapeHtml(tag) + '</span><span class="tag-chip-remove" data-idx="' + idx + '" aria-label="Remove tag ' + escapeHtml(tag) + '">×</span>';
+
+            chip.querySelector('.tag-chip-remove').addEventListener('click', function(e) {
+              e.stopPropagation();
+              removeTag(idx);
+            });
+
+            container.insertBefore(chip, input);
+          });
+        }
+
+        function renderSuggestions(filterText) {
+          optionsList.innerHTML = '';
+          createRow.style.display = 'none';
+          createRow.innerHTML = '';
+          highlightedIdx = -1;
+
+          var q = (filterText || '').trim().toLowerCase();
+          currentFilteredTags = availableTags.filter(function(tag) {
+            return !q || tag.toLowerCase().includes(q);
+          });
+
+          var selectedLower = (currentDoc.meta.tags || []).map(function(t) { return t.toLowerCase(); });
+          var exactMatch = false;
+
+          currentFilteredTags.forEach(function(tag, idx) {
+            if (tag.toLowerCase() === q) exactMatch = true;
+            var isSelected = selectedLower.includes(tag.toLowerCase());
+            var opt = document.createElement('div');
+            opt.className = 'combobox-option' + (isSelected ? ' is-selected' : '');
+            opt.setAttribute('role', 'option');
+            opt.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+            opt.textContent = tag;
+
+            opt.addEventListener('mousedown', function(e) {
+              e.preventDefault();
+              if (isSelected) {
+                var tIdx = currentDoc.meta.tags.findIndex(function(t) { return t.toLowerCase() === tag.toLowerCase(); });
+                if (tIdx >= 0) removeTag(tIdx);
+              } else {
+                addTag(tag);
+              }
+            });
+            optionsList.appendChild(opt);
+          });
+
+          var rawTrimmed = (filterText || '').trim();
+          if (rawTrimmed && !exactMatch) {
+            createRow.style.display = 'flex';
+            createRow.textContent = '+ Create "' + rawTrimmed + '"';
+            createRow.onmousedown = function(e) {
+              e.preventDefault();
+              addTag(rawTrimmed);
+            };
+          }
+
+          updateHighlight();
+        }
+
+        function updateHighlight() {
+          var allOptions = optionsList.querySelectorAll('.combobox-option');
+          allOptions.forEach(function(el, i) {
+            el.classList.toggle('is-highlighted', i === highlightedIdx);
+            if (i === highlightedIdx) el.scrollIntoView({ block: 'nearest' });
+          });
+          var isCreateHighlighted = (highlightedIdx === currentFilteredTags.length && createRow.style.display !== 'none');
+          createRow.classList.toggle('is-highlighted', isCreateHighlighted);
+        }
+
+        container.addEventListener('click', function() {
+          input.focus();
+        });
+
         input.addEventListener('focus', function() {
-          renderDropdown(input.value);
+          openDropdown();
         });
 
         input.addEventListener('input', function() {
-          currentDoc.meta.category = input.value;
-          renderDropdown(input.value);
-          triggerAutosave();
+          openDropdown();
         });
 
-        input.addEventListener('blur', function() {
-          setTimeout(function() { dropdown.style.display = 'none'; }, 200);
+        input.addEventListener('keydown', function(e) {
+          var totalItems = currentFilteredTags.length + (createRow.style.display !== 'none' ? 1 : 0);
+
+          if (e.key === 'ArrowDown') {
+            e.preventDefault();
+            if (dropdown.style.display !== 'flex') {
+              openDropdown();
+            } else if (totalItems > 0) {
+              highlightedIdx = (highlightedIdx + 1) % totalItems;
+              updateHighlight();
+            }
+          } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            if (totalItems > 0) {
+              highlightedIdx = (highlightedIdx - 1 + totalItems) % totalItems;
+              updateHighlight();
+            }
+          } else if (e.key === 'Enter' || e.key === ',') {
+            e.preventDefault();
+            if (highlightedIdx >= 0 && highlightedIdx < currentFilteredTags.length) {
+              var chosen = currentFilteredTags[highlightedIdx];
+              var isSelected = (currentDoc.meta.tags || []).some(function(t) { return t.toLowerCase() === chosen.toLowerCase(); });
+              if (isSelected) {
+                var tIdx = currentDoc.meta.tags.findIndex(function(t) { return t.toLowerCase() === chosen.toLowerCase(); });
+                if (tIdx >= 0) removeTag(tIdx);
+              } else {
+                addTag(chosen);
+              }
+            } else if (highlightedIdx === currentFilteredTags.length && createRow.style.display !== 'none') {
+              addTag(input.value.trim());
+            } else if (input.value.trim()) {
+              addTag(input.value.trim());
+            }
+          } else if (e.key === 'Backspace' && !input.value) {
+            if (currentDoc.meta.tags && currentDoc.meta.tags.length > 0) {
+              removeTag(currentDoc.meta.tags.length - 1);
+            }
+          } else if (e.key === 'Escape') {
+            e.preventDefault();
+            closeDropdown();
+          }
         });
+
+        input.addEventListener('paste', function(e) {
+          e.preventDefault();
+          var paste = (e.clipboardData || window.clipboardData).getData('text');
+          if (paste) {
+            var parts = paste.split(',').map(function(p) { return p.trim(); }).filter(Boolean);
+            parts.forEach(function(p) { addTag(p); });
+          }
+        });
+
+        document.addEventListener('click', function(e) {
+          if (!wrap.contains(e.target)) {
+            closeDropdown();
+          }
+        });
+
+        window._renderTagChips = renderTagChips;
       }
 
       // ── Advanced Settings Accordion ─────────────────────
@@ -3056,22 +3603,21 @@ const totalBlockCount = Object.keys(blockRegistry).length;
 
       function createNewArticle() {
         isExistingPublished = false;
-        slugManual = false;
-        var btn = document.getElementById('slug-toggle-btn');
-        if (btn) btn.textContent = '🔒 Auto';
-        document.getElementById('meta-slug').style.display = 'none';
-        document.getElementById('slug-text-preview').style.display = 'block';
+        originalPublishedSlug = '';
+        var warningEl = document.getElementById('slug-published-warning');
+        if (warningEl) warningEl.style.display = 'none';
 
         currentDoc = {
           version: 1,
           studioId: uid('draft'),
-          slug: 'untitled-scroll',
+          slug: '',
           meta: {
             title: '',
             description: '',
             author: 'Oracle of Orgs',
-            category: 'Architecture',
-            tags: ['Architecture'],
+            category: 'Salesforce',
+            difficulty: 'Lv. 1 - Incantation',
+            tags: [],
             rank: 'Mechanic',
             readingTime: '1 min',
             aetherReward: 120,
@@ -3167,13 +3713,15 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       document.getElementById('btn-duplicate-article').addEventListener('click', function() {
         var copyDoc = JSON.parse(JSON.stringify(currentDoc));
         copyDoc.studioId = uid('draft');
-        copyDoc.slug = (copyDoc.slug || 'untitled') + '-copy';
+        var rawBase = (copyDoc.slug || 'untitled').replace(/-copy(-\d+)?$/i, '');
+        copyDoc.slug = normalizeSlugClient(rawBase + '-copy', false);
         copyDoc.meta.title = (copyDoc.meta.title || 'Untitled Scroll') + ' (Copy)';
         copyDoc.meta.status = 'draft';
 
         normalizeDocument(copyDoc);
         currentDoc = copyDoc;
         isExistingPublished = false;
+        originalPublishedSlug = '';
         activeSectionId = currentDoc.sections.length > 0 ? currentDoc.sections[0].id : null;
         renderSections();
         syncMetaInputsFromState();
@@ -3224,6 +3772,39 @@ const totalBlockCount = Object.keys(blockRegistry).length;
           document.getElementById('meta-title').focus();
           return;
         }
+
+        var rawSlug = (currentDoc.slug || '').trim();
+        if (!rawSlug) {
+          showToast('Choose a URL slug before publishing this scroll.', 'error');
+          document.getElementById('meta-slug').focus();
+          return;
+        }
+        var finalSlug = normalizeSlugClient(rawSlug, false);
+        if (!isValidSlugClient(finalSlug)) {
+          showToast('Invalid slug. Must be lowercase alphanumeric characters and single hyphens.', 'error');
+          document.getElementById('meta-slug').focus();
+          return;
+        }
+        currentDoc.slug = finalSlug;
+
+        // Collision validation against published articles
+        var publishedArticles = window.STUDIO_PUBLISHED_ARTICLES || [];
+        var matchSlug = publishedArticles.find(function(a) { return a.slug === finalSlug; });
+        if (matchSlug) {
+          if (matchSlug.studioId && matchSlug.studioId !== currentDoc.studioId) {
+            showToast('This article URL is already in use.', 'error');
+            return;
+          }
+        }
+
+        if (!currentDoc.meta.category || !currentDoc.meta.category.trim()) {
+          showToast('Choose an article category before publishing this scroll.', 'error');
+          return;
+        }
+        if (!currentDoc.meta.difficulty) {
+          showToast('Choose an article difficulty before publishing this scroll.', 'error');
+          return;
+        }
         if (currentDoc.sections.length === 0) {
           showToast('Add at least one section before publishing', 'error');
           return;
@@ -3261,6 +3842,7 @@ const totalBlockCount = Object.keys(blockRegistry).length;
           if (data.success) {
             isDirty = false;
             isExistingPublished = true;
+            originalPublishedSlug = data.slug;
             setStatus('Published', 'saved');
             showToast('✦ Scroll published successfully: ' + data.slug, 'success');
             setTimeout(function() {
@@ -3278,6 +3860,8 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       // ── Initial Boot ────────────────────────────────────
       initLibrary();
       initCategoryCombobox();
+      initDifficultyDropdown();
+      initTagsCombobox();
 
       // Restore last draft or create default
       var lastDraftId = null;

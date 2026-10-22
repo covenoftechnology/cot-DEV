@@ -4,6 +4,7 @@ import fsp from 'node:fs/promises';
 import path from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ArticleDocument } from '../types/article-document';
+import { normalizeSlug, isValidSlug } from '../lib/article-taxonomy';
 
 function readJsonBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -31,9 +32,7 @@ function sendJson(res: ServerResponse, statusCode: number, data: any) {
 }
 
 function validateSlug(slug: string): boolean {
-  if (!slug || typeof slug !== 'string') return false;
-  // lower case, alphanumeric and single hyphens, no traversal
-  return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
+  return isValidSlug(slug);
 }
 
 function sanitizeFilename(filename: string): string {
@@ -45,7 +44,8 @@ function generateMetaTs(meta: any, slug: string): string {
   const safeTitle = JSON.stringify(meta.title || 'Untitled Scroll');
   const safeDesc = JSON.stringify(meta.description || '');
   const safeAuthor = JSON.stringify(meta.author || 'Oracle of Orgs');
-  const safeCat = JSON.stringify(meta.category || 'Architecture');
+  const safeCat = JSON.stringify(meta.category || 'Salesforce');
+  const safeDifficulty = JSON.stringify(meta.difficulty || 'Lv. 1 - Incantation');
   const safeTags = JSON.stringify(Array.isArray(meta.tags) ? meta.tags : []);
   const safeRank = JSON.stringify(meta.rank || 'Mechanic');
   const safeReadingTime = JSON.stringify(meta.readingTime || '12 min');
@@ -69,6 +69,7 @@ const meta: ArticleMeta = {
   description: ${safeDesc},
   author: ${safeAuthor},
   category: ${safeCat},
+  difficulty: ${safeDifficulty},
   tags: ${safeTags},
   rank: ${safeRank},
   readingTime: ${safeReadingTime},
@@ -269,11 +270,23 @@ export default function articleStudioIntegration(): AstroIntegration {
                         if (!doc.meta?.title?.trim()) {
                           return sendJson(res, 400, { error: 'Title is required.' });
                         }
+                        if (!doc.meta?.category?.trim()) {
+                          return sendJson(res, 400, { error: 'Choose an article category before publishing this scroll.' });
+                        }
+                        if (!doc.meta?.difficulty) {
+                          return sendJson(res, 400, { error: 'Choose an article difficulty before publishing this scroll.' });
+                        }
                         if (!doc.sections || doc.sections.length === 0) {
                           return sendJson(res, 400, { error: 'Add at least one section before publishing.' });
                         }
 
-                        const slug = (doc.slug || '').trim().toLowerCase();
+                        const rawSlug = (doc.slug || '').trim();
+                        if (!rawSlug) {
+                          return sendJson(res, 400, {
+                            error: 'Choose a URL slug before publishing this scroll.',
+                          });
+                        }
+                        const slug = normalizeSlug(rawSlug);
                         if (!validateSlug(slug)) {
                           return sendJson(res, 400, {
                             error: 'Invalid slug. Must be lowercase alphanumeric characters and single hyphens.',
@@ -283,23 +296,23 @@ export default function articleStudioIntegration(): AstroIntegration {
                         const articleFolder = path.join(articlesDir, slug);
                         const contentJsonPath = path.join(articleFolder, 'content.json');
 
-                        // CRITICAL RULE 25: Collision check
+                        // Collision check
                         if (fs.existsSync(articleFolder)) {
                           if (!fs.existsSync(contentJsonPath)) {
                             return sendJson(res, 409, {
-                              error: 'This slug belongs to a manually-authored article.',
+                              error: 'This article URL is already in use.',
                             });
                           }
                           try {
                             const existingContent = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
                             if (existingContent.studioId !== doc.studioId) {
                               return sendJson(res, 409, {
-                                error: 'This slug belongs to another article. Choose a unique slug.',
+                                error: 'This article URL is already in use.',
                               });
                             }
                           } catch (e) {
                             return sendJson(res, 409, {
-                              error: 'This slug belongs to a manually-authored article.',
+                              error: 'This article URL is already in use.',
                             });
                           }
                         }
@@ -402,9 +415,7 @@ import content from './content.json';
                           .trim();
 
                         const rawSlug = (originalDoc.slug || 'article').trim();
-                        const baseSlug = rawSlug
-                          .replace(/(?:-copy)+(-\d+)?$/i, '')
-                          .trim();
+                        const baseSlug = normalizeSlug(rawSlug.replace(/(?:-copy)+(-\d+)?$/i, '')) || 'article';
 
                         // Read all existing drafts to determine next copy index
                         const files = await fsp.readdir(draftsDir);
@@ -423,12 +434,12 @@ import content from './content.json';
                         }
 
                         let copyTitle = `${baseTitle} — Copy`;
-                        let copySlug = `${baseSlug}-copy`;
+                        let copySlug = normalizeSlug(`${baseSlug}-copy`);
                         let counter = 2;
 
                         while (existingTitles.has(copyTitle.toLowerCase()) || existingSlugs.has(copySlug.toLowerCase())) {
                           copyTitle = `${baseTitle} — Copy ${counter}`;
-                          copySlug = `${baseSlug}-copy-${counter}`;
+                          copySlug = normalizeSlug(`${baseSlug}-copy-${counter}`);
                           counter++;
                         }
 
