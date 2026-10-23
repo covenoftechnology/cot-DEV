@@ -1706,13 +1706,176 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         showToast('Section duplicated');
       }
 
-      function deleteSection(secId) {
+      // ── Inline Delete Confirmation (Section & Block) ────
+      var activeInlineDelete = null;
+
+      function closeInlineDelete() {
+        if (!activeInlineDelete) return null;
+        var prevTrigger = activeInlineDelete.triggerBtn;
+        if (activeInlineDelete.popoverEl && activeInlineDelete.popoverEl.parentNode) {
+          activeInlineDelete.popoverEl.parentNode.removeChild(activeInlineDelete.popoverEl);
+        }
+        activeInlineDelete = null;
+        return prevTrigger;
+      }
+
+      function positionInlineConfirmation(triggerBtn, popoverEl) {
+        if (!triggerBtn || !popoverEl) return;
+        var rect = triggerBtn.getBoundingClientRect();
+        var popoverWidth = popoverEl.offsetWidth || 230;
+        var popoverHeight = popoverEl.offsetHeight || 68;
+
+        // Position horizontally: align right edge of popover with right edge of triggerBtn
+        var left = rect.right - popoverWidth;
+        if (left < 10) {
+          left = Math.max(10, rect.left);
+        }
+        if (left + popoverWidth > window.innerWidth - 10) {
+          left = Math.max(10, window.innerWidth - popoverWidth - 10);
+        }
+
+        // Position vertically: default directly below with 6px gap
+        var top = rect.bottom + 6;
+        if (top + popoverHeight > window.innerHeight - 10) {
+          // Flip above button if not enough room below
+          top = Math.max(10, rect.top - popoverHeight - 6);
+        }
+
+        popoverEl.style.left = Math.round(left) + 'px';
+        popoverEl.style.top = Math.round(top) + 'px';
+      }
+
+      function handleInlineDeleteScrollOrResize() {
+        if (activeInlineDelete && activeInlineDelete.triggerBtn && activeInlineDelete.popoverEl) {
+          if (!document.body.contains(activeInlineDelete.triggerBtn)) {
+            closeInlineDelete();
+            return;
+          }
+          var rect = activeInlineDelete.triggerBtn.getBoundingClientRect();
+          if (rect.bottom < 0 || rect.top > window.innerHeight) {
+            closeInlineDelete();
+            return;
+          }
+          positionInlineConfirmation(activeInlineDelete.triggerBtn, activeInlineDelete.popoverEl);
+        }
+      }
+
+      function showInlineDelete(triggerBtn, title, subtitle, onConfirm) {
+        // Toggle: clicking same trigger again closes it
+        if (activeInlineDelete && activeInlineDelete.triggerBtn === triggerBtn) {
+          closeInlineDelete();
+          return;
+        }
+
+        closeInlineDelete();
+
+        if (!triggerBtn) {
+          if (confirm(title)) onConfirm();
+          return;
+        }
+
+        var popover = document.createElement('div');
+        popover.className = 'delete-confirm-inline';
+        popover.setAttribute('role', 'dialog');
+        popover.setAttribute('aria-modal', 'false');
+        popover.setAttribute('aria-label', title);
+
+        var content = document.createElement('div');
+        content.className = 'delete-confirm-inline__content';
+
+        var titleEl = document.createElement('div');
+        titleEl.className = 'delete-confirm-inline__title';
+        titleEl.textContent = title;
+        content.appendChild(titleEl);
+
+        if (subtitle) {
+          var subtitleEl = document.createElement('div');
+          subtitleEl.className = 'delete-confirm-inline__subtitle';
+          subtitleEl.textContent = subtitle;
+          content.appendChild(subtitleEl);
+        }
+
+        var actions = document.createElement('div');
+        actions.className = 'delete-confirm-inline__actions';
+
+        var cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.className = 'studio-btn studio-btn--sm delete-confirm-cancel';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.setAttribute('aria-label', 'Cancel deletion');
+
+        var deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'studio-btn studio-btn--sm studio-btn--danger delete-confirm-proceed';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.setAttribute('aria-label', 'Confirm deletion');
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(deleteBtn);
+        content.appendChild(actions);
+        popover.appendChild(content);
+
+        var studioRoot = document.querySelector('.coven-studio') || document.body;
+        studioRoot.appendChild(popover);
+
+        activeInlineDelete = {
+          triggerBtn: triggerBtn,
+          popoverEl: popover,
+          onConfirm: onConfirm
+        };
+
+        positionInlineConfirmation(triggerBtn, popover);
+
+        cancelBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          var prev = closeInlineDelete();
+          if (prev) prev.focus();
+        });
+
+        deleteBtn.addEventListener('click', function(e) {
+          e.stopPropagation();
+          closeInlineDelete();
+          if (typeof onConfirm === 'function') {
+            onConfirm();
+          }
+        });
+
+        setTimeout(function() {
+          cancelBtn.focus();
+        }, 10);
+      }
+
+      window.addEventListener('resize', handleInlineDeleteScrollOrResize, { passive: true });
+      window.addEventListener('scroll', handleInlineDeleteScrollOrResize, { capture: true, passive: true });
+
+      document.addEventListener('mousedown', function(e) {
+        if (!activeInlineDelete) return;
+        if (activeInlineDelete.popoverEl && activeInlineDelete.popoverEl.contains(e.target)) {
+          return;
+        }
+        if (activeInlineDelete.triggerBtn && activeInlineDelete.triggerBtn.contains(e.target)) {
+          return;
+        }
+        closeInlineDelete();
+      });
+
+      document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' && activeInlineDelete) {
+          var prev = closeInlineDelete();
+          if (prev) prev.focus();
+        }
+      });
+
+      function deleteSection(secId, triggerBtn) {
         var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
         if (!sec) return;
         
-        confirmDelete(
-          'DELETE SECTION?',
-          'This section contains ' + sec.blocks.length + ' block(s). This cannot be undone.',
+        var subtitle = sec.blocks.length === 1 ? 'Contains 1 block.' : ('Contains ' + sec.blocks.length + ' block(s).');
+
+        showInlineDelete(
+          triggerBtn,
+          'Delete section?',
+          subtitle,
           function() {
             currentDoc.sections = currentDoc.sections.filter(function(s) { return s.id !== secId; });
             if (activeSectionId === secId) {
@@ -1776,13 +1939,14 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         showToast('Block duplicated');
       }
 
-      function deleteBlock(secId, blockId) {
+      function deleteBlock(secId, blockId, triggerBtn) {
         var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
         if (!sec) return;
         
-        confirmDelete(
-          'DELETE BLOCK?',
-          'Remove this block from the scroll?',
+        showInlineDelete(
+          triggerBtn,
+          'Delete block?',
+          null,
           function() {
             sec.blocks = sec.blocks.filter(function(b) { return b.id !== blockId; });
             renderSections();
@@ -3232,7 +3396,7 @@ const totalBlockCount = Object.keys(blockRegistry).length;
           });
           header.querySelector('[data-action="del"]').addEventListener('click', function(e) {
             e.stopPropagation();
-            deleteSection(sec.id);
+            deleteSection(sec.id, e.currentTarget);
           });
 
           // Section Drag and Drop Reordering
@@ -3349,7 +3513,7 @@ const totalBlockCount = Object.keys(blockRegistry).length;
               });
               bHeader.querySelector('[data-action="del"]').addEventListener('click', function(e) {
                 e.stopPropagation();
-                deleteBlock(sec.id, b.id);
+                deleteBlock(sec.id, b.id, e.currentTarget);
               });
 
               // Block Drag & Drop
