@@ -380,6 +380,17 @@ const totalBlockCount = Object.keys(blockRegistry).length;
         return /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(slug);
       }
 
+      function slugify(text) {
+        return (text || '')
+          .toString()
+          .toLowerCase()
+          .trim()
+          .normalize('NFD')
+          .replace(/[\u0300-\u036f]/g, '')
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '');
+      }
+
       function escapeHtml(str) {
         if (!str && str !== 0) return '';
         return String(str)
@@ -387,6 +398,677 @@ const totalBlockCount = Object.keys(blockRegistry).length;
           .replace(/</g, '&lt;')
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;');
+      }
+
+      // ── Rich Text Helpers (Basic Typography: title-text, text-title, solo-text) ──
+      function getRichData(val) {
+        if (val && typeof val === 'object') {
+          return {
+            text: typeof val.text === 'string' ? val.text : (typeof val.content === 'string' ? val.content : ''),
+            align: (val.align === 'center' || val.align === 'right') ? val.align : 'left'
+          };
+        }
+        return {
+          text: typeof val === 'string' ? val : '',
+          align: 'left'
+        };
+      }
+
+      function validateLinkUrl(url) {
+        if (!url || typeof url !== 'string') return false;
+        var trimmed = url.trim();
+        if (!trimmed) return false;
+
+        // Internal relative route
+        if (trimmed.startsWith('/')) {
+          if (trimmed.startsWith('//')) return false;
+          if (trimmed.includes('\\')) return false;
+          if (trimmed.includes('/../') || trimmed.endsWith('/..') || trimmed === '/..') return false;
+          if (trimmed.includes('/./') || trimmed.endsWith('/.') || trimmed === '/.') return false;
+          return true;
+        }
+
+        // External URL: only http: and https:
+        if (/^https?:\/\//i.test(trimmed)) {
+          try {
+            var parsed = new URL(trimmed);
+            if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+            if (!parsed.hostname || parsed.hostname.indexOf('.') === -1) return false;
+            return true;
+          } catch (e) {
+            return false;
+          }
+        }
+
+        return false;
+      }
+
+      function sanitizeRichText(html) {
+        if (!html || typeof html !== 'string') return '';
+        var parser = new DOMParser();
+        var doc = parser.parseFromString('<div>' + html + '</div>', 'text/html');
+        var root = doc.body.firstElementChild || doc.body;
+
+        function cleanNode(node) {
+          var children = Array.from(node.childNodes);
+          for (var i = 0; i < children.length; i++) {
+            var child = children[i];
+            if (child.nodeType === 3) continue;
+            if (child.nodeType === 1) {
+              var tag = child.tagName.toLowerCase();
+              cleanNode(child);
+              if (tag === 'b' || tag === 'strong') {
+                var strong = doc.createElement('strong');
+                while (child.firstChild) strong.appendChild(child.firstChild);
+                child.parentNode.replaceChild(strong, child);
+              } else if (tag === 'i' || tag === 'em') {
+                var em = doc.createElement('em');
+                while (child.firstChild) em.appendChild(child.firstChild);
+                child.parentNode.replaceChild(em, child);
+              } else if (tag === 'u') {
+                var u = doc.createElement('u');
+                while (child.firstChild) u.appendChild(child.firstChild);
+                child.parentNode.replaceChild(u, child);
+              } else if (tag === 'span') {
+                var allowedClasses = ['article-text-gold', 'article-text-purple', 'article-text-muted'];
+                var matched = allowedClasses.find(function(c) { return child.classList.contains(c); });
+                if (matched) {
+                  child.className = matched;
+                  child.removeAttribute('style');
+                } else {
+                  while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
+                  child.parentNode.removeChild(child);
+                }
+              } else if (tag === 'a') {
+                var rawHref = child.getAttribute('href') || '';
+                if (validateLinkUrl(rawHref)) {
+                  // Prevent nested anchors: unwrap any <a> inside this <a>
+                  var nestedAnchors = Array.from(child.querySelectorAll('a'));
+                  nestedAnchors.forEach(function(na) {
+                    while (na.firstChild) na.parentNode.insertBefore(na.firstChild, na);
+                    na.parentNode.removeChild(na);
+                  });
+
+                  var cleanA = doc.createElement('a');
+                  cleanA.setAttribute('href', rawHref.trim());
+                  var isExt = /^https?:\/\//i.test(rawHref.trim());
+                  if (isExt) {
+                    cleanA.setAttribute('target', '_blank');
+                    cleanA.setAttribute('rel', 'noopener noreferrer');
+                  }
+                  var allowedLinkColorClasses = [
+                    'article-rich-link--gold',
+                    'article-rich-link--purple',
+                    'article-rich-link--parchment',
+                    'article-rich-link--muted'
+                  ];
+                  var matchedClass = allowedLinkColorClasses.find(function(c) { return child.classList.contains(c); });
+                  cleanA.className = 'article-rich-link' + (matchedClass ? ' ' + matchedClass : '');
+                  while (child.firstChild) cleanA.appendChild(child.firstChild);
+                  child.parentNode.replaceChild(cleanA, child);
+                } else {
+                  // Unsafe or invalid href: unwrap children, remove anchor!
+                  while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
+                  child.parentNode.removeChild(child);
+                }
+              } else if (tag === 'br') {
+                // keep br
+              } else {
+                while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
+                child.parentNode.removeChild(child);
+              }
+            } else {
+              child.parentNode.removeChild(child);
+            }
+          }
+        }
+
+        cleanNode(root);
+        return root.innerHTML;
+      }
+
+      function applyColorClass(surface, colorClass) {
+        var sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
+        var range = sel.getRangeAt(0);
+        if (!surface.contains(range.commonAncestorContainer)) return;
+        if (range.collapsed) return;
+
+        var oldSpans = surface.querySelectorAll('.article-text-gold, .article-text-purple, .article-text-muted');
+        for (var j = 0; j < oldSpans.length; j++) {
+          var osp = oldSpans[j];
+          if (range.intersectsNode ? range.intersectsNode(osp) : true) {
+            var tn = document.createTextNode(osp.textContent);
+            osp.parentNode.replaceChild(tn, osp);
+          }
+        }
+
+        if (colorClass !== 'default') {
+          try {
+            var span = document.createElement('span');
+            span.className = colorClass;
+            range.surroundContents(span);
+            var newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+          } catch (err) {
+            var fragment = range.extractContents();
+            var spanNode = document.createElement('span');
+            spanNode.className = colorClass;
+            spanNode.appendChild(fragment);
+            range.insertNode(spanNode);
+            var reselRange = document.createRange();
+            reselRange.selectNodeContents(spanNode);
+            sel.removeAllRanges();
+            sel.addRange(reselRange);
+          }
+        }
+      }
+
+      function renderRichTextFieldHtml(label, fieldAttr, rawData, placeholder, removeBtnHtml) {
+        var rich = getRichData(rawData);
+        var align = rich.align || 'left';
+        var text = rich.text || '';
+
+        return (
+          '<div class="studio-form-group rich-text-field-wrap">' +
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+              '<label class="studio-label" style="margin-bottom:0">' + label + '</label>' +
+              (removeBtnHtml || '') +
+            '</div>' +
+            '<div class="rich-text-toolbar" role="toolbar" aria-label="Text formatting">' +
+              '<button type="button" class="rich-btn rich-btn-bold" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>' +
+              '<button type="button" class="rich-btn rich-btn-italic" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>' +
+              '<button type="button" class="rich-btn rich-btn-underline" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>' +
+              '<div class="rich-color-dropdown-wrap">' +
+                '<button type="button" class="rich-btn rich-btn-color" data-cmd="toggle-color" title="Text Color"><span class="rich-color-glyph">A</span><span class="rich-color-caret">▾</span></button>' +
+                '<div class="rich-color-menu" style="display:none">' +
+                  '<div class="rich-color-menu-title">TEXT COLOR</div>' +
+                  '<button type="button" class="rich-color-item" data-color="default"><span class="rich-color-swatch swatch-default"></span>Default</button>' +
+                  '<button type="button" class="rich-color-item" data-color="article-text-gold"><span class="rich-color-swatch swatch-gold"></span>Coven Gold</button>' +
+                  '<button type="button" class="rich-color-item" data-color="article-text-purple"><span class="rich-color-swatch swatch-purple"></span>Coven Purple</button>' +
+                  '<button type="button" class="rich-color-item" data-color="article-text-muted"><span class="rich-color-swatch swatch-muted"></span>Muted Parchment</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="rich-link-dropdown-wrap">' +
+                '<button type="button" class="rich-btn rich-btn-link" data-cmd="link" title="Add or edit link" aria-label="Add or edit link">' +
+                  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">' +
+                    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>' +
+                    '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>' +
+                  '</svg>' +
+                '</button>' +
+                '<div class="rich-link-popover" style="display:none" role="dialog" aria-label="Link destination and style">' +
+                  '<div class="rich-link-popover__label">LINK DESTINATION</div>' +
+                  '<input type="text" class="rich-link-popover__input" placeholder="https://example.com or /article/..." aria-label="Link URL" />' +
+                  '<div class="rich-link-popover__error" style="display:none">Enter a valid http(s) URL or Coven internal path.</div>' +
+                  '<div class="rich-link-popover__msg" style="display:none">Select text before creating a link.</div>' +
+                  '<div class="rich-link-popover__color-section">' +
+                    '<div class="rich-link-popover__label" style="margin-top:4px">LINK COLOR</div>' +
+                    '<div class="rich-link-popover__swatches" role="radiogroup" aria-label="Link color">' +
+                      '<button type="button" class="rich-link-swatch is-active" data-link-color="default" title="Default Coven Link"><span class="rich-color-swatch swatch-gold"></span>Default</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="gold" title="Coven Gold"><span class="rich-color-swatch swatch-gold"></span>Gold</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="purple" title="Coven Purple"><span class="rich-color-swatch swatch-purple"></span>Purple</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="parchment" title="Parchment"><span class="rich-color-swatch swatch-default"></span>Parchment</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="muted" title="Muted Parchment"><span class="rich-color-swatch swatch-muted"></span>Muted</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="rich-link-popover__actions">' +
+                    '<button type="button" class="studio-btn studio-btn--danger rich-link-btn--remove" style="display:none">Remove Link</button>' +
+                    '<div style="flex:1"></div>' +
+                    '<button type="button" class="studio-btn rich-link-btn--cancel">Cancel</button>' +
+                    '<button type="button" class="studio-btn studio-btn--primary rich-link-btn--apply" disabled>Apply Link</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<span class="rich-toolbar-divider"></span>' +
+              '<button type="button" class="rich-btn rich-btn-align ' + (align === 'left' ? 'is-active' : '') + '" data-align="left" title="Align Left">≡←</button>' +
+              '<button type="button" class="rich-btn rich-btn-align ' + (align === 'center' ? 'is-active' : '') + '" data-align="center" title="Align Center">≡↔</button>' +
+              '<button type="button" class="rich-btn rich-btn-align ' + (align === 'right' ? 'is-active' : '') + '" data-align="right" title="Align Right">→≡</button>' +
+            '</div>' +
+            '<div class="rich-text-surface rich-align-' + align + '" contenteditable="true" spellcheck="false" ' + fieldAttr + ' data-placeholder="' + escapeHtml(placeholder || '') + '">' + sanitizeRichText(text) + '</div>' +
+          '</div>'
+        );
+      }
+
+      function attachRichTextListeners(bBody, sec, block) {
+        var d = block.data;
+
+        bBody.querySelectorAll('.rich-text-field-wrap').forEach(function(wrap) {
+          var toolbar = wrap.querySelector('.rich-text-toolbar');
+          var surface = wrap.querySelector('.rich-text-surface');
+          var colorMenu = wrap.querySelector('.rich-color-menu');
+          var colorTrigger = wrap.querySelector('.rich-btn-color');
+          var linkBtn = wrap.querySelector('.rich-btn-link');
+          var linkPopover = wrap.querySelector('.rich-link-popover');
+          var urlInput = linkPopover ? linkPopover.querySelector('.rich-link-popover__input') : null;
+          var urlError = linkPopover ? linkPopover.querySelector('.rich-link-popover__error') : null;
+          var popoverMsg = linkPopover ? linkPopover.querySelector('.rich-link-popover__msg') : null;
+          var colorSection = linkPopover ? linkPopover.querySelector('.rich-link-popover__color-section') : null;
+          var removeBtn = linkPopover ? linkPopover.querySelector('.rich-link-btn--remove') : null;
+          var cancelBtn = linkPopover ? linkPopover.querySelector('.rich-link-btn--cancel') : null;
+          var applyBtn = linkPopover ? linkPopover.querySelector('.rich-link-btn--apply') : null;
+          var swatchBtns = linkPopover ? linkPopover.querySelectorAll('.rich-link-swatch') : [];
+
+          var savedRange = null;
+          var activeAnchor = null;
+          var selectedLinkColor = 'default';
+
+          if (!toolbar || !surface) return;
+
+          var directField = surface.getAttribute('data-rich-field');
+          var arrayField = surface.getAttribute('data-rich-array');
+          var arrayIdx = arrayField ? parseInt(surface.getAttribute('data-rich-idx'), 10) : -1;
+
+          function getCurrentData() {
+            if (directField) {
+              return getRichData(d[directField]);
+            }
+            if (arrayField && Array.isArray(d[arrayField])) {
+              return getRichData(d[arrayField][arrayIdx]);
+            }
+            return { text: '', align: 'left' };
+          }
+
+          function setCurrentData(richObj) {
+            if (directField) {
+              d[directField] = richObj;
+            } else if (arrayField && Array.isArray(d[arrayField])) {
+              d[arrayField][arrayIdx] = richObj;
+            }
+            calculateReadingTime();
+            triggerAutosave();
+          }
+
+          function getAnchorAtSelection() {
+            var sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return null;
+            var range = sel.getRangeAt(0);
+            if (!surface.contains(range.commonAncestorContainer)) return null;
+            var node = range.commonAncestorContainer;
+            if (node.nodeType === 3) node = node.parentNode;
+            var a = node ? (node.closest ? node.closest('a') : null) : null;
+            return (a && surface.contains(a)) ? a : null;
+          }
+
+          function getSelectionInfo() {
+            var sel = window.getSelection();
+            if (!sel || !sel.rangeCount) return { hasSelection: false, anchor: null, range: null };
+            var range = sel.getRangeAt(0);
+            if (!surface.contains(range.commonAncestorContainer)) return { hasSelection: false, anchor: null, range: null };
+            var anchor = getAnchorAtSelection();
+            var hasText = !range.collapsed && range.toString().trim().length > 0;
+            return { hasSelection: hasText || !!anchor, hasText: hasText, anchor: anchor, range: range };
+          }
+
+          function updateToolbarActiveStates() {
+            var boldBtn = toolbar.querySelector('[data-cmd="bold"]');
+            var italicBtn = toolbar.querySelector('[data-cmd="italic"]');
+            var underlineBtn = toolbar.querySelector('[data-cmd="underline"]');
+
+            if (boldBtn) boldBtn.classList.toggle('is-active', document.queryCommandState('bold'));
+            if (italicBtn) italicBtn.classList.toggle('is-active', document.queryCommandState('italic'));
+            if (underlineBtn) underlineBtn.classList.toggle('is-active', document.queryCommandState('underline'));
+
+            var cur = getCurrentData();
+            toolbar.querySelectorAll('.rich-btn-align').forEach(function(btn) {
+              btn.classList.toggle('is-active', btn.getAttribute('data-align') === cur.align);
+            });
+
+            var selInfo = getSelectionInfo();
+            if (linkBtn) {
+              if (selInfo.anchor) {
+                linkBtn.classList.add('is-active');
+                linkBtn.style.opacity = '1';
+                linkBtn.title = 'Edit link';
+              } else if (selInfo.hasText) {
+                linkBtn.classList.remove('is-active');
+                linkBtn.style.opacity = '1';
+                linkBtn.title = 'Add link';
+              } else {
+                linkBtn.classList.remove('is-active');
+                linkBtn.style.opacity = '0.5';
+                linkBtn.title = 'Select text before creating a link';
+              }
+            }
+          }
+
+          function updateSwatchActive() {
+            swatchBtns.forEach(function(sb) {
+              sb.classList.toggle('is-active', sb.getAttribute('data-link-color') === selectedLinkColor);
+            });
+          }
+
+          function closeLinkPopover() {
+            if (linkPopover) linkPopover.style.display = 'none';
+            if (applyBtn) applyBtn.style.display = 'inline-block';
+            savedRange = null;
+            activeAnchor = null;
+          }
+
+          toolbar.querySelectorAll('button').forEach(function(btn) {
+            btn.addEventListener('mousedown', function(e) {
+              e.preventDefault();
+            });
+          });
+
+          toolbar.querySelectorAll('[data-cmd="bold"], [data-cmd="italic"], [data-cmd="underline"]').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              var cmd = btn.getAttribute('data-cmd');
+              surface.focus();
+              document.execCommand(cmd, false, null);
+              updateToolbarActiveStates();
+              var cur = getCurrentData();
+              cur.text = sanitizeRichText(surface.innerHTML);
+              setCurrentData(cur);
+            });
+          });
+
+          if (colorTrigger && colorMenu) {
+            colorTrigger.addEventListener('click', function(e) {
+              e.preventDefault();
+              var isOpen = colorMenu.style.display === 'block';
+              document.querySelectorAll('.rich-color-menu').forEach(function(m) { m.style.display = 'none'; });
+              document.querySelectorAll('.rich-link-popover').forEach(function(p) { p.style.display = 'none'; });
+              colorMenu.style.display = isOpen ? 'none' : 'block';
+            });
+
+            colorMenu.querySelectorAll('.rich-color-item').forEach(function(item) {
+              item.addEventListener('click', function(e) {
+                e.preventDefault();
+                var colorClass = item.getAttribute('data-color');
+                surface.focus();
+                applyColorClass(surface, colorClass);
+                colorMenu.style.display = 'none';
+                updateToolbarActiveStates();
+                var cur = getCurrentData();
+                cur.text = sanitizeRichText(surface.innerHTML);
+                setCurrentData(cur);
+              });
+            });
+          }
+
+          // ── Link Button & Popover Events ──────────────────
+          if (linkBtn && linkPopover) {
+            linkBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              var isOpen = linkPopover.style.display === 'flex';
+              if (isOpen) {
+                closeLinkPopover();
+                return;
+              }
+              document.querySelectorAll('.rich-color-menu').forEach(function(m) { m.style.display = 'none'; });
+              document.querySelectorAll('.rich-link-popover').forEach(function(p) { p.style.display = 'none'; });
+
+              var selInfo = getSelectionInfo();
+
+              if (selInfo.anchor) {
+                // Editing existing anchor
+                activeAnchor = selInfo.anchor;
+                savedRange = null;
+                if (urlInput) urlInput.value = activeAnchor.getAttribute('href') || '';
+                var cls = activeAnchor.className || '';
+                selectedLinkColor = 'default';
+                if (cls.indexOf('article-rich-link--gold') !== -1) selectedLinkColor = 'gold';
+                else if (cls.indexOf('article-rich-link--purple') !== -1) selectedLinkColor = 'purple';
+                else if (cls.indexOf('article-rich-link--parchment') !== -1) selectedLinkColor = 'parchment';
+                else if (cls.indexOf('article-rich-link--muted') !== -1) selectedLinkColor = 'muted';
+
+                updateSwatchActive();
+                if (urlInput) urlInput.style.display = 'block';
+                if (colorSection) colorSection.style.display = 'block';
+                if (popoverMsg) popoverMsg.style.display = 'none';
+                if (removeBtn) removeBtn.style.display = 'inline-block';
+                if (applyBtn) {
+                  applyBtn.style.display = 'inline-block';
+                  applyBtn.textContent = 'Update Link';
+                  applyBtn.disabled = !validateLinkUrl(urlInput ? urlInput.value : '');
+                }
+                if (urlError) urlError.style.display = 'none';
+
+                linkPopover.style.display = 'flex';
+                setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+              } else if (selInfo.hasText) {
+                // Creating new link on selected range
+                activeAnchor = null;
+                savedRange = selInfo.range.cloneRange();
+                if (urlInput) urlInput.value = '';
+                selectedLinkColor = 'default';
+                updateSwatchActive();
+
+                if (urlInput) urlInput.style.display = 'block';
+                if (colorSection) colorSection.style.display = 'block';
+                if (popoverMsg) popoverMsg.style.display = 'none';
+                if (removeBtn) removeBtn.style.display = 'none';
+                if (applyBtn) {
+                  applyBtn.style.display = 'inline-block';
+                  applyBtn.textContent = 'Apply Link';
+                  applyBtn.disabled = true;
+                }
+                if (urlError) urlError.style.display = 'none';
+
+                linkPopover.style.display = 'flex';
+                setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+              } else {
+                // Selection collapsed: show message
+                activeAnchor = null;
+                savedRange = null;
+                if (urlInput) urlInput.style.display = 'none';
+                if (colorSection) colorSection.style.display = 'none';
+                if (popoverMsg) {
+                  popoverMsg.textContent = 'Select text before creating a link.';
+                  popoverMsg.style.display = 'block';
+                }
+                if (removeBtn) removeBtn.style.display = 'none';
+                if (applyBtn) applyBtn.style.display = 'none';
+                if (urlError) urlError.style.display = 'none';
+
+                linkPopover.style.display = 'flex';
+              }
+            });
+
+            linkPopover.addEventListener('mousedown', function(e) {
+              if (e.target.tagName !== 'INPUT') {
+                e.preventDefault();
+              }
+            });
+
+            swatchBtns.forEach(function(sb) {
+              sb.addEventListener('click', function(e) {
+                e.preventDefault();
+                selectedLinkColor = sb.getAttribute('data-link-color') || 'default';
+                updateSwatchActive();
+              });
+            });
+
+            if (urlInput) {
+              function checkUrlValidity() {
+                var val = urlInput.value.trim();
+                var isValid = validateLinkUrl(val);
+                if (!val) {
+                  if (urlError) urlError.style.display = 'none';
+                  if (applyBtn) applyBtn.disabled = true;
+                } else if (isValid) {
+                  if (urlError) urlError.style.display = 'none';
+                  if (applyBtn) applyBtn.disabled = false;
+                } else {
+                  if (urlError) {
+                    urlError.textContent = 'Enter a valid http(s) URL or Coven internal path.';
+                    urlError.style.display = 'block';
+                  }
+                  if (applyBtn) applyBtn.disabled = true;
+                }
+              }
+
+              ['input', 'change', 'keyup', 'paste'].forEach(function(evt) {
+                urlInput.addEventListener(evt, checkUrlValidity);
+              });
+
+              urlInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                  e.preventDefault();
+                  closeLinkPopover();
+                  surface.focus();
+                } else if (e.key === 'Enter') {
+                  e.preventDefault();
+                  checkUrlValidity();
+                  if (applyBtn && !applyBtn.disabled) {
+                    applyBtn.click();
+                  }
+                }
+              });
+            }
+
+            if (cancelBtn) {
+              cancelBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                closeLinkPopover();
+                surface.focus();
+              });
+            }
+
+            if (removeBtn) {
+              removeBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                if (activeAnchor) {
+                  while (activeAnchor.firstChild) {
+                    activeAnchor.parentNode.insertBefore(activeAnchor.firstChild, activeAnchor);
+                  }
+                  activeAnchor.parentNode.removeChild(activeAnchor);
+                }
+                closeLinkPopover();
+                surface.focus();
+                var cur = getCurrentData();
+                cur.text = sanitizeRichText(surface.innerHTML);
+                setCurrentData(cur);
+                updateToolbarActiveStates();
+              });
+            }
+
+            if (applyBtn) {
+              applyBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                var url = urlInput ? urlInput.value.trim() : '';
+                if (!validateLinkUrl(url)) return;
+
+                var isExt = /^https?:\/\//i.test(url);
+                var colorClass = selectedLinkColor !== 'default' ? ' article-rich-link--' + selectedLinkColor : '';
+
+                if (activeAnchor) {
+                  activeAnchor.setAttribute('href', url);
+                  if (isExt) {
+                    activeAnchor.setAttribute('target', '_blank');
+                    activeAnchor.setAttribute('rel', 'noopener noreferrer');
+                  } else {
+                    activeAnchor.removeAttribute('target');
+                    activeAnchor.removeAttribute('rel');
+                  }
+                  activeAnchor.className = 'article-rich-link' + colorClass;
+                } else if (savedRange) {
+                  var sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(savedRange);
+
+                  // Prevent nested anchors
+                  var insideAnchors = surface.querySelectorAll('a');
+                  for (var k = 0; k < insideAnchors.length; k++) {
+                    var ia = insideAnchors[k];
+                    if (savedRange.intersectsNode ? savedRange.intersectsNode(ia) : false) {
+                      while (ia.firstChild) ia.parentNode.insertBefore(ia.firstChild, ia);
+                      ia.parentNode.removeChild(ia);
+                    }
+                  }
+
+                  var a = document.createElement('a');
+                  a.setAttribute('href', url);
+                  if (isExt) {
+                    a.setAttribute('target', '_blank');
+                    a.setAttribute('rel', 'noopener noreferrer');
+                  }
+                  a.className = 'article-rich-link' + colorClass;
+
+                  try {
+                    savedRange.surroundContents(a);
+                  } catch (err) {
+                    var fragment = savedRange.extractContents();
+                    a.appendChild(fragment);
+                    savedRange.insertNode(a);
+                  }
+
+                  var newRange = document.createRange();
+                  newRange.selectNodeContents(a);
+                  sel.removeAllRanges();
+                  sel.addRange(newRange);
+                }
+
+                closeLinkPopover();
+                surface.focus();
+                var cur = getCurrentData();
+                cur.text = sanitizeRichText(surface.innerHTML);
+                setCurrentData(cur);
+                updateToolbarActiveStates();
+              });
+            }
+          }
+
+          toolbar.querySelectorAll('.rich-btn-align').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.preventDefault();
+              var align = btn.getAttribute('data-align');
+              surface.classList.remove('rich-align-left', 'rich-align-center', 'rich-align-right');
+              surface.classList.add('rich-align-' + align);
+              toolbar.querySelectorAll('.rich-btn-align').forEach(function(b) {
+                b.classList.toggle('is-active', b === btn);
+              });
+              var cur = getCurrentData();
+              cur.align = align;
+              cur.text = sanitizeRichText(surface.innerHTML);
+              setCurrentData(cur);
+            });
+          });
+
+          surface.addEventListener('click', function(e) {
+            var anchor = e.target.closest('a');
+            if (anchor) {
+              e.preventDefault();
+              updateToolbarActiveStates();
+            }
+          });
+
+          surface.addEventListener('input', function() {
+            var cur = getCurrentData();
+            cur.text = sanitizeRichText(surface.innerHTML);
+            setCurrentData(cur);
+            updateToolbarActiveStates();
+          });
+
+          surface.addEventListener('keyup', updateToolbarActiveStates);
+          surface.addEventListener('mouseup', updateToolbarActiveStates);
+
+          surface.addEventListener('paste', function(e) {
+            e.preventDefault();
+            var text = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
+            document.execCommand('insertText', false, text);
+            var cur = getCurrentData();
+            cur.text = sanitizeRichText(surface.innerHTML);
+            setCurrentData(cur);
+            updateToolbarActiveStates();
+          });
+
+          surface.addEventListener('focus', function() {
+            wrap.classList.add('is-focused');
+            updateToolbarActiveStates();
+          });
+
+          surface.addEventListener('blur', function() {
+            wrap.classList.remove('is-focused');
+            if (colorMenu) colorMenu.style.display = 'none';
+            var cur = getCurrentData();
+            cur.text = sanitizeRichText(surface.innerHTML);
+            setCurrentData(cur);
+          });
+        });
       }
 
       // ── State ───────────────────────────────────────────
@@ -461,10 +1143,24 @@ const totalBlockCount = Object.keys(blockRegistry).length;
 
             switch (blk.type) {
               case 'title-text':
+                if (!Array.isArray(d.paragraphs)) {
+                  d.paragraphs = d.paragraph || d.text ? [d.paragraph || d.text] : [''];
+                }
+                d.paragraphs = d.paragraphs.map(function(p) { return getRichData(p); });
+                d.heading = getRichData(d.heading);
+                break;
+
+              case 'text-title':
+                d.intro = getRichData(d.intro);
+                d.heading = getRichData(d.heading);
+                d.paragraph = getRichData(d.paragraph || d.text);
+                break;
+
               case 'solo-text':
                 if (!Array.isArray(d.paragraphs)) {
                   d.paragraphs = d.paragraph || d.text ? [d.paragraph || d.text] : [''];
                 }
+                d.paragraphs = d.paragraphs.map(function(p) { return getRichData(p); });
                 break;
 
               case 'bullet-list':
@@ -647,7 +1343,9 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       function calculateReadingTime() {
         var totalWords = 0;
 
-        function addWords(str) {
+        function addWords(val) {
+          if (!val) return;
+          var str = (typeof val === 'object' && val !== null) ? (val.text || val.content || '') : val;
           if (!str || typeof str !== 'string') return;
           var clean = str.replace(/<[^>]*>/g, ' ').trim();
           if (clean) {
@@ -1142,14 +1840,14 @@ const totalBlockCount = Object.keys(blockRegistry).length;
                 '<div class="studio-form-group"><label class="studio-label"><span>Kicker</span><span class="field-label-remove" data-act="remove-field" data-opt-field="kicker">✕ Remove</span></label><input type="text" class="studio-input" data-field="kicker" value="' + escapeHtml(d.kicker) + '" placeholder="01 · Kicker text..." /></div>' :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="kicker">+ Add Kicker</button></div>'
               ) +
-              '<div class="studio-form-group"><label class="studio-label">Heading *</label><input type="text" class="studio-input" data-field="heading" value="' + escapeHtml(d.heading || '') + '" placeholder="Primary section heading..." /></div>' +
+              renderRichTextFieldHtml('Heading *', 'data-rich-field="heading"', d.heading, 'Primary section heading...') +
               '<div class="studio-form-group"><label class="studio-label">Paragraphs</label><div class="studio-repeatable-list">';
             (d.paragraphs || ['']).forEach(function(p, pIdx) {
               html += 
                 '<div class="studio-repeatable-row">' +
                   '<span class="studio-repeatable-handle">⋮⋮</span>' +
                   '<div class="studio-repeatable-content">' +
-                    '<textarea class="studio-textarea" data-array-field="paragraphs" data-array-idx="' + pIdx + '" style="min-height:75px" placeholder="Write paragraph...">' + escapeHtml(typeof p === 'object' ? p.text : p) + '</textarea>' +
+                    renderRichTextFieldHtml('Paragraph ' + (pIdx + 1), 'data-rich-array="paragraphs" data-rich-idx="' + pIdx + '"', p, 'Write paragraph...') +
                   '</div>' +
                   '<div class="studio-repeatable-actions">' +
                     '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-paragraph" data-idx="' + pIdx + '" ' + (d.paragraphs.length <= 1 ? 'disabled' : '') + ' title="Delete paragraph">✕</button>' +
@@ -1165,9 +1863,9 @@ const totalBlockCount = Object.keys(blockRegistry).length;
                 '<div class="studio-form-group"><label class="studio-label"><span>Kicker</span><span class="field-label-remove" data-act="remove-field" data-opt-field="kicker">✕ Remove</span></label><input type="text" class="studio-input" data-field="kicker" value="' + escapeHtml(d.kicker) + '" /></div>' :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="kicker">+ Add Kicker</button></div>'
               ) +
-              '<div class="studio-form-group"><label class="studio-label">Intro Bridge Lead</label><textarea class="studio-textarea" data-field="intro" placeholder="Introductory bridge lead paragraph...">' + escapeHtml(d.intro || '') + '</textarea></div>' +
-              '<div class="studio-form-group"><label class="studio-label">Subsequent Heading</label><input type="text" class="studio-input" data-field="heading" value="' + escapeHtml(d.heading || '') + '" placeholder="Subsequent heading..." /></div>' +
-              '<div class="studio-form-group"><label class="studio-label">Body Paragraph</label><textarea class="studio-textarea" data-field="paragraph" placeholder="Detailed technical narrative...">' + escapeHtml(d.paragraph || '') + '</textarea></div>';
+              renderRichTextFieldHtml('Intro Bridge Lead', 'data-rich-field="intro"', d.intro, 'Introductory bridge lead paragraph...') +
+              renderRichTextFieldHtml('Subsequent Heading', 'data-rich-field="heading"', d.heading, 'Subsequent heading...') +
+              renderRichTextFieldHtml('Body Paragraph', 'data-rich-field="paragraph"', d.paragraph || d.text, 'Detailed technical narrative...');
             break;
 
           case 'solo-text':
@@ -1177,7 +1875,7 @@ const totalBlockCount = Object.keys(blockRegistry).length;
                 '<div class="studio-repeatable-row">' +
                   '<span class="studio-repeatable-handle">⋮⋮</span>' +
                   '<div class="studio-repeatable-content">' +
-                    '<textarea class="studio-textarea" data-array-field="paragraphs" data-array-idx="' + pIdx + '" style="min-height:85px" placeholder="Narrative paragraph text...">' + escapeHtml(typeof p === 'object' ? p.text : p) + '</textarea>' +
+                    renderRichTextFieldHtml('Paragraph ' + (pIdx + 1), 'data-rich-array="paragraphs" data-rich-idx="' + pIdx + '"', p, 'Narrative paragraph text...') +
                   '</div>' +
                   '<div class="studio-repeatable-actions">' +
                     '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-paragraph" data-idx="' + pIdx + '" ' + (d.paragraphs.length <= 1 ? 'disabled' : '') + ' title="Delete paragraph">✕</button>' +
@@ -1722,6 +2420,11 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       function attachBlockListeners(bBody, sec, block) {
         var d = block.data;
 
+        // Rich text listeners for Basic Typography (title-text, text-title, solo-text)
+        if (block.type === 'title-text' || block.type === 'text-title' || block.type === 'solo-text') {
+          attachRichTextListeners(bBody, sec, block);
+        }
+
         // 1. Direct field inputs
         bBody.querySelectorAll('[data-field]').forEach(function(input) {
           var field = input.getAttribute('data-field');
@@ -1954,7 +2657,7 @@ const totalBlockCount = Object.keys(blockRegistry).length;
             // Paragraphs
             case 'add-paragraph':
               d.paragraphs = d.paragraphs || [];
-              d.paragraphs.push('');
+              d.paragraphs.push({ text: '', align: 'left' });
               renderSections();
               triggerAutosave();
               break;
@@ -3439,6 +4142,20 @@ const totalBlockCount = Object.keys(blockRegistry).length;
 
         window._renderTagChips = renderTagChips;
       }
+
+      // Close rich text color menus and link popovers on outside click
+      document.addEventListener('click', function(e) {
+        if (!e.target.closest('.rich-color-dropdown-wrap')) {
+          document.querySelectorAll('.rich-color-menu').forEach(function(m) {
+            m.style.display = 'none';
+          });
+        }
+        if (!e.target.closest('.rich-link-dropdown-wrap')) {
+          document.querySelectorAll('.rich-link-popover').forEach(function(p) {
+            p.style.display = 'none';
+          });
+        }
+      });
 
       // ── Advanced Settings Accordion ─────────────────────
       document.getElementById('adv-settings-toggle').addEventListener('click', function() {

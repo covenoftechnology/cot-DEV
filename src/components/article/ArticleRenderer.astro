@@ -25,13 +25,60 @@ function slugify(text: string): string {
 
 function cleanHtml(input: string): string {
   if (!input || typeof input !== 'string') return '';
-  return input
+  let sanitized = input
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/\son\w+="[^"]*"/gi, '')
     .replace(/\son\w+='[^']*'/gi, '')
     .replace(/\sstyle="[^"]*"/gi, '')
-    .replace(/javascript:/gi, '');
+    .replace(/javascript:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/data:/gi, '');
+
+  // Strip unsafe anchors and sanitize allowed anchors
+  sanitized = sanitized.replace(/<a\b([^>]*)>([\s\S]*?)<\/a>/gi, (_match, attrs, content) => {
+    const hrefMatch = attrs.match(/href="([^"]*)"/i) || attrs.match(/href='([^']*)'/i);
+    if (!hrefMatch) return content;
+    const href = hrefMatch[1].trim();
+    const isExternal = /^https?:\/\//i.test(href);
+    const isInternal = href.startsWith('/') && !href.startsWith('//') && !href.includes('\\') && !href.includes('/../') && !href.includes('/./');
+    if (!isExternal && !isInternal) {
+      return content;
+    }
+    let safeClass = 'article-rich-link';
+    const classMatch = attrs.match(/class="([^"]*)"/i) || attrs.match(/class='([^']*)'/i);
+    if (classMatch) {
+      const cls = classMatch[1];
+      if (cls.includes('article-rich-link--gold')) safeClass += ' article-rich-link--gold';
+      else if (cls.includes('article-rich-link--purple')) safeClass += ' article-rich-link--purple';
+      else if (cls.includes('article-rich-link--parchment')) safeClass += ' article-rich-link--parchment';
+      else if (cls.includes('article-rich-link--muted')) safeClass += ' article-rich-link--muted';
+    }
+    const targetRel = isExternal ? ' target="_blank" rel="noopener noreferrer"' : '';
+    return `<a href="${href}" class="${safeClass}"${targetRel}>${content}</a>`;
+  });
+
+  return sanitized;
+}
+
+function getPlainHeadingText(input: any): string {
+  if (!input) return '';
+  let str = '';
+  if (typeof input === 'string') {
+    str = input;
+  } else if (typeof input === 'object' && input !== null) {
+    str = input.text || input.content || '';
+  }
+  if (!str || typeof str !== 'string') return '';
+  let clean = str.replace(/<[^>]+>/g, '').trim();
+  clean = clean
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&nbsp;/g, ' ');
+  return clean.trim();
 }
 ---
 
@@ -48,38 +95,98 @@ function cleanHtml(input: string): string {
 
           switch (block.type) {
             case 'title-text': {
+              const headingData = typeof d.heading === 'object' && d.heading !== null
+                ? { text: d.heading.text || d.heading.content || '', align: d.heading.align || 'left' }
+                : { text: typeof d.heading === 'string' ? d.heading : '', align: d.headingAlign || 'left' };
+              const headingAlignClass = headingData.align && headingData.align !== 'left' ? `rich-align-${headingData.align}` : '';
+
               const paragraphs = Array.isArray(d.paragraphs)
-                ? d.paragraphs.map((p: any) => (typeof p === 'object' && p !== null ? p.text : p))
-                : (d.paragraph || d.text ? [d.paragraph || d.text] : []);
+                ? d.paragraphs.map((p: any) => {
+                    if (typeof p === 'object' && p !== null) {
+                      return { text: p.text || p.content || '', align: p.align || 'left' };
+                    }
+                    return { text: typeof p === 'string' ? p : '', align: 'left' };
+                  })
+                : (d.paragraph || d.text ? [{ text: d.paragraph || d.text, align: 'left' }] : []);
+
+              const plainHeading = getPlainHeadingText(headingData.text);
+              const isTocSub = plainHeading.length > 0;
+              const subId = `sub-${block.id || `${sIndex}-${bIndex}`}`;
+
               return (
                 <div class="block-typography-title-text">
                   {d.kicker && <div class="section-kicker">{d.kicker}</div>}
-                  {d.heading && <h3>{d.heading}</h3>}
-                  {paragraphs.map((p: string) => (
-                    p ? <p><Fragment set:html={cleanHtml(p)} /></p> : null
+                  {headingData.text && (
+                    <h3
+                      id={subId}
+                      data-toc-sub={isTocSub ? 'true' : undefined}
+                      data-toc-subtitle={isTocSub ? plainHeading : undefined}
+                      class={headingAlignClass || undefined}
+                    >
+                      <Fragment set:html={cleanHtml(headingData.text)} />
+                    </h3>
+                  )}
+                  {paragraphs.map((p: { text: string; align: string }) => (
+                    p.text ? <p class={p.align && p.align !== 'left' ? `rich-align-${p.align}` : undefined}><Fragment set:html={cleanHtml(p.text)} /></p> : null
                   ))}
                 </div>
               );
             }
 
-            case 'text-title':
+            case 'text-title': {
+              const introData = typeof d.intro === 'object' && d.intro !== null
+                ? { text: d.intro.text || d.intro.content || '', align: d.intro.align || 'left' }
+                : { text: typeof d.intro === 'string' ? d.intro : '', align: d.introAlign || 'left' };
+              const introAlignClass = introData.align && introData.align !== 'left' ? ` rich-align-${introData.align}` : '';
+
+              const headingData = typeof d.heading === 'object' && d.heading !== null
+                ? { text: d.heading.text || d.heading.content || '', align: d.heading.align || 'left' }
+                : { text: typeof d.heading === 'string' ? d.heading : '', align: d.headingAlign || 'left' };
+              const headingAlignClass = headingData.align && headingData.align !== 'left' ? ` rich-align-${headingData.align}` : '';
+
+              const paraRaw = d.paragraph || d.text;
+              const paraData = typeof paraRaw === 'object' && paraRaw !== null
+                ? { text: paraRaw.text || paraRaw.content || '', align: paraRaw.align || 'left' }
+                : { text: typeof paraRaw === 'string' ? paraRaw : '', align: d.paragraphAlign || 'left' };
+              const paraAlignClass = paraData.align && paraData.align !== 'left' ? `rich-align-${paraData.align}` : '';
+
+              const plainHeading = getPlainHeadingText(headingData.text);
+              const isTocSub = plainHeading.length > 0;
+              const subId = `sub-${block.id || `${sIndex}-${bIndex}`}`;
+
               return (
                 <div class="block-typography-text-title">
                   {d.kicker && <div class="section-kicker">{d.kicker}</div>}
-                  {d.intro && <p class="text-intro"><Fragment set:html={cleanHtml(d.intro)} /></p>}
-                  {d.heading && <h3 class="heading-subsequent">{d.heading}</h3>}
-                  {(d.paragraph || d.text) && <p><Fragment set:html={cleanHtml(d.paragraph || d.text)} /></p>}
+                  {introData.text && <p class={`text-intro${introAlignClass}`}><Fragment set:html={cleanHtml(introData.text)} /></p>}
+                  {headingData.text && (
+                    <h3
+                      id={subId}
+                      data-toc-sub={isTocSub ? 'true' : undefined}
+                      data-toc-subtitle={isTocSub ? plainHeading : undefined}
+                      class={`heading-subsequent${headingAlignClass}`}
+                    >
+                      <Fragment set:html={cleanHtml(headingData.text)} />
+                    </h3>
+                  )}
+                  {paraData.text && <p class={paraAlignClass || undefined}><Fragment set:html={cleanHtml(paraData.text)} /></p>}
                 </div>
               );
+            }
 
             case 'solo-text': {
               const paragraphs = Array.isArray(d.paragraphs)
-                ? d.paragraphs.map((p: any) => (typeof p === 'object' && p !== null ? p.text : p))
-                : (d.paragraph || d.text ? [d.paragraph || d.text] : []);
+                ? d.paragraphs.map((p: any) => {
+                    if (typeof p === 'object' && p !== null) {
+                      return { text: p.text || p.content || '', align: p.align || 'left' };
+                    }
+                    return { text: typeof p === 'string' ? p : '', align: 'left' };
+                  })
+                : (d.paragraph || d.text ? [{ text: d.paragraph || d.text, align: 'left' }] : []);
+
               return (
                 <div class="block-solo-text">
-                  {paragraphs.map((p: string) => (
-                    p ? <p><Fragment set:html={cleanHtml(p)} /></p> : null
+                  {paragraphs.map((p: { text: string; align: string }) => (
+                    p.text ? <p class={p.align && p.align !== 'left' ? `rich-align-${p.align}` : undefined}><Fragment set:html={cleanHtml(p.text)} /></p> : null
                   ))}
                 </div>
               );
@@ -148,11 +255,23 @@ function cleanHtml(input: string): string {
               );
             }
 
-            case 'text-image':
+            case 'text-image': {
+              const plainHeading = getPlainHeadingText(d.heading);
+              const isTocSub = plainHeading.length > 0;
+              const subId = `sub-${block.id || `${sIndex}-${bIndex}`}`;
+
               return (
                 <div class="layout-text-media">
                   <div class="layout-copy">
-                    {d.heading && <h3>{d.heading}</h3>}
+                    {d.heading && (
+                      <h3
+                        id={subId}
+                        data-toc-sub={isTocSub ? 'true' : undefined}
+                        data-toc-subtitle={isTocSub ? plainHeading : undefined}
+                      >
+                        {d.heading}
+                      </h3>
+                    )}
                     {d.text && <p><Fragment set:html={cleanHtml(d.text)} /></p>}
                   </div>
                   {d.imageSrc && (
@@ -163,8 +282,13 @@ function cleanHtml(input: string): string {
                   )}
                 </div>
               );
+            }
 
-            case 'image-text':
+            case 'image-text': {
+              const plainHeading = getPlainHeadingText(d.heading);
+              const isTocSub = plainHeading.length > 0;
+              const subId = `sub-${block.id || `${sIndex}-${bIndex}`}`;
+
               return (
                 <div class="layout-media-text">
                   {d.imageSrc && (
@@ -174,11 +298,20 @@ function cleanHtml(input: string): string {
                     </figure>
                   )}
                   <div class="layout-copy">
-                    {d.heading && <h3>{d.heading}</h3>}
+                    {d.heading && (
+                      <h3
+                        id={subId}
+                        data-toc-sub={isTocSub ? 'true' : undefined}
+                        data-toc-subtitle={isTocSub ? plainHeading : undefined}
+                      >
+                        {d.heading}
+                      </h3>
+                    )}
                     {d.text && <p><Fragment set:html={cleanHtml(d.text)} /></p>}
                   </div>
                 </div>
               );
+            }
 
             case 'two-columns':
               return (
@@ -548,3 +681,53 @@ function cleanHtml(input: string): string {
     );
   })}
 </div>
+
+<style is:global>
+  .article-template .rich-align-left { text-align: left; }
+  .article-template .rich-align-center { text-align: center; }
+  .article-template .rich-align-right { text-align: right; }
+  .article-template .article-text-gold { color: #e8cf95; }
+  .article-template .article-text-purple { color: #b98fd8; }
+  .article-template .article-text-muted { color: #8f857a; }
+  .article-template .article-text-default { color: inherit; }
+
+  /* ── Rich Text Hyperlinks ── */
+  .article-template .article-rich-link {
+    color: #e8cf95;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .article-template .article-rich-link:hover {
+    color: #f3ecdf;
+  }
+  .article-template .article-rich-link--gold {
+    color: #e8cf95;
+  }
+  .article-template .article-rich-link--gold:hover {
+    color: #f3ecdf;
+  }
+  .article-template .article-rich-link--purple {
+    color: #b98fd8;
+  }
+  .article-template .article-rich-link--purple:hover {
+    color: #d5b2ee;
+  }
+  .article-template .article-rich-link--parchment {
+    color: #ece6dd;
+  }
+  .article-template .article-rich-link--parchment:hover {
+    color: #ffffff;
+  }
+  .article-template .article-rich-link--muted {
+    color: #8f857a;
+  }
+  .article-template .article-rich-link--muted:hover {
+    color: #cdc3b6;
+  }
+  .article-template .article-rich-link u {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>

@@ -290,6 +290,7 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
     var isScrolling = false;
     var scrollStopTimer = null;
     var stickyZoneEl = null;
+    var updateActiveSubsection = null;
 
     function handleScroll() {
       if (!stickyZoneEl) {
@@ -312,6 +313,9 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
       if (!ticking) {
         window.requestAnimationFrame(function () {
           updateUnifiedReadingProgress();
+          if (typeof updateActiveSubsection === 'function') {
+            updateActiveSubsection();
+          }
           ticking = false;
         });
         ticking = true;
@@ -340,12 +344,45 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
           var title = sec.getAttribute('data-toc-title') || ('Section ' + (idx + 1));
           var numStr = String(idx + 1).padStart(2, '0');
           var li = document.createElement('li');
+          li.className = 'toc-item';
           var a = document.createElement('a');
           a.href = '#' + id;
           a.className = 'toc-link';
           a.setAttribute('data-toc-target', id);
           a.innerHTML = '<span class="toc-num">' + numStr + '</span><span>' + title + '</span>';
           li.appendChild(a);
+
+          var subElements = Array.from(sec.querySelectorAll('[data-toc-sub="true"]'));
+          var validSubs = subElements.filter(function (sub) {
+            var subTitle = sub.getAttribute('data-toc-subtitle');
+            return subTitle && subTitle.trim().length > 0;
+          });
+
+          if (validSubs.length > 0) {
+            var subUl = document.createElement('ul');
+            subUl.className = 'toc-sub-list';
+            validSubs.forEach(function (sub) {
+              var subId = sub.id;
+              var subTitle = sub.getAttribute('data-toc-subtitle') || '';
+              var subLi = document.createElement('li');
+              subLi.className = 'toc-sub-item';
+              var subA = document.createElement('a');
+              subA.href = '#' + subId;
+              subA.className = 'toc-sub-link';
+              subA.setAttribute('data-toc-target', subId);
+              subA.setAttribute('data-parent-target', id);
+
+              var span = document.createElement('span');
+              span.className = 'toc-sub-text';
+              span.textContent = subTitle;
+              subA.appendChild(span);
+
+              subLi.appendChild(subA);
+              subUl.appendChild(subLi);
+            });
+            li.appendChild(subUl);
+          }
+
           container.appendChild(li);
         });
       }
@@ -416,6 +453,9 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
               link.classList.remove('active');
             }
           });
+          if (typeof updateActiveSubsection === 'function') {
+            updateActiveSubsection();
+          }
         }
       }
 
@@ -456,6 +496,50 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
           sp.build(sections);
         }
 
+        updateActiveSubsection = function () {
+          var allTocSubLinks = document.querySelectorAll('.toc-sub-link');
+          if (allTocSubLinks.length === 0) return;
+
+          var activePrimaryLink = document.querySelector('.toc-link.active');
+          if (!activePrimaryLink) {
+            allTocSubLinks.forEach(function (link) { link.classList.remove('active-sub'); });
+            return;
+          }
+
+          var activeSectionId = activePrimaryLink.getAttribute('data-toc-target');
+          var activeSection = activeSectionId ? document.getElementById(activeSectionId) : null;
+          if (!activeSection) {
+            allTocSubLinks.forEach(function (link) { link.classList.remove('active-sub'); });
+            return;
+          }
+
+          var subs = Array.from(activeSection.querySelectorAll('[data-toc-sub="true"]'));
+          if (subs.length === 0) {
+            allTocSubLinks.forEach(function (link) { link.classList.remove('active-sub'); });
+            return;
+          }
+
+          var probeY = window.innerHeight * 0.35;
+          var activeSubId = null;
+
+          for (var i = 0; i < subs.length; i++) {
+            var rect = subs[i].getBoundingClientRect();
+            if (rect.top <= probeY) {
+              activeSubId = subs[i].id;
+            } else {
+              break;
+            }
+          }
+
+          allTocSubLinks.forEach(function (link) {
+            if (activeSubId && link.getAttribute('data-toc-target') === activeSubId) {
+              link.classList.add('active-sub');
+            } else {
+              link.classList.remove('active-sub');
+            }
+          });
+        };
+
         // Measure geometry & sync progress + initial active TOC section immediately
         measureArticleGeometry();
         updateUnifiedReadingProgress();
@@ -482,6 +566,9 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
                     link.classList.remove('active');
                   }
                 });
+                if (typeof updateActiveSubsection === 'function') {
+                  updateActiveSubsection();
+                }
               }
             });
           }, {
@@ -506,6 +593,29 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         var sp = getSpiritProgress();
         if (sp && typeof sp.measureThresholds === 'function') sp.measureThresholds();
         updateUnifiedReadingProgress();
+      });
+
+      // Click feedback for TOC links
+      document.addEventListener('click', function (e) {
+        var subLink = e.target.closest('.toc-sub-link');
+        if (subLink) {
+          var targetId = subLink.getAttribute('data-toc-target');
+          var allSubs = document.querySelectorAll('.toc-sub-link');
+          allSubs.forEach(function (l) {
+            if (l.getAttribute('data-toc-target') === targetId) {
+              l.classList.add('active-sub');
+            } else {
+              l.classList.remove('active-sub');
+            }
+          });
+          return;
+        }
+
+        var primaryLink = e.target.closest('.toc-link');
+        if (primaryLink) {
+          var allSubs = document.querySelectorAll('.toc-sub-link');
+          allSubs.forEach(function (l) { l.classList.remove('active-sub'); });
+        }
       });
 
       // Exercise reveal buttons
@@ -868,6 +978,59 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
     color: #b98fd8;
     flex-shrink: 0;
     width: 18px;
+  }
+
+  /* ── Subsections beneath parent Section ──────────────────────── */
+  .toc-sub-list {
+    list-style: none;
+    margin: 2px 0 6px 14px;
+    padding: 2px 0 2px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 1px solid rgba(216, 181, 107, 0.12);
+  }
+
+  .toc-sub-item {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .toc-sub-link {
+    display: block;
+    padding: 4px 8px;
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 12px;
+    color: #857b6f;
+    text-decoration: none;
+    border-radius: 3px;
+    border-left: 2px solid transparent;
+    transition: all 0.15s ease;
+    line-height: 1.35;
+    word-break: break-word;
+  }
+
+  .toc-sub-link:hover {
+    color: #ded6cb;
+    background: rgba(216, 181, 107, 0.05);
+  }
+
+  .toc-sub-link.active-sub {
+    color: #e8cf95;
+    background: rgba(216, 181, 107, 0.08);
+    border-left-color: rgba(216, 181, 107, 0.65);
+    font-weight: 500;
+  }
+
+  .article-template [data-toc-sub="true"] {
+    scroll-margin-top: calc(var(--article-sticky-height, 75px) + 24px);
+  }
+
+  @media (max-width: 980px) {
+    .article-template [data-toc-sub="true"] {
+      scroll-margin-top: calc(var(--article-sticky-height, 67px) + var(--article-mobile-toc-height, 46px) + 20px);
+    }
   }
 
   /* ── Next Article / Navigation ───────────────────────────────── */

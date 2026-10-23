@@ -14,6 +14,11 @@ export interface ArticleSection {
   blocks: ArticleBlock[];
 }
 
+export interface ArticleRichText {
+  text: string;
+  align?: 'left' | 'center' | 'right';
+}
+
 export interface ArticleDocument {
   version: 1;
   studioId: string;
