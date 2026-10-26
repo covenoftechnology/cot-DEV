@@ -28,7 +28,7 @@ const canonicalCategories = ARTICLE_CATEGORIES;
 const canonicalDifficulties = ARTICLE_DIFFICULTIES;
 const canonicalTags = ARTICLE_TAGS;
 const difficultyGlyphs = DIFFICULTY_GLYPHS;
-const totalBlockCount = Object.keys(blockRegistry).length;
+const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'text-title').length;
 ---
 
 <!DOCTYPE html>
@@ -1580,7 +1580,7 @@ const totalBlockCount = Object.keys(blockRegistry).length;
           header.className = 'category-accordion-header';
 
           var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
-            return b.category === cat;
+            return b.category === cat && b.type !== 'text-title';
           });
 
           header.innerHTML = 
