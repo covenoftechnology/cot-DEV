@@ -1892,6 +1892,29 @@
   background: rgba(216, 181, 107, 0.1);
 }
 
+.coven-studio .table-contextual-bar {
+  margin-bottom: 8px;
+}
+
+.coven-studio .table-contextual-bar .rich-text-toolbar {
+  border-radius: 4px;
+  border-bottom: 1px solid rgba(216, 181, 107, 0.22);
+  opacity: 1;
+}
+
+.coven-studio .studio-table-cell-input.rich-text-surface {
+  min-height: 24px;
+  cursor: text;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.coven-studio .studio-table-cell-input.rich-text-surface:empty::before {
+  content: '...';
+  color: var(--studio-text-muted);
+  opacity: 0.5;
+}
+
 /* Article Trial Builder */
 .coven-studio .trial-q-card {
   background: rgba(18, 14, 26, 0.9);

@@ -43,7 +43,7 @@ try {
 <div class="cov-code-block">
   <div class="cov-code-header">
     <div style="display: flex; align-items: center; gap: 10px;">
-      <span class="cov-code-title">{title || 'Scroll Snippet'}</span>
+      <span class="cov-code-title"><Fragment set:html={title || 'Scroll Snippet'} /></span>
       <span class="cov-code-lang">{language.toUpperCase()}</span>
     </div>
     <button type="button" class="cov-code-copy-btn" aria-label="Copy code to clipboard">

@@ -80,6 +80,19 @@ function getPlainHeadingText(input: any): string {
     .replace(/&nbsp;/g, ' ');
   return clean.trim();
 }
+
+function getRich(input: any): { text: string; align: string } {
+  if (input && typeof input === 'object') {
+    return {
+      text: typeof input.text === 'string' ? input.text : (typeof input.content === 'string' ? input.content : ''),
+      align: input.align === 'center' || input.align === 'right' ? input.align : 'left',
+    };
+  }
+  return {
+    text: typeof input === 'string' ? input : '',
+    align: 'left',
+  };
+}
 ---
 
 <div class="article-template">
@@ -210,20 +223,43 @@ function getPlainHeadingText(input: any): string {
 
             case 'nested-bullets': {
               const items = Array.isArray(d.items) ? d.items : [];
+              const titleData = typeof d.title === 'object' && d.title !== null
+                ? { text: d.title.text || d.title.content || '', align: d.title.align || 'left' }
+                : { text: typeof d.title === 'string' ? d.title : '', align: 'left' };
               return (
                 <div class="block-nested-bullets">
-                  {d.title && <h3 class="list-title">{d.title}</h3>}
+                  {titleData.text && (
+                    <h3 class={`list-title${titleData.align && titleData.align !== 'left' ? ` rich-align-${titleData.align}` : ''}`}>
+                      <Fragment set:html={cleanHtml(titleData.text)} />
+                    </h3>
+                  )}
                   <ul class="nested-bullets-list">
                     {items.map((mainItem: any) => {
+                      const mainData = typeof mainItem.text === 'object' && mainItem.text !== null
+                        ? { text: mainItem.text.text || mainItem.text.content || '', align: mainItem.text.align || 'left' }
+                        : { text: typeof mainItem.text === 'string' ? mainItem.text : '', align: 'left' };
                       const subItems = mainItem.children || mainItem.subItems || [];
                       return (
                         <li class="nested-bullet-main">
-                          <span class="bullet-text"><Fragment set:html={cleanHtml(mainItem.text || '')} /></span>
+                          <span class={`bullet-text${mainData.align && mainData.align !== 'left' ? ` rich-align-${mainData.align}` : ''}`}>
+                            <span class="bullet-inner-text" style={mainData.align && mainData.align !== 'left' ? `text-align: ${mainData.align}; width: 100%;` : undefined}>
+                              <Fragment set:html={cleanHtml(mainData.text || '')} />
+                            </span>
+                          </span>
                           {Array.isArray(subItems) && subItems.length > 0 && (
                             <ul class="sub-bullets-list">
                               {subItems.map((sub: any) => {
-                                const subText = typeof sub === 'object' && sub !== null ? sub.text : sub;
-                                return <li class="sub-bullet-item"><Fragment set:html={cleanHtml(subText)} /></li>;
+                                const subRaw = typeof sub === 'object' && sub !== null ? (sub.text !== undefined ? sub.text : sub) : sub;
+                                const subData = typeof subRaw === 'object' && subRaw !== null
+                                  ? { text: subRaw.text || subRaw.content || '', align: subRaw.align || 'left' }
+                                  : { text: typeof subRaw === 'string' ? subRaw : '', align: 'left' };
+                                return (
+                                  <li class={`sub-bullet-item${subData.align && subData.align !== 'left' ? ` rich-align-${subData.align}` : ''}`}>
+                                    <span class="sub-bullet-inner-text" style={subData.align && subData.align !== 'left' ? `text-align: ${subData.align}; width: 100%;` : undefined}>
+                                      <Fragment set:html={cleanHtml(subData.text)} />
+                                    </span>
+                                  </li>
+                                );
                               })}
                             </ul>
                           )}
@@ -237,47 +273,82 @@ function getPlainHeadingText(input: any): string {
 
             case 'numbered-steps': {
               const steps = Array.isArray(d.steps) ? d.steps : [];
+              const titleData = typeof d.title === 'object' && d.title !== null
+                ? { text: d.title.text || d.title.content || '', align: d.title.align || 'left' }
+                : { text: typeof d.title === 'string' ? d.title : '', align: 'left' };
               return (
                 <div class="block-numbered-steps">
-                  {d.title && <h3 class="list-title">{d.title}</h3>}
+                  {titleData.text && (
+                    <h3 class={`list-title${titleData.align && titleData.align !== 'left' ? ` rich-align-${titleData.align}` : ''}`}>
+                      <Fragment set:html={cleanHtml(titleData.text)} />
+                    </h3>
+                  )}
                   <ol class="steps-list">
-                    {steps.map((step: any, idx: number) => (
-                      <li class="step-item">
-                        <div class="step-badge">{step.badge || String(idx + 1).padStart(2, '0')}</div>
-                        <div class="step-content">
-                          {step.title && <h4>{step.title}</h4>}
-                          {step.text && <p><Fragment set:html={cleanHtml(step.text)} /></p>}
-                        </div>
-                      </li>
-                    ))}
+                    {steps.map((step: any, idx: number) => {
+                      const stepTitle = typeof step.title === 'object' && step.title !== null
+                        ? { text: step.title.text || step.title.content || '', align: step.title.align || 'left' }
+                        : { text: typeof step.title === 'string' ? step.title : '', align: 'left' };
+                      const stepText = typeof step.text === 'object' && step.text !== null
+                        ? { text: step.text.text || step.text.content || '', align: step.text.align || 'left' }
+                        : { text: typeof step.text === 'string' ? step.text : '', align: 'left' };
+                      return (
+                        <li class="step-item">
+                          <div class="step-badge">{step.badge || String(idx + 1).padStart(2, '0')}</div>
+                          <div class="step-content" style="flex:1">
+                            {stepTitle.text && (
+                              <h4 class={stepTitle.align && stepTitle.align !== 'left' ? `rich-align-${stepTitle.align}` : undefined}>
+                                <Fragment set:html={cleanHtml(stepTitle.text)} />
+                              </h4>
+                            )}
+                            {stepText.text && (
+                              <p class={stepText.align && stepText.align !== 'left' ? `rich-align-${stepText.align}` : undefined}>
+                                <Fragment set:html={cleanHtml(stepText.text)} />
+                              </p>
+                            )}
+                          </div>
+                        </li>
+                      );
+                    })}
                   </ol>
                 </div>
               );
             }
 
             case 'text-image': {
-              const plainHeading = getPlainHeadingText(d.heading);
+              const headingData = getRich(d.heading);
+              const textData = getRich(d.text);
+              const captionData = getRich(d.caption);
+              const plainHeading = getPlainHeadingText(headingData.text);
               const isTocSub = plainHeading.length > 0;
               const subId = `sub-${block.id || `${sIndex}-${bIndex}`}`;
 
               return (
                 <div class="layout-text-media">
                   <div class="layout-copy">
-                    {d.heading && (
+                    {headingData.text && (
                       <h3
                         id={subId}
                         data-toc-sub={isTocSub ? 'true' : undefined}
                         data-toc-subtitle={isTocSub ? plainHeading : undefined}
+                        class={headingData.align !== 'left' ? `rich-align-${headingData.align}` : undefined}
                       >
-                        {d.heading}
+                        <Fragment set:html={cleanHtml(headingData.text)} />
                       </h3>
                     )}
-                    {d.text && <p><Fragment set:html={cleanHtml(d.text)} /></p>}
+                    {textData.text && (
+                      <p class={textData.align !== 'left' ? `rich-align-${textData.align}` : undefined}>
+                        <Fragment set:html={cleanHtml(textData.text)} />
+                      </p>
+                    )}
                   </div>
                   {d.imageSrc && (
                     <figure class="layout-media">
                       <img src={d.imageSrc} alt={d.alt || ''} loading="lazy" />
-                      {d.caption && <figcaption>{d.caption}</figcaption>}
+                      {captionData.text && (
+                        <figcaption class={captionData.align !== 'left' ? `rich-align-${captionData.align}` : undefined}>
+                          <Fragment set:html={cleanHtml(captionData.text)} />
+                        </figcaption>
+                      )}
                     </figure>
                   )}
                 </div>
@@ -285,7 +356,10 @@ function getPlainHeadingText(input: any): string {
             }
 
             case 'image-text': {
-              const plainHeading = getPlainHeadingText(d.heading);
+              const headingData = getRich(d.heading);
+              const textData = getRich(d.text);
+              const captionData = getRich(d.caption);
+              const plainHeading = getPlainHeadingText(headingData.text);
               const isTocSub = plainHeading.length > 0;
               const subId = `sub-${block.id || `${sIndex}-${bIndex}`}`;
 
@@ -294,31 +368,44 @@ function getPlainHeadingText(input: any): string {
                   {d.imageSrc && (
                     <figure class="layout-media">
                       <img src={d.imageSrc} alt={d.alt || ''} loading="lazy" />
-                      {d.caption && <figcaption>{d.caption}</figcaption>}
+                      {captionData.text && (
+                        <figcaption class={captionData.align !== 'left' ? `rich-align-${captionData.align}` : undefined}>
+                          <Fragment set:html={cleanHtml(captionData.text)} />
+                        </figcaption>
+                      )}
                     </figure>
                   )}
                   <div class="layout-copy">
-                    {d.heading && (
+                    {headingData.text && (
                       <h3
                         id={subId}
                         data-toc-sub={isTocSub ? 'true' : undefined}
                         data-toc-subtitle={isTocSub ? plainHeading : undefined}
+                        class={headingData.align !== 'left' ? `rich-align-${headingData.align}` : undefined}
                       >
-                        {d.heading}
+                        <Fragment set:html={cleanHtml(headingData.text)} />
                       </h3>
                     )}
-                    {d.text && <p><Fragment set:html={cleanHtml(d.text)} /></p>}
+                    {textData.text && (
+                      <p class={textData.align !== 'left' ? `rich-align-${textData.align}` : undefined}>
+                        <Fragment set:html={cleanHtml(textData.text)} />
+                      </p>
+                    )}
                   </div>
                 </div>
               );
             }
 
-            case 'two-columns':
+            case 'two-columns': {
+              const c1Title = getRich(d.col1Title);
+              const c1Text = getRich(d.col1Text);
+              const c2Title = getRich(d.col2Title);
+              const c2Text = getRich(d.col2Text);
               return (
                 <div class="layout-2col">
                   <div class="col-box">
-                    {d.col1Title && <h3>{d.col1Title}</h3>}
-                    {d.col1Text && <p><Fragment set:html={cleanHtml(d.col1Text)} /></p>}
+                    {c1Title.text && <h3 class={c1Title.align !== 'left' ? `rich-align-${c1Title.align}` : undefined}><Fragment set:html={cleanHtml(c1Title.text)} /></h3>}
+                    {c1Text.text && <p class={c1Text.align !== 'left' ? `rich-align-${c1Text.align}` : undefined}><Fragment set:html={cleanHtml(c1Text.text)} /></p>}
                     {Array.isArray(d.col1List) && d.col1List.length > 0 && (
                       <ul class="col-list">
                         {d.col1List.map((li: string) => <li><Fragment set:html={cleanHtml(li)} /></li>)}
@@ -326,8 +413,8 @@ function getPlainHeadingText(input: any): string {
                     )}
                   </div>
                   <div class="col-box">
-                    {d.col2Title && <h3>{d.col2Title}</h3>}
-                    {d.col2Text && <p><Fragment set:html={cleanHtml(d.col2Text)} /></p>}
+                    {c2Title.text && <h3 class={c2Title.align !== 'left' ? `rich-align-${c2Title.align}` : undefined}><Fragment set:html={cleanHtml(c2Title.text)} /></h3>}
+                    {c2Text.text && <p class={c2Text.align !== 'left' ? `rich-align-${c2Text.align}` : undefined}><Fragment set:html={cleanHtml(c2Text.text)} /></p>}
                     {Array.isArray(d.col2List) && d.col2List.length > 0 && (
                       <ul class="col-list">
                         {d.col2List.map((li: string) => <li><Fragment set:html={cleanHtml(li)} /></li>)}
@@ -336,160 +423,191 @@ function getPlainHeadingText(input: any): string {
                   </div>
                 </div>
               );
+            }
 
             case 'three-columns':
               return (
                 <div class="layout-3col">
-                  {(Array.isArray(d.columns) ? d.columns : []).map((col: any) => (
-                    <div class="col-box">
-                      {col.kicker && <div class="col-kicker">{col.kicker}</div>}
-                      {col.title && <h3>{col.title}</h3>}
-                      {col.text && <p><Fragment set:html={cleanHtml(col.text)} /></p>}
-                    </div>
-                  ))}
+                  {(Array.isArray(d.columns) ? d.columns : []).map((col: any) => {
+                    const colTitle = getRich(col.title);
+                    const colText = getRich(col.text);
+                    return (
+                      <div class="col-box">
+                        {col.kicker && <div class="col-kicker">{col.kicker}</div>}
+                        {colTitle.text && <h3 class={colTitle.align !== 'left' ? `rich-align-${colTitle.align}` : undefined}><Fragment set:html={cleanHtml(colTitle.text)} /></h3>}
+                        {colText.text && <p class={colText.align !== 'left' ? `rich-align-${colText.align}` : undefined}><Fragment set:html={cleanHtml(colText.text)} /></p>}
+                      </div>
+                    );
+                  })}
                 </div>
               );
 
-            case 'single-image':
+            case 'single-image': {
+              const captionData = getRich(d.caption);
               return d.src ? (
                 <figure class="figure-single">
                   <img src={d.src} alt={d.alt || ''} loading="lazy" />
-                  {d.caption && <figcaption>{d.caption}</figcaption>}
+                  {captionData.text && <figcaption class={captionData.align !== 'left' ? `rich-align-${captionData.align}` : undefined}><Fragment set:html={cleanHtml(captionData.text)} /></figcaption>}
                 </figure>
               ) : null;
+            }
 
-            case 'full-image':
+            case 'full-image': {
+              const captionData = getRich(d.caption);
               return d.src ? (
                 <figure class="figure-full">
                   <img src={d.src} alt={d.alt || ''} loading="lazy" />
-                  {d.caption && <figcaption>{d.caption}</figcaption>}
+                  {captionData.text && <figcaption class={captionData.align !== 'left' ? `rich-align-${captionData.align}` : undefined}><Fragment set:html={cleanHtml(captionData.text)} /></figcaption>}
                 </figure>
               ) : null;
+            }
 
-            case 'two-images':
+            case 'two-images': {
+              const cap1 = getRich(d.img1Caption);
+              const cap2 = getRich(d.img2Caption);
               return (
                 <div class="image-grid-2">
                   {d.img1Src && (
                     <figure class="figure-item">
                       <img src={d.img1Src} alt={d.img1Alt || ''} loading="lazy" />
-                      {d.img1Caption && <figcaption>{d.img1Caption}</figcaption>}
+                      {cap1.text && <figcaption class={cap1.align !== 'left' ? `rich-align-${cap1.align}` : undefined}><Fragment set:html={cleanHtml(cap1.text)} /></figcaption>}
                     </figure>
                   )}
                   {d.img2Src && (
                     <figure class="figure-item">
                       <img src={d.img2Src} alt={d.img2Alt || ''} loading="lazy" />
-                      {d.img2Caption && <figcaption>{d.img2Caption}</figcaption>}
+                      {cap2.text && <figcaption class={cap2.align !== 'left' ? `rich-align-${cap2.align}` : undefined}><Fragment set:html={cleanHtml(cap2.text)} /></figcaption>}
                     </figure>
                   )}
                 </div>
               );
+            }
 
-            case 'three-images':
+            case 'three-images': {
+              const cap1 = getRich(d.img1Caption);
+              const cap2 = getRich(d.img2Caption);
+              const cap3 = getRich(d.img3Caption);
               return (
                 <div class="image-grid-3">
                   {d.img1Src && (
                     <figure class="figure-item">
                       <img src={d.img1Src} alt={d.img1Alt || ''} loading="lazy" />
-                      {d.img1Caption && <figcaption>{d.img1Caption}</figcaption>}
+                      {cap1.text && <figcaption class={cap1.align !== 'left' ? `rich-align-${cap1.align}` : undefined}><Fragment set:html={cleanHtml(cap1.text)} /></figcaption>}
                     </figure>
                   )}
                   {d.img2Src && (
                     <figure class="figure-item">
                       <img src={d.img2Src} alt={d.img2Alt || ''} loading="lazy" />
-                      {d.img2Caption && <figcaption>{d.img2Caption}</figcaption>}
+                      {cap2.text && <figcaption class={cap2.align !== 'left' ? `rich-align-${cap2.align}` : undefined}><Fragment set:html={cleanHtml(cap2.text)} /></figcaption>}
                     </figure>
                   )}
                   {d.img3Src && (
                     <figure class="figure-item">
                       <img src={d.img3Src} alt={d.img3Alt || ''} loading="lazy" />
-                      {d.img3Caption && <figcaption>{d.img3Caption}</figcaption>}
+                      {cap3.text && <figcaption class={cap3.align !== 'left' ? `rich-align-${cap3.align}` : undefined}><Fragment set:html={cleanHtml(cap3.text)} /></figcaption>}
                     </figure>
                   )}
                 </div>
               );
+            }
 
             case 'gallery-scroll':
               return (
                 <div class="horizontal-scroll-wrap">
                   <div class="horizontal-scroll" role="region" aria-label="Horizontal image gallery" tabindex="0">
-                    {(Array.isArray(d.cards) ? d.cards : []).map((card: any) => (
-                      card.src ? (
+                    {(Array.isArray(d.cards) ? d.cards : []).map((card: any) => {
+                      const cardCap = getRich(card.caption);
+                      return card.src ? (
                         <figure class="gallery-card">
                           <img src={card.src} alt={card.alt || ''} loading="lazy" />
-                          {card.caption && <figcaption>{card.caption}</figcaption>}
+                          {cardCap.text && <figcaption class={cardCap.align !== 'left' ? `rich-align-${cardCap.align}` : undefined}><Fragment set:html={cleanHtml(cardCap.text)} /></figcaption>}
                         </figure>
-                      ) : null
-                    ))}
+                      ) : null;
+                    })}
                   </div>
                   {d.hint && <div class="gallery-scroll-hint">{d.hint}</div>}
                 </div>
               );
 
-            case 'card-grid-2':
+            case 'card-grid-2': {
+              const c1Title = getRich(d.card1Title);
+              const c1Desc = getRich(d.card1Desc);
+              const c2Title = getRich(d.card2Title);
+              const c2Desc = getRich(d.card2Desc);
               return (
                 <div class="card-grid-2">
                   <div class="pattern-card">
                     {d.card1Icon && <div class="pattern-card-icon">{d.card1Icon}</div>}
-                    {d.card1Title && <h3 class="pattern-card-title">{d.card1Title}</h3>}
-                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card1Desc)} /></p>
+                    {c1Title.text && <h3 class={`pattern-card-title${c1Title.align !== 'left' ? ` rich-align-${c1Title.align}` : ''}`}><Fragment set:html={cleanHtml(c1Title.text)} /></h3>}
+                    {c1Desc.text && <p class={`pattern-card-desc${c1Desc.align !== 'left' ? ` rich-align-${c1Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c1Desc.text)} /></p>}
                   </div>
                   <div class="pattern-card">
                     {d.card2Icon && <div class="pattern-card-icon">{d.card2Icon}</div>}
-                    {d.card2Title && <h3 class="pattern-card-title">{d.card2Title}</h3>}
-                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card2Desc)} /></p>
+                    {c2Title.text && <h3 class={`pattern-card-title${c2Title.align !== 'left' ? ` rich-align-${c2Title.align}` : ''}`}><Fragment set:html={cleanHtml(c2Title.text)} /></h3>}
+                    {c2Desc.text && <p class={`pattern-card-desc${c2Desc.align !== 'left' ? ` rich-align-${c2Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c2Desc.text)} /></p>}
                   </div>
                 </div>
               );
+            }
 
-            case 'card-grid-3':
+            case 'card-grid-3': {
+              const c1Title = getRich(d.card1Title);
+              const c1Desc = getRich(d.card1Desc);
+              const c2Title = getRich(d.card2Title);
+              const c2Desc = getRich(d.card2Desc);
+              const c3Title = getRich(d.card3Title);
+              const c3Desc = getRich(d.card3Desc);
               return (
                 <div class="card-grid-3">
                   <div class="pattern-card">
                     {d.card1Icon && <div class="pattern-card-icon">{d.card1Icon}</div>}
-                    {d.card1Title && <h3 class="pattern-card-title">{d.card1Title}</h3>}
-                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card1Desc)} /></p>
+                    {c1Title.text && <h3 class={`pattern-card-title${c1Title.align !== 'left' ? ` rich-align-${c1Title.align}` : ''}`}><Fragment set:html={cleanHtml(c1Title.text)} /></h3>}
+                    {c1Desc.text && <p class={`pattern-card-desc${c1Desc.align !== 'left' ? ` rich-align-${c1Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c1Desc.text)} /></p>}
                   </div>
                   <div class="pattern-card">
                     {d.card2Icon && <div class="pattern-card-icon">{d.card2Icon}</div>}
-                    {d.card2Title && <h3 class="pattern-card-title">{d.card2Title}</h3>}
-                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card2Desc)} /></p>
+                    {c2Title.text && <h3 class={`pattern-card-title${c2Title.align !== 'left' ? ` rich-align-${c2Title.align}` : ''}`}><Fragment set:html={cleanHtml(c2Title.text)} /></h3>}
+                    {c2Desc.text && <p class={`pattern-card-desc${c2Desc.align !== 'left' ? ` rich-align-${c2Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c2Desc.text)} /></p>}
                   </div>
                   <div class="pattern-card">
                     {d.card3Icon && <div class="pattern-card-icon">{d.card3Icon}</div>}
-                    {d.card3Title && <h3 class="pattern-card-title">{d.card3Title}</h3>}
-                    <p class="pattern-card-desc"><Fragment set:html={cleanHtml(d.card3Desc)} /></p>
+                    {c3Title.text && <h3 class={`pattern-card-title${c3Title.align !== 'left' ? ` rich-align-${c3Title.align}` : ''}`}><Fragment set:html={cleanHtml(c3Title.text)} /></h3>}
+                    {c3Desc.text && <p class={`pattern-card-desc${c3Desc.align !== 'left' ? ` rich-align-${c3Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c3Desc.text)} /></p>}
                   </div>
                 </div>
               );
+            }
 
             case 'comparison': {
+              const h1 = getRich(d.col1Header);
+              const h2 = getRich(d.col2Header);
               const col1Items = (Array.isArray(d.col1Items) ? d.col1Items : [])
-                .map((it: any) => (typeof it === 'object' && it !== null ? it.text : it))
-                .filter(Boolean);
+                .map((it: any) => getRich(it))
+                .filter(it => it.text);
               const col2Items = (Array.isArray(d.col2Items) ? d.col2Items : [])
-                .map((it: any) => (typeof it === 'object' && it !== null ? it.text : it))
-                .filter(Boolean);
+                .map((it: any) => getRich(it))
+                .filter(it => it.text);
               return (
                 <div class="comparison-split">
                   <div class="comparison-column">
                     <div class="comparison-col-header">
                       {d.col1Icon && <span class="comparison-col-icon">{d.col1Icon}</span>}
-                      <span>{d.col1Header}</span>
+                      <span class={h1.align !== 'left' ? `rich-align-${h1.align}` : undefined}><Fragment set:html={cleanHtml(h1.text)} /></span>
                     </div>
                     <ul class="comparison-list">
-                      {col1Items.map((item: string) => (
-                        <li><Fragment set:html={cleanHtml(item)} /></li>
+                      {col1Items.map((item: any) => (
+                        <li class={item.align !== 'left' ? `rich-align-${item.align}` : undefined}><Fragment set:html={cleanHtml(item.text)} /></li>
                       ))}
                     </ul>
                   </div>
                   <div class="comparison-column">
                     <div class="comparison-col-header">
                       {d.col2Icon && <span class="comparison-col-icon">{d.col2Icon}</span>}
-                      <span>{d.col2Header}</span>
+                      <span class={h2.align !== 'left' ? `rich-align-${h2.align}` : undefined}><Fragment set:html={cleanHtml(h2.text)} /></span>
                     </div>
                     <ul class="comparison-list">
-                      {col2Items.map((item: string) => (
-                        <li><Fragment set:html={cleanHtml(item)} /></li>
+                      {col2Items.map((item: any) => (
+                        <li class={item.align !== 'left' ? `rich-align-${item.align}` : undefined}><Fragment set:html={cleanHtml(item.text)} /></li>
                       ))}
                     </ul>
                   </div>
@@ -497,26 +615,33 @@ function getPlainHeadingText(input: any): string {
               );
             }
 
-            case 'stats-metrics':
+            case 'stats-metrics': {
+              const s1Label = getRich(d.stat1Label);
+              const s1Sub = getRich(d.stat1Sub);
+              const s2Label = getRich(d.stat2Label);
+              const s2Sub = getRich(d.stat2Sub);
+              const s3Label = getRich(d.stat3Label);
+              const s3Sub = getRich(d.stat3Sub);
               return (
                 <div class="stats-grid">
                   <div class="stat-card">
                     <div class="stat-number">{d.stat1Num}</div>
-                    <div class="stat-label">{d.stat1Label}</div>
-                    {d.stat1Sub && <div class="stat-sub">{d.stat1Sub}</div>}
+                    <div class={`stat-label${s1Label.align !== 'left' ? ` rich-align-${s1Label.align}` : ''}`}><Fragment set:html={cleanHtml(s1Label.text)} /></div>
+                    {s1Sub.text && <div class={`stat-sub${s1Sub.align !== 'left' ? ` rich-align-${s1Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s1Sub.text)} /></div>}
                   </div>
                   <div class="stat-card">
                     <div class="stat-number">{d.stat2Num}</div>
-                    <div class="stat-label">{d.stat2Label}</div>
-                    {d.stat2Sub && <div class="stat-sub">{d.stat2Sub}</div>}
+                    <div class={`stat-label${s2Label.align !== 'left' ? ` rich-align-${s2Label.align}` : ''}`}><Fragment set:html={cleanHtml(s2Label.text)} /></div>
+                    {s2Sub.text && <div class={`stat-sub${s2Sub.align !== 'left' ? ` rich-align-${s2Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s2Sub.text)} /></div>}
                   </div>
                   <div class="stat-card">
                     <div class="stat-number">{d.stat3Num}</div>
-                    <div class="stat-label">{d.stat3Label}</div>
-                    {d.stat3Sub && <div class="stat-sub">{d.stat3Sub}</div>}
+                    <div class={`stat-label${s3Label.align !== 'left' ? ` rich-align-${s3Label.align}` : ''}`}><Fragment set:html={cleanHtml(s3Label.text)} /></div>
+                    {s3Sub.text && <div class={`stat-sub${s3Sub.align !== 'left' ? ` rich-align-${s3Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s3Sub.text)} /></div>}
                   </div>
                 </div>
               );
+            }
 
             case 'technical-table': {
               const hasStructuredCols = Array.isArray(d.columns) && d.columns.length > 0;
@@ -530,7 +655,14 @@ function getPlainHeadingText(input: any): string {
                   <table class="coven-table">
                     <thead>
                       <tr>
-                        {columns.map((col: any) => <th>{col.label}</th>)}
+                        {columns.map((col: any) => {
+                          const colData = getRich(col.label);
+                          return (
+                            <th class={colData.align !== 'left' ? `rich-align-${colData.align}` : undefined}>
+                              <Fragment set:html={cleanHtml(colData.text)} />
+                            </th>
+                          );
+                        })}
                       </tr>
                     </thead>
                     <tbody>
@@ -545,7 +677,12 @@ function getPlainHeadingText(input: any): string {
                             } else if (Array.isArray(row)) {
                               cellVal = row[cIdx] || '';
                             }
-                            return <td><Fragment set:html={cleanHtml(cellVal)} /></td>;
+                            const cellData = getRich(cellVal);
+                            return (
+                              <td class={cellData.align !== 'left' ? `rich-align-${cellData.align}` : undefined}>
+                                <Fragment set:html={cleanHtml(cellData.text)} />
+                              </td>
+                            );
                           })}
                         </tr>
                       ))}
@@ -555,81 +692,102 @@ function getPlainHeadingText(input: any): string {
               );
             }
 
-            case 'callout':
+            case 'callout': {
+              const cTitle = getRich(d.title);
+              const cText = getRich(d.text);
               return (
-                <Callout type={d.calloutType || 'info'} title={d.title}>
-                  <p><Fragment set:html={cleanHtml(d.text || '')} /></p>
+                <Callout type={d.calloutType || 'info'} title={cTitle.text ? cleanHtml(cTitle.text) : undefined}>
+                  <p class={cText.align !== 'left' ? `rich-align-${cText.align}` : undefined}><Fragment set:html={cleanHtml(cText.text || '')} /></p>
                 </Callout>
               );
+            }
 
-            case 'pullquote':
+            case 'pullquote': {
+              const qRich = getRich(d.quote);
+              const aRich = getRich(d.author);
               return (
                 <div class="pullquote">
-                  <p class="pullquote-text">"{d.quote}"</p>
-                  {d.author && <span class="pullquote-author">{d.author}</span>}
+                  <p class={`pullquote-text${qRich.align !== 'left' ? ` rich-align-${qRich.align}` : ''}`}>"{cleanHtml(qRich.text)}"</p>
+                  {aRich.text && <span class={`pullquote-author${aRich.align !== 'left' ? ` rich-align-${aRich.align}` : ''}`}><Fragment set:html={cleanHtml(aRich.text)} /></span>}
                 </div>
               );
+            }
 
-            case 'code-block':
+            case 'code-block': {
+              const codeTitle = getRich(d.title);
               return (
-                <CodeBlock title={d.title} language={d.language || 'typescript'} code={d.code || ''} />
+                <CodeBlock title={codeTitle.text ? cleanHtml(codeTitle.text) : undefined} language={d.language || 'typescript'} code={d.code || ''} />
               );
+            }
 
             case 'faq':
               return (
                 <div class="faq-list">
-                  {(Array.isArray(d.items) ? d.items : []).map((item: any) => (
-                    <details class="faq-item">
-                      <summary><Fragment set:html={cleanHtml(item.question)} /></summary>
-                      <div class="faq-body">
-                        <p><Fragment set:html={cleanHtml(item.answer)} /></p>
-                      </div>
-                    </details>
-                  ))}
+                  {(Array.isArray(d.items) ? d.items : []).map((item: any) => {
+                    const qRich = getRich(item.question);
+                    const aRich = getRich(item.answer);
+                    return (
+                      <details class="faq-item">
+                        <summary class={qRich.align !== 'left' ? `rich-align-${qRich.align}` : undefined}><Fragment set:html={cleanHtml(qRich.text)} /></summary>
+                        <div class="faq-body">
+                          <p class={aRich.align !== 'left' ? `rich-align-${aRich.align}` : undefined}><Fragment set:html={cleanHtml(aRich.text)} /></p>
+                        </div>
+                      </details>
+                    );
+                  })}
                 </div>
               );
 
             case 'exercise': {
               const targetId = `ans-${sIndex}-${bIndex}`;
+              const scRich = getRich(d.scenario);
+              const stRich = getRich(d.solutionTitle);
+              const sxRich = getRich(d.solutionText);
               return (
                 <div class="exercise-group">
                   <div class="exercise-card">
                     {d.badge && <span class="exercise-badge">{d.badge}</span>}
-                    <p class="exercise-scenario">
-                      <strong>Scenario:</strong> <Fragment set:html={cleanHtml(d.scenario || '')} />
+                    <p class={`exercise-scenario${scRich.align !== 'left' ? ` rich-align-${scRich.align}` : ''}`}>
+                      <strong>Scenario:</strong> <Fragment set:html={cleanHtml(scRich.text || '')} />
                     </p>
                     <button type="button" class="reveal-btn" aria-expanded="false" data-target={targetId}>
                       <span>{d.buttonText || '✦ Reveal Answer'}</span>
                     </button>
                     <div id={targetId} class="reveal-answer">
-                      {d.solutionTitle && <strong>{d.solutionTitle}</strong>}
-                      <p><Fragment set:html={cleanHtml(d.solutionText || '')} /></p>
+                      {stRich.text && <strong class={stRich.align !== 'left' ? `rich-align-${stRich.align}` : undefined}><Fragment set:html={cleanHtml(stRich.text)} /></strong>}
+                      <p class={sxRich.align !== 'left' ? `rich-align-${sxRich.align}` : undefined}><Fragment set:html={cleanHtml(sxRich.text || '')} /></p>
                     </div>
                   </div>
                 </div>
               );
             }
 
-            case 'key-takeaways':
+            case 'key-takeaways': {
+              const tTitle = getRich(d.title);
               return (
                 <div class="takeaways-box">
-                  {d.title && (
-                    <h3 class="takeaways-title">
+                  {tTitle.text && (
+                    <h3 class={`takeaways-title${tTitle.align !== 'left' ? ` rich-align-${tTitle.align}` : ''}`}>
                       <span>✦</span>
-                      <span>{d.title}</span>
+                      <span><Fragment set:html={cleanHtml(tTitle.text)} /></span>
                     </h3>
                   )}
                   <div class="takeaways-table" role="list">
-                    {(Array.isArray(d.items) ? d.items : []).map((item: any) => (
-                      <div class="takeaway-row" role="listitem">
-                        <span class="takeaway-glyph" aria-hidden="true">✦</span>
-                        <span class="takeaway-term">{item.term}</span>
-                        <span class="takeaway-desc"><Fragment set:html={cleanHtml(item.desc)} /></span>
-                      </div>
-                    ))}
+                    {(Array.isArray(d.items) ? d.items : []).map((item: any) => {
+                      const itTerm = getRich(item.term);
+                      const itDesc = getRich(item.desc);
+                      return (
+                        <div class="takeaway-row" role="listitem">
+                          <span class="takeaway-glyph" aria-hidden="true">✦</span>
+                          <span class={`takeaway-term${itTerm.align !== 'left' ? ` rich-align-${itTerm.align}` : ''}`}><Fragment set:html={cleanHtml(itTerm.text)} /></span>
+                          <span class={`takeaway-desc${itDesc.align !== 'left' ? ` rich-align-${itDesc.align}` : ''}`}><Fragment set:html={cleanHtml(itDesc.text)} /></span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               );
+            }
 
             case 'related-docs':
               return (
@@ -641,12 +799,13 @@ function getPlainHeadingText(input: any): string {
                       ? 'COVEN SCROLL'
                       : (item.type === 'external' ? 'EXTERNAL DOCUMENTATION' : (item.type || 'DOCUMENTATION'));
                     const arrow = item.ctaArrow || (isExt ? '↗' : '→');
+                    const itTitle = getRich(item.title);
 
                     return (
                       <a href={href} class="related-card" target={isExt ? '_blank' : undefined} rel={isExt ? 'noopener noreferrer' : undefined}>
                         <div>
                           <div class="related-type">{typeLabel}</div>
-                          <h4 class="related-title">{item.title}</h4>
+                          <h4 class={`related-title${itTitle.align !== 'left' ? ` rich-align-${itTitle.align}` : ''}`}><Fragment set:html={cleanHtml(itTitle.text)} /></h4>
                         </div>
                         <div class="related-cta">
                           <span>{item.ctaText || (isExt ? 'Official documentation' : 'Study scroll')}</span>
@@ -686,6 +845,10 @@ function getPlainHeadingText(input: any): string {
   .article-template .rich-align-left { text-align: left; }
   .article-template .rich-align-center { text-align: center; }
   .article-template .rich-align-right { text-align: right; }
+  .article-template .bullet-text.rich-align-center,
+  .article-template .sub-bullet-item.rich-align-center { justify-content: center; }
+  .article-template .bullet-text.rich-align-right,
+  .article-template .sub-bullet-item.rich-align-right { justify-content: flex-end; }
   .article-template .article-text-gold { color: #e8cf95; }
   .article-template .article-text-purple { color: #b98fd8; }
   .article-template .article-text-muted { color: #8f857a; }

@@ -28,7 +28,7 @@ const canonicalCategories = ARTICLE_CATEGORIES;
 const canonicalDifficulties = ARTICLE_DIFFICULTIES;
 const canonicalTags = ARTICLE_TAGS;
 const difficultyGlyphs = DIFFICULTY_GLYPHS;
-const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'text-title').length;
+const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bullet-list').length;
 ---
 
 <!DOCTYPE html>
@@ -659,6 +659,15 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           var directField = surface.getAttribute('data-rich-field');
           var arrayField = surface.getAttribute('data-rich-array');
           var arrayIdx = arrayField ? parseInt(surface.getAttribute('data-rich-idx'), 10) : -1;
+          var arrayObjField = surface.getAttribute('data-rich-array-obj');
+          var arrayObjId = surface.getAttribute('data-rich-item-id');
+          var arrayObjProp = surface.getAttribute('data-rich-prop') || 'text';
+          var isNestedSub = surface.getAttribute('data-rich-nested-sub') === 'true';
+          var nestedParentId = surface.getAttribute('data-rich-parent-id');
+          var nestedSubId = surface.getAttribute('data-rich-sub-id');
+          var trialQId = surface.getAttribute('data-rich-trial-q-id');
+          var trialQProp = surface.getAttribute('data-rich-trial-q-prop');
+          var trialAnsId = surface.getAttribute('data-rich-trial-ans-id');
 
           function getCurrentData() {
             if (directField) {
@@ -666,6 +675,30 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             }
             if (arrayField && Array.isArray(d[arrayField])) {
               return getRichData(d[arrayField][arrayIdx]);
+            }
+            if (arrayObjField && Array.isArray(d[arrayObjField])) {
+              var target = d[arrayObjField].find(function(it) { return it.id === arrayObjId; });
+              return target ? getRichData(target[arrayObjProp]) : { text: '', align: 'left' };
+            }
+            if (isNestedSub && Array.isArray(d.items)) {
+              var main = d.items.find(function(m) { return m.id === nestedParentId; });
+              if (main && Array.isArray(main.children)) {
+                var sub = main.children.find(function(s) { return s.id === nestedSubId; });
+                return sub ? getRichData(sub.text) : { text: '', align: 'left' };
+              }
+            }
+            if (trialQId) {
+              var tq = (d.questions || []).find(function(q) { return q.id === trialQId; });
+              if (tq) {
+                if (trialAnsId && Array.isArray(tq.answers)) {
+                  var ta = tq.answers.find(function(a) { return a.id === trialAnsId; });
+                  return ta ? getRichData(ta.text) : { text: '', align: 'left' };
+                }
+                if (trialQProp) {
+                  return getRichData(tq[trialQProp]);
+                }
+              }
+              return { text: '', align: 'left' };
             }
             return { text: '', align: 'left' };
           }
@@ -675,6 +708,29 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               d[directField] = richObj;
             } else if (arrayField && Array.isArray(d[arrayField])) {
               d[arrayField][arrayIdx] = richObj;
+            } else if (arrayObjField && Array.isArray(d[arrayObjField])) {
+              var target = d[arrayObjField].find(function(it) { return it.id === arrayObjId; });
+              if (target) {
+                target[arrayObjProp] = richObj;
+              }
+            } else if (isNestedSub && Array.isArray(d.items)) {
+              var main = d.items.find(function(m) { return m.id === nestedParentId; });
+              if (main && Array.isArray(main.children)) {
+                var sub = main.children.find(function(s) { return s.id === nestedSubId; });
+                if (sub) {
+                  sub.text = richObj;
+                }
+              }
+            } else if (trialQId) {
+              var tq = (d.questions || []).find(function(q) { return q.id === trialQId; });
+              if (tq) {
+                if (trialAnsId && Array.isArray(tq.answers)) {
+                  var ta = tq.answers.find(function(a) { return a.id === trialAnsId; });
+                  if (ta) ta.text = richObj;
+                } else if (trialQProp) {
+                  tq[trialQProp] = richObj;
+                }
+              }
             }
             calculateReadingTime();
             triggerAutosave();
@@ -1046,6 +1102,21 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           surface.addEventListener('keyup', updateToolbarActiveStates);
           surface.addEventListener('mouseup', updateToolbarActiveStates);
 
+          surface.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+              var k = e.key.toLowerCase();
+              if (k === 'b' || k === 'i' || k === 'u') {
+                var cmd = k === 'b' ? 'bold' : (k === 'i' ? 'italic' : 'underline');
+                e.preventDefault();
+                document.execCommand(cmd, false, null);
+                updateToolbarActiveStates();
+                var cur = getCurrentData();
+                cur.text = sanitizeRichText(surface.innerHTML);
+                setCurrentData(cur);
+              }
+            }
+          });
+
           surface.addEventListener('paste', function(e) {
             e.preventDefault();
             var text = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
@@ -1067,6 +1138,541 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             var cur = getCurrentData();
             cur.text = sanitizeRichText(surface.innerHTML);
             setCurrentData(cur);
+          });
+        });
+      }
+
+      function renderTableContextualToolbarHtml() {
+        return (
+          '<div class="table-contextual-bar">' +
+            '<div class="rich-text-toolbar" role="toolbar" aria-label="Table cell formatting">' +
+              '<button type="button" class="rich-btn rich-btn-bold" data-cmd="bold" title="Bold (Ctrl+B)"><b>B</b></button>' +
+              '<button type="button" class="rich-btn rich-btn-italic" data-cmd="italic" title="Italic (Ctrl+I)"><i>I</i></button>' +
+              '<button type="button" class="rich-btn rich-btn-underline" data-cmd="underline" title="Underline (Ctrl+U)"><u>U</u></button>' +
+              '<div class="rich-color-dropdown-wrap">' +
+                '<button type="button" class="rich-btn rich-btn-color" data-cmd="toggle-color" title="Text Color"><span class="rich-color-glyph">A</span><span class="rich-color-caret">▾</span></button>' +
+                '<div class="rich-color-menu" style="display:none">' +
+                  '<div class="rich-color-menu-title">TEXT COLOR</div>' +
+                  '<button type="button" class="rich-color-item" data-color="default"><span class="rich-color-swatch swatch-default"></span>Default</button>' +
+                  '<button type="button" class="rich-color-item" data-color="article-text-gold"><span class="rich-color-swatch swatch-gold"></span>Coven Gold</button>' +
+                  '<button type="button" class="rich-color-item" data-color="article-text-purple"><span class="rich-color-swatch swatch-purple"></span>Coven Purple</button>' +
+                  '<button type="button" class="rich-color-item" data-color="article-text-muted"><span class="rich-color-swatch swatch-muted"></span>Muted Parchment</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="rich-link-dropdown-wrap">' +
+                '<button type="button" class="rich-btn rich-btn-link" data-cmd="link" title="Add or edit link" aria-label="Add or edit link">' +
+                  '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">' +
+                    '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>' +
+                    '<path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>' +
+                  '</svg>' +
+                '</button>' +
+                '<div class="rich-link-popover" style="display:none" role="dialog" aria-label="Link destination and style">' +
+                  '<div class="rich-link-popover__label">LINK DESTINATION</div>' +
+                  '<input type="text" class="rich-link-popover__input" placeholder="https://example.com or /article/..." aria-label="Link URL" />' +
+                  '<div class="rich-link-popover__error" style="display:none">Enter a valid http(s) URL or Coven internal path.</div>' +
+                  '<div class="rich-link-popover__msg" style="display:none">Select text before creating a link.</div>' +
+                  '<div class="rich-link-popover__color-section">' +
+                    '<div class="rich-link-popover__label" style="margin-top:4px">LINK COLOR</div>' +
+                    '<div class="rich-link-popover__swatches" role="radiogroup" aria-label="Link color">' +
+                      '<button type="button" class="rich-link-swatch is-active" data-link-color="default" title="Default Coven Link"><span class="rich-color-swatch swatch-gold"></span>Default</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="gold" title="Coven Gold"><span class="rich-color-swatch swatch-gold"></span>Gold</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="purple" title="Coven Purple"><span class="rich-color-swatch swatch-purple"></span>Purple</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="parchment" title="Parchment"><span class="rich-color-swatch swatch-default"></span>Parchment</button>' +
+                      '<button type="button" class="rich-link-swatch" data-link-color="muted" title="Muted Parchment"><span class="rich-color-swatch swatch-muted"></span>Muted</button>' +
+                    '</div>' +
+                  '</div>' +
+                  '<div class="rich-link-popover__actions">' +
+                    '<button type="button" class="studio-btn studio-btn--danger rich-link-btn--remove" style="display:none">Remove Link</button>' +
+                    '<div style="flex:1"></div>' +
+                    '<button type="button" class="studio-btn rich-link-btn--cancel">Cancel</button>' +
+                    '<button type="button" class="studio-btn studio-btn--primary rich-link-btn--apply" disabled>Apply Link</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<span class="rich-toolbar-divider"></span>' +
+              '<button type="button" class="rich-btn rich-btn-align" data-align="left" title="Align Left">≡←</button>' +
+              '<button type="button" class="rich-btn rich-btn-align" data-align="center" title="Align Center">≡↔</button>' +
+              '<button type="button" class="rich-btn rich-btn-align" data-align="right" title="Align Right">→≡</button>' +
+              '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted);margin-left:auto;padding-right:6px;display:flex;align-items:center" class="table-active-cell-indicator">Select header or cell</span>' +
+            '</div>' +
+          '</div>'
+        );
+      }
+
+      function attachTableRichTextListeners(bBody, sec, block) {
+        var d = block.data;
+        var tableBar = bBody.querySelector('.table-contextual-bar');
+        if (!tableBar) return;
+
+        var toolbar = tableBar.querySelector('.rich-text-toolbar');
+        var indicator = tableBar.querySelector('.table-active-cell-indicator');
+        var colorMenu = tableBar.querySelector('.rich-color-menu');
+        var colorTrigger = tableBar.querySelector('.rich-btn-color');
+        var linkBtn = tableBar.querySelector('.rich-btn-link');
+        var linkPopover = tableBar.querySelector('.rich-link-popover');
+        var urlInput = linkPopover ? linkPopover.querySelector('.rich-link-popover__input') : null;
+        var urlError = linkPopover ? linkPopover.querySelector('.rich-link-popover__error') : null;
+        var popoverMsg = linkPopover ? linkPopover.querySelector('.rich-link-popover__msg') : null;
+        var colorSection = linkPopover ? linkPopover.querySelector('.rich-link-popover__color-section') : null;
+        var removeBtn = linkPopover ? linkPopover.querySelector('.rich-link-btn--remove') : null;
+        var cancelBtn = linkPopover ? linkPopover.querySelector('.rich-link-btn--cancel') : null;
+        var applyBtn = linkPopover ? linkPopover.querySelector('.rich-link-btn--apply') : null;
+        var swatchBtns = linkPopover ? linkPopover.querySelectorAll('.rich-link-swatch') : [];
+
+        var activeSurface = null;
+        var savedRange = null;
+        var activeAnchor = null;
+        var selectedLinkColor = 'default';
+
+        function getActiveData() {
+          if (!activeSurface) return { text: '', align: 'left' };
+          var colId = activeSurface.getAttribute('data-table-header');
+          if (colId) {
+            var col = (d.columns || []).find(function(c) { return c.id === colId; });
+            return col ? getRichData(col.label) : { text: '', align: 'left' };
+          }
+          var rowId = activeSurface.getAttribute('data-table-row');
+          var cellColId = activeSurface.getAttribute('data-table-col');
+          if (rowId && cellColId) {
+            var row = (d.rows || []).find(function(r) { return r.id === rowId; });
+            if (row && row.cells) {
+              return getRichData(row.cells[cellColId]);
+            }
+          }
+          return { text: '', align: 'left' };
+        }
+
+        function setActiveData(richObj) {
+          if (!activeSurface) return;
+          var colId = activeSurface.getAttribute('data-table-header');
+          if (colId) {
+            var col = (d.columns || []).find(function(c) { return c.id === colId; });
+            if (col) col.label = richObj;
+          }
+          var rowId = activeSurface.getAttribute('data-table-row');
+          var cellColId = activeSurface.getAttribute('data-table-col');
+          if (rowId && cellColId) {
+            var row = (d.rows || []).find(function(r) { return r.id === rowId; });
+            if (row) {
+              row.cells = row.cells || {};
+              row.cells[cellColId] = richObj;
+            }
+          }
+          calculateReadingTime();
+          triggerAutosave();
+        }
+
+        function updateToolbarActiveStates() {
+          if (!activeSurface) {
+            if (indicator) indicator.textContent = 'Select header or cell';
+            return;
+          }
+
+          var colId = activeSurface.getAttribute('data-table-header');
+          if (colId) {
+            var cObj = (d.columns || []).find(function(c) { return c.id === colId; });
+            var cText = cObj ? (typeof cObj.label === 'object' ? cObj.label.text : cObj.label) : '';
+            if (indicator) indicator.textContent = 'Header: ' + (cText.replace(/<[^>]*>/g, '').trim() || 'Column');
+          } else {
+            var rowId = activeSurface.getAttribute('data-table-row');
+            var rIdx = (d.rows || []).findIndex(function(r) { return r.id === rowId; });
+            if (indicator) indicator.textContent = 'Cell: Row ' + (rIdx + 1);
+          }
+
+          var boldBtn = toolbar.querySelector('[data-cmd="bold"]');
+          var italicBtn = toolbar.querySelector('[data-cmd="italic"]');
+          var underlineBtn = toolbar.querySelector('[data-cmd="underline"]');
+
+          if (boldBtn) boldBtn.classList.toggle('is-active', document.queryCommandState('bold'));
+          if (italicBtn) italicBtn.classList.toggle('is-active', document.queryCommandState('italic'));
+          if (underlineBtn) underlineBtn.classList.toggle('is-active', document.queryCommandState('underline'));
+
+          var cur = getActiveData();
+          toolbar.querySelectorAll('.rich-btn-align').forEach(function(btn) {
+            btn.classList.toggle('is-active', btn.getAttribute('data-align') === cur.align);
+          });
+
+          var sel = window.getSelection();
+          var anchor = null;
+          var hasText = false;
+          if (sel && sel.rangeCount) {
+            var range = sel.getRangeAt(0);
+            if (activeSurface.contains(range.commonAncestorContainer)) {
+              var node = range.commonAncestorContainer;
+              if (node.nodeType === 3) node = node.parentNode;
+              anchor = (node && node.closest) ? node.closest('a') : null;
+              hasText = !range.collapsed && range.toString().trim().length > 0;
+            }
+          }
+
+          if (linkBtn) {
+            if (anchor) {
+              linkBtn.classList.add('is-active');
+              linkBtn.style.opacity = '1';
+              linkBtn.title = 'Edit link';
+            } else if (hasText) {
+              linkBtn.classList.remove('is-active');
+              linkBtn.style.opacity = '1';
+              linkBtn.title = 'Add link';
+            } else {
+              linkBtn.classList.remove('is-active');
+              linkBtn.style.opacity = '0.5';
+              linkBtn.title = 'Select text before creating a link';
+            }
+          }
+        }
+
+        function updateSwatchActive() {
+          swatchBtns.forEach(function(sb) {
+            sb.classList.toggle('is-active', sb.getAttribute('data-link-color') === selectedLinkColor);
+          });
+        }
+
+        function closeLinkPopover() {
+          if (linkPopover) linkPopover.style.display = 'none';
+          if (applyBtn) applyBtn.style.display = 'inline-block';
+          savedRange = null;
+          activeAnchor = null;
+        }
+
+        toolbar.querySelectorAll('button').forEach(function(btn) {
+          btn.addEventListener('mousedown', function(e) {
+            e.preventDefault();
+          });
+        });
+
+        toolbar.querySelectorAll('[data-cmd="bold"], [data-cmd="italic"], [data-cmd="underline"]').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!activeSurface) return;
+            var cmd = btn.getAttribute('data-cmd');
+            activeSurface.focus();
+            document.execCommand(cmd, false, null);
+            updateToolbarActiveStates();
+            var cur = getActiveData();
+            cur.text = sanitizeRichText(activeSurface.innerHTML);
+            setActiveData(cur);
+          });
+        });
+
+        if (colorTrigger && colorMenu) {
+          colorTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!activeSurface) return;
+            var isOpen = colorMenu.style.display === 'block';
+            document.querySelectorAll('.rich-color-menu').forEach(function(m) { m.style.display = 'none'; });
+            document.querySelectorAll('.rich-link-popover').forEach(function(p) { p.style.display = 'none'; });
+            colorMenu.style.display = isOpen ? 'none' : 'block';
+          });
+
+          colorMenu.querySelectorAll('.rich-color-item').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+              e.preventDefault();
+              if (!activeSurface) return;
+              var colorClass = item.getAttribute('data-color');
+              activeSurface.focus();
+              applyColorClass(activeSurface, colorClass);
+              colorMenu.style.display = 'none';
+              updateToolbarActiveStates();
+              var cur = getActiveData();
+              cur.text = sanitizeRichText(activeSurface.innerHTML);
+              setActiveData(cur);
+            });
+          });
+        }
+
+        if (linkBtn && linkPopover) {
+          linkBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!activeSurface) return;
+            var isOpen = linkPopover.style.display === 'flex';
+            if (isOpen) {
+              closeLinkPopover();
+              return;
+            }
+            document.querySelectorAll('.rich-color-menu').forEach(function(m) { m.style.display = 'none'; });
+            document.querySelectorAll('.rich-link-popover').forEach(function(p) { p.style.display = 'none'; });
+
+            var sel = window.getSelection();
+            var anchor = null;
+            var range = null;
+            var hasText = false;
+            if (sel && sel.rangeCount) {
+              range = sel.getRangeAt(0);
+              if (activeSurface.contains(range.commonAncestorContainer)) {
+                var node = range.commonAncestorContainer;
+                if (node.nodeType === 3) node = node.parentNode;
+                anchor = (node && node.closest) ? node.closest('a') : null;
+                hasText = !range.collapsed && range.toString().trim().length > 0;
+              }
+            }
+
+            if (anchor) {
+              activeAnchor = anchor;
+              savedRange = null;
+              if (urlInput) urlInput.value = activeAnchor.getAttribute('href') || '';
+              var cls = activeAnchor.className || '';
+              selectedLinkColor = 'default';
+              if (cls.indexOf('article-rich-link--gold') !== -1) selectedLinkColor = 'gold';
+              else if (cls.indexOf('article-rich-link--purple') !== -1) selectedLinkColor = 'purple';
+              else if (cls.indexOf('article-rich-link--parchment') !== -1) selectedLinkColor = 'parchment';
+              else if (cls.indexOf('article-rich-link--muted') !== -1) selectedLinkColor = 'muted';
+
+              updateSwatchActive();
+              if (urlInput) urlInput.style.display = 'block';
+              if (colorSection) colorSection.style.display = 'block';
+              if (popoverMsg) popoverMsg.style.display = 'none';
+              if (removeBtn) removeBtn.style.display = 'inline-block';
+              if (applyBtn) {
+                applyBtn.style.display = 'inline-block';
+                applyBtn.textContent = 'Update Link';
+                applyBtn.disabled = !validateLinkUrl(urlInput ? urlInput.value : '');
+              }
+              if (urlError) urlError.style.display = 'none';
+
+              linkPopover.style.display = 'flex';
+              setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+            } else if (hasText) {
+              activeAnchor = null;
+              savedRange = range.cloneRange();
+              if (urlInput) urlInput.value = '';
+              selectedLinkColor = 'default';
+              updateSwatchActive();
+
+              if (urlInput) urlInput.style.display = 'block';
+              if (colorSection) colorSection.style.display = 'block';
+              if (popoverMsg) popoverMsg.style.display = 'none';
+              if (removeBtn) removeBtn.style.display = 'none';
+              if (applyBtn) {
+                applyBtn.style.display = 'inline-block';
+                applyBtn.textContent = 'Apply Link';
+                applyBtn.disabled = true;
+              }
+              if (urlError) urlError.style.display = 'none';
+
+              linkPopover.style.display = 'flex';
+              setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+            } else {
+              activeAnchor = null;
+              savedRange = null;
+              if (urlInput) urlInput.style.display = 'none';
+              if (colorSection) colorSection.style.display = 'none';
+              if (popoverMsg) {
+                popoverMsg.textContent = 'Select text before creating a link.';
+                popoverMsg.style.display = 'block';
+              }
+              if (removeBtn) removeBtn.style.display = 'none';
+              if (applyBtn) applyBtn.style.display = 'none';
+              if (urlError) urlError.style.display = 'none';
+
+              linkPopover.style.display = 'flex';
+            }
+          });
+
+          linkPopover.addEventListener('mousedown', function(e) {
+            if (e.target.tagName !== 'INPUT') e.preventDefault();
+          });
+
+          swatchBtns.forEach(function(sb) {
+            sb.addEventListener('click', function(e) {
+              e.preventDefault();
+              selectedLinkColor = sb.getAttribute('data-link-color') || 'default';
+              updateSwatchActive();
+            });
+          });
+
+          if (urlInput) {
+            function checkTableUrlValidity() {
+              var val = urlInput.value.trim();
+              var isValid = validateLinkUrl(val);
+              if (!val) {
+                if (urlError) urlError.style.display = 'none';
+                if (applyBtn) applyBtn.disabled = true;
+              } else if (isValid) {
+                if (urlError) urlError.style.display = 'none';
+                if (applyBtn) applyBtn.disabled = false;
+              } else {
+                if (urlError) {
+                  urlError.textContent = 'Enter a valid http(s) URL or Coven internal path.';
+                  urlError.style.display = 'block';
+                }
+                if (applyBtn) applyBtn.disabled = true;
+              }
+            }
+
+            ['input', 'change', 'keyup', 'paste'].forEach(function(evt) {
+              urlInput.addEventListener(evt, checkTableUrlValidity);
+            });
+
+            urlInput.addEventListener('keydown', function(e) {
+              if (e.key === 'Escape') {
+                e.preventDefault();
+                closeLinkPopover();
+                if (activeSurface) activeSurface.focus();
+              } else if (e.key === 'Enter') {
+                e.preventDefault();
+                checkTableUrlValidity();
+                if (applyBtn && !applyBtn.disabled) applyBtn.click();
+              }
+            });
+          }
+
+          if (cancelBtn) {
+            cancelBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              closeLinkPopover();
+              if (activeSurface) activeSurface.focus();
+            });
+          }
+
+          if (removeBtn) {
+            removeBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              if (activeAnchor) {
+                while (activeAnchor.firstChild) {
+                  activeAnchor.parentNode.insertBefore(activeAnchor.firstChild, activeAnchor);
+                }
+                activeAnchor.parentNode.removeChild(activeAnchor);
+              }
+              closeLinkPopover();
+              if (activeSurface) {
+                activeSurface.focus();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(activeSurface.innerHTML);
+                setActiveData(cur);
+              }
+              updateToolbarActiveStates();
+            });
+          }
+
+          if (applyBtn) {
+            applyBtn.addEventListener('click', function(e) {
+              e.preventDefault();
+              var url = urlInput ? urlInput.value.trim() : '';
+              if (!validateLinkUrl(url)) return;
+              if (!activeSurface) return;
+
+              var isExt = /^https?:\/\//i.test(url);
+              var colorClass = selectedLinkColor !== 'default' ? ' article-rich-link--' + selectedLinkColor : '';
+
+              if (activeAnchor) {
+                activeAnchor.setAttribute('href', url);
+                if (isExt) {
+                  activeAnchor.setAttribute('target', '_blank');
+                  activeAnchor.setAttribute('rel', 'noopener noreferrer');
+                } else {
+                  activeAnchor.removeAttribute('target');
+                  activeAnchor.removeAttribute('rel');
+                }
+                activeAnchor.className = 'article-rich-link' + colorClass;
+              } else if (savedRange) {
+                var sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(savedRange);
+
+                var a = document.createElement('a');
+                a.setAttribute('href', url);
+                if (isExt) {
+                  a.setAttribute('target', '_blank');
+                  a.setAttribute('rel', 'noopener noreferrer');
+                }
+                a.className = 'article-rich-link' + colorClass;
+
+                try {
+                  savedRange.surroundContents(a);
+                } catch (err) {
+                  var fragment = savedRange.extractContents();
+                  a.appendChild(fragment);
+                  savedRange.insertNode(a);
+                }
+
+                var newRange = document.createRange();
+                newRange.selectNodeContents(a);
+                sel.removeAllRanges();
+                sel.addRange(newRange);
+              }
+
+              closeLinkPopover();
+              activeSurface.focus();
+              var cur = getActiveData();
+              cur.text = sanitizeRichText(activeSurface.innerHTML);
+              setActiveData(cur);
+              updateToolbarActiveStates();
+            });
+          }
+        }
+
+        toolbar.querySelectorAll('.rich-btn-align').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!activeSurface) return;
+            var align = btn.getAttribute('data-align');
+            activeSurface.classList.remove('rich-align-left', 'rich-align-center', 'rich-align-right');
+            activeSurface.classList.add('rich-align-' + align);
+            activeSurface.setAttribute('data-table-align', align);
+            toolbar.querySelectorAll('.rich-btn-align').forEach(function(b) {
+              b.classList.toggle('is-active', b === btn);
+            });
+            var cur = getActiveData();
+            cur.align = align;
+            cur.text = sanitizeRichText(activeSurface.innerHTML);
+            setActiveData(cur);
+          });
+        });
+
+        bBody.querySelectorAll('.studio-table-cell-input.rich-text-surface').forEach(function(cell) {
+          cell.addEventListener('focus', function() {
+            activeSurface = cell;
+            updateToolbarActiveStates();
+          });
+
+          cell.addEventListener('click', function(e) {
+            activeSurface = cell;
+            updateToolbarActiveStates();
+          });
+
+          cell.addEventListener('input', function() {
+            activeSurface = cell;
+            var cur = getActiveData();
+            cur.text = sanitizeRichText(cell.innerHTML);
+            setActiveData(cur);
+            updateToolbarActiveStates();
+          });
+
+          cell.addEventListener('keyup', function() {
+            activeSurface = cell;
+            updateToolbarActiveStates();
+          });
+
+          cell.addEventListener('mouseup', function() {
+            activeSurface = cell;
+            updateToolbarActiveStates();
+          });
+
+          cell.addEventListener('keydown', function(e) {
+            if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+              var k = e.key.toLowerCase();
+              if (k === 'b' || k === 'i' || k === 'u') {
+                var cmd = k === 'b' ? 'bold' : (k === 'i' ? 'italic' : 'underline');
+                e.preventDefault();
+                document.execCommand(cmd, false, null);
+                updateToolbarActiveStates();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(cell.innerHTML);
+                setActiveData(cur);
+              }
+            }
+          });
+
+          cell.addEventListener('paste', function(e) {
+            e.preventDefault();
+            var text = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
+            document.execCommand('insertText', false, text);
+            activeSurface = cell;
+            var cur = getActiveData();
+            cur.text = sanitizeRichText(cell.innerHTML);
+            setActiveData(cur);
+            updateToolbarActiveStates();
           });
         });
       }
@@ -1176,47 +1782,89 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 break;
 
               case 'nested-bullets':
+                if (d.title !== undefined) {
+                  d.title = getRichData(d.title);
+                }
                 if (Array.isArray(d.items)) {
                   d.items = d.items.map(function(main) {
                     if (typeof main === 'string') main = { text: main };
                     if (!main.id) main.id = uid('main');
+                    main.text = getRichData(main.text);
                     var rawSubs = main.children || main.subItems || [];
                     main.children = rawSubs.map(function(sub) {
-                      if (typeof sub === 'string') return { id: uid('sub'), text: sub };
+                      if (typeof sub === 'string') sub = { id: uid('sub'), text: sub };
                       if (!sub.id) sub.id = uid('sub');
+                      sub.text = getRichData(sub.text);
                       return sub;
                     });
                     return main;
                   });
                 } else {
-                  d.items = [{ id: uid('main'), text: '', children: [] }];
+                  d.items = [{ id: uid('main'), text: getRichData(''), children: [] }];
                 }
                 break;
 
               case 'numbered-steps':
+                if (d.title !== undefined) {
+                  d.title = getRichData(d.title);
+                }
                 if (Array.isArray(d.steps)) {
                   d.steps = d.steps.map(function(s, idx) {
                     if (!s.id) s.id = uid('step');
                     s.badge = String(idx + 1).padStart(2, '0');
+                    s.title = getRichData(s.title);
+                    s.text = getRichData(s.text);
                     return s;
                   });
                 } else {
-                  d.steps = [{ id: uid('step'), badge: '01', title: '', text: '' }];
+                  d.steps = [{ id: uid('step'), badge: '01', title: getRichData(''), text: getRichData('') }];
                 }
+                break;
+
+              case 'text-image':
+              case 'image-text':
+                if (d.heading !== undefined) d.heading = getRichData(d.heading);
+                d.text = getRichData(d.text);
+                if (d.caption !== undefined) d.caption = getRichData(d.caption);
+                break;
+
+              case 'two-columns':
+                if (d.col1Title !== undefined) d.col1Title = getRichData(d.col1Title);
+                d.col1Text = getRichData(d.col1Text);
+                if (d.col2Title !== undefined) d.col2Title = getRichData(d.col2Title);
+                d.col2Text = getRichData(d.col2Text);
                 break;
 
               case 'three-columns':
                 if (!Array.isArray(d.columns) || d.columns.length === 0) {
                   d.columns = [
-                    { id: 'col_1', kicker: 'PILLAR I', title: '', text: '' },
-                    { id: 'col_2', kicker: 'PILLAR II', title: '', text: '' },
-                    { id: 'col_3', kicker: 'PILLAR III', title: '', text: '' }
+                    { id: 'col_1', kicker: 'PILLAR I', title: getRichData(''), text: getRichData('') },
+                    { id: 'col_2', kicker: 'PILLAR II', title: getRichData(''), text: getRichData('') },
+                    { id: 'col_3', kicker: 'PILLAR III', title: getRichData(''), text: getRichData('') }
                   ];
                 } else {
                   d.columns.forEach(function(c, i) {
                     if (!c.id) c.id = 'col_' + (i + 1);
+                    c.title = getRichData(c.title);
+                    c.text = getRichData(c.text);
                   });
                 }
+                break;
+
+              case 'single-image':
+              case 'full-image':
+                if (d.caption !== undefined) d.caption = getRichData(d.caption);
+                break;
+
+              case 'two-images':
+                if (d.img1Caption !== undefined) d.img1Caption = getRichData(d.img1Caption);
+                if (d.img2Caption !== undefined) d.img2Caption = getRichData(d.img2Caption);
+                break;
+
+              case 'three-images':
+                if (d.img1Caption !== undefined) d.img1Caption = getRichData(d.img1Caption);
+                if (d.img2Caption !== undefined) d.img2Caption = getRichData(d.img2Caption);
+                if (d.img3Caption !== undefined) d.img3Caption = getRichData(d.img3Caption);
                 break;
 
               case 'gallery-scroll':
@@ -1225,15 +1873,35 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 } else {
                   d.cards.forEach(function(c) {
                     if (!c.id) c.id = uid('gcard');
+                    c.caption = getRichData(c.caption);
                   });
                 }
                 break;
 
+              case 'card-grid-2':
+                d.card1Title = getRichData(d.card1Title);
+                d.card1Desc = getRichData(d.card1Desc);
+                d.card2Title = getRichData(d.card2Title);
+                d.card2Desc = getRichData(d.card2Desc);
+                break;
+
+              case 'card-grid-3':
+                d.card1Title = getRichData(d.card1Title);
+                d.card1Desc = getRichData(d.card1Desc);
+                d.card2Title = getRichData(d.card2Title);
+                d.card2Desc = getRichData(d.card2Desc);
+                d.card3Title = getRichData(d.card3Title);
+                d.card3Desc = getRichData(d.card3Desc);
+                break;
+
               case 'comparison':
+                d.col1Header = getRichData(d.col1Header);
+                d.col2Header = getRichData(d.col2Header);
                 if (Array.isArray(d.col1Items)) {
                   d.col1Items = d.col1Items.map(function(it) {
-                    if (typeof it === 'string') return { id: uid('c1'), text: it };
+                    if (typeof it === 'string') return { id: uid('c1'), text: getRichData(it) };
                     if (!it.id) it.id = uid('c1');
+                    it.text = getRichData(it.text);
                     return it;
                   });
                 } else {
@@ -1241,8 +1909,9 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 }
                 if (Array.isArray(d.col2Items)) {
                   d.col2Items = d.col2Items.map(function(it) {
-                    if (typeof it === 'string') return { id: uid('c2'), text: it };
+                    if (typeof it === 'string') return { id: uid('c2'), text: getRichData(it) };
                     if (!it.id) it.id = uid('c2');
+                    it.text = getRichData(it.text);
                     return it;
                   });
                 } else {
@@ -1250,76 +1919,125 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 }
                 break;
 
+              case 'stats-metrics':
+                d.stat1Label = getRichData(d.stat1Label);
+                d.stat1Sub = getRichData(d.stat1Sub);
+                d.stat2Label = getRichData(d.stat2Label);
+                d.stat2Sub = getRichData(d.stat2Sub);
+                d.stat3Label = getRichData(d.stat3Label);
+                d.stat3Sub = getRichData(d.stat3Sub);
+                break;
+
               case 'technical-table':
                 if (!Array.isArray(d.columns) || d.columns.length === 0) {
                   if (Array.isArray(d.headers) && d.headers.length > 0) {
                     d.columns = d.headers.map(function(h, idx) {
-                      return { id: 'col_' + idx, label: h };
+                      return { id: 'col_' + idx, label: getRichData(h) };
                     });
                     if (Array.isArray(d.rows)) {
                       d.rows = d.rows.map(function(r) {
                         var cells = {};
                         d.columns.forEach(function(c, cIdx) {
-                          cells[c.id] = r.cells ? (r.cells[c.id] || '') : (r['col' + (cIdx + 1)] || (Array.isArray(r) ? r[cIdx] : ''));
+                          cells[c.id] = getRichData(r.cells ? (r.cells[c.id] || '') : (r['col' + (cIdx + 1)] || (Array.isArray(r) ? r[cIdx] : '')));
                         });
                         return { id: r.id || uid('row'), cells: cells };
                       });
                     }
                   } else {
                     d.columns = [
-                      { id: 'col_1', label: 'Feature' },
-                      { id: 'col_2', label: 'Status' }
+                      { id: 'col_1', label: getRichData('Feature') },
+                      { id: 'col_2', label: getRichData('Status') }
                     ];
                     d.rows = [
-                      { id: uid('row'), cells: { col_1: '', col_2: '' } }
+                      { id: uid('row'), cells: { col_1: getRichData(''), col_2: getRichData('') } }
                     ];
                   }
+                } else {
+                  d.columns.forEach(function(c) {
+                    c.label = getRichData(c.label);
+                  });
+                  (d.rows || []).forEach(function(r) {
+                    r.cells = r.cells || {};
+                    d.columns.forEach(function(c) {
+                      r.cells[c.id] = getRichData(r.cells[c.id]);
+                    });
+                  });
                 }
+                break;
+
+              case 'callout':
+                if (d.title !== undefined) d.title = getRichData(d.title);
+                d.text = getRichData(d.text);
+                break;
+
+              case 'pullquote':
+                d.quote = getRichData(d.quote);
+                d.author = getRichData(d.author);
+                break;
+
+              case 'code-block':
+                if (d.title !== undefined) d.title = getRichData(d.title);
                 break;
 
               case 'faq':
                 if (Array.isArray(d.items)) {
                   d.items = d.items.map(function(it) {
                     if (!it.id) it.id = uid('faq');
+                    it.question = getRichData(it.question);
+                    it.answer = getRichData(it.answer);
                     return it;
                   });
                 } else {
-                  d.items = [{ id: uid('faq'), question: '', answer: '' }];
+                  d.items = [{ id: uid('faq'), question: getRichData(''), answer: getRichData('') }];
                 }
                 break;
 
+              case 'exercise':
+                d.scenario = getRichData(d.scenario);
+                d.solutionTitle = getRichData(d.solutionTitle);
+                d.solutionText = getRichData(d.solutionText);
+                break;
+
               case 'article-trial':
+                d.title = getRichData(d.title || "You've reached the trial");
+                d.intro = getRichData(d.intro || d.description || '');
                 if (!Array.isArray(d.questions) || d.questions.length === 0) {
                   d.questions = [
                     {
                       id: uid('q'),
-                      question: '',
+                      question: getRichData(''),
                       answers: [
-                        { id: uid('ans'), text: '', correct: true },
-                        { id: uid('ans'), text: '', correct: false }
+                        { id: uid('ans'), text: getRichData(''), correct: true },
+                        { id: uid('ans'), text: getRichData(''), correct: false }
                       ],
-                      explanation: ''
+                      explanation: getRichData('')
                     }
                   ];
                 } else {
                   d.questions.forEach(function(q) {
                     if (!q.id) q.id = uid('q');
+                    q.question = getRichData(q.question);
+                    q.explanation = getRichData(q.explanation);
                     if (!Array.isArray(q.answers)) q.answers = [];
                     q.answers.forEach(function(a) {
                       if (!a.id) a.id = uid('ans');
+                      a.text = getRichData(a.text);
                     });
                   });
                 }
                 break;
 
               case 'key-takeaways':
+                if (d.title !== undefined) d.title = getRichData(d.title);
                 if (Array.isArray(d.items)) {
                   d.items = d.items.map(function(it) {
                     if (!it.id) it.id = uid('t');
+                    it.term = getRichData(it.term);
+                    it.desc = getRichData(it.desc);
                     return it;
                   });
                 } else {
-                  d.items = [{ id: uid('t'), term: '', desc: '' }];
+                  d.items = [{ id: uid('t'), term: getRichData(''), desc: getRichData('') }];
                 }
                 break;
 
@@ -1328,10 +2046,11 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                   d.items = d.items.map(function(it) {
                     if (!it.id) it.id = uid('rd');
                     it.type = it.type || (it.url && it.url.startsWith('http') ? 'external' : 'internal');
+                    it.title = getRichData(it.title);
                     return it;
                   });
                 } else {
-                  d.items = [{ id: uid('rd'), type: 'internal', title: '', slug: '', url: '', ctaText: 'Study scroll' }];
+                  d.items = [{ id: uid('rd'), type: 'internal', title: getRichData(''), slug: '', url: '', ctaText: 'Study scroll' }];
                 }
                 break;
             }
@@ -1363,6 +2082,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
 
           (sec.blocks || []).forEach(function(blk) {
             var d = blk.data || {};
+            addWords(d.title);
             addWords(d.heading);
             addWords(d.intro);
             addWords(d.text);
@@ -1384,6 +2104,24 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             addWords(d.card2Desc);
             addWords(d.card3Title);
             addWords(d.card3Desc);
+            addWords(d.col1Header);
+            addWords(d.col2Header);
+            addWords(d.stat1Label);
+            addWords(d.stat1Sub);
+            addWords(d.stat2Label);
+            addWords(d.stat2Sub);
+            addWords(d.stat3Label);
+            addWords(d.stat3Sub);
+            addWords(d.img1Caption);
+            addWords(d.img2Caption);
+            addWords(d.img3Caption);
+
+            if (Array.isArray(d.col1Items)) {
+              d.col1Items.forEach(function(it) { addWords(it.text); });
+            }
+            if (Array.isArray(d.col2Items)) {
+              d.col2Items.forEach(function(it) { addWords(it.text); });
+            }
 
             if (Array.isArray(d.paragraphs)) {
               d.paragraphs.forEach(function(p) { addWords(typeof p === 'object' ? p.text : p); });
@@ -1516,6 +2254,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
         var caption = opts.caption || '';
         var showCaption = opts.showCaption !== false;
         var propPrefix = opts.propPrefix || 'image';
+        var captionAttr = opts.captionAttr || '';
 
         if (!src) {
           return (
@@ -1551,10 +2290,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 '<input type="text" class="studio-input" data-img-subfield="alt" data-img-prop="' + propPrefix + '" value="' + escapeHtml(alt) + '" placeholder="Required descriptive text for accessibility" />' +
               '</div>' +
               (showCaption ? (
-                '<div class="studio-form-group">' +
-                  '<label class="studio-label">Caption (Optional)</label>' +
-                  '<input type="text" class="studio-input" data-img-subfield="caption" data-img-prop="' + propPrefix + '" value="' + escapeHtml(caption) + '" placeholder="Figure · Diagram explanation..." />' +
-                '</div>'
+                captionAttr ?
+                  renderRichTextFieldHtml('Caption (Optional)', captionAttr, caption, 'Figure · Diagram explanation...') :
+                  ('<div class="studio-form-group">' +
+                    '<label class="studio-label">Caption (Optional)</label>' +
+                    '<input type="text" class="studio-input" data-img-subfield="caption" data-img-prop="' + propPrefix + '" value="' + escapeHtml(caption) + '" placeholder="Figure · Diagram explanation..." />' +
+                  '</div>')
               ) : '') +
             '</div>' +
           '</div>'
@@ -1580,7 +2321,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           header.className = 'category-accordion-header';
 
           var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
-            return b.category === cat && b.type !== 'text-title';
+            return b.category === cat && b.type !== 'text-title' && b.type !== 'bullet-list';
           });
 
           header.innerHTML = 
@@ -2091,28 +2832,23 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           case 'nested-bullets':
             html += 
               (d.title !== undefined ?
-                '<div class="studio-form-group"><label class="studio-label"><span>List Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Optional hierarchical title..." /></div>' :
+                renderRichTextFieldHtml('<span>List Title</span>', 'data-rich-field="title"', d.title, 'Optional hierarchical title...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
               '<div class="studio-form-group"><label class="studio-label">Hierarchical Items</label><div style="display:flex;flex-direction:column;gap:12px">';
             (d.items || []).forEach(function(main, mIdx) {
+              var mainLabel = '<div style="display:flex;align-items:center;gap:8px"><span class="studio-repeatable-handle">⋮⋮</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);font-weight:600">MAIN ITEM ' + String(mIdx + 1).padStart(2, '0') + '</span></div>';
+              var mainRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-main" data-item-id="' + main.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete parent item">✕</button>';
               html += 
                 '<div class="nested-parent-card">' +
-                  '<div style="display:flex;align-items:center;gap:8px">' +
-                    '<span class="studio-repeatable-handle">⋮⋮</span>' +
-                    '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-gold);font-weight:600">' + String(mIdx + 1).padStart(2, '0') + '</span>' +
-                    '<input type="text" class="studio-input" data-array-obj="items" data-item-id="' + main.id + '" data-prop="text" value="' + escapeHtml(main.text || '') + '" placeholder="Main invocation / parent item..." />' +
-                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-main" data-item-id="' + main.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete parent item">✕</button>' +
-                  '</div>' +
+                  renderRichTextFieldHtml(mainLabel, 'data-rich-array-obj="items" data-rich-item-id="' + main.id + '" data-rich-prop="text"', main.text, 'Main invocation / parent item...', mainRemove) +
                   '<div class="nested-sub-items-wrap">';
               (main.children || []).forEach(function(sub, sIdx) {
+                var subLabel = '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-purple)">↳ SUB-ITEM</span>';
+                var subRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-sub" data-parent-id="' + main.id + '" data-sub-id="' + sub.id + '" title="Delete sub-item">✕</button>';
                 html += 
-                  '<div class="studio-repeatable-row">' +
-                    '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-purple)">↳</span>' +
-                    '<div class="studio-repeatable-content">' +
-                      '<input type="text" class="studio-input" data-nested-sub="true" data-parent-id="' + main.id + '" data-sub-id="' + sub.id + '" value="' + escapeHtml(sub.text || '') + '" placeholder="Sub-item detail..." />' +
-                    '</div>' +
-                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-sub" data-parent-id="' + main.id + '" data-sub-id="' + sub.id + '" title="Delete sub-item">✕</button>' +
+                  '<div class="nested-sub-item-card" style="margin-bottom:6px">' +
+                    renderRichTextFieldHtml(subLabel, 'data-rich-nested-sub="true" data-rich-parent-id="' + main.id + '" data-rich-sub-id="' + sub.id + '"', sub.text, 'Sub-item detail...', subRemove) +
                   '</div>';
               });
               html += 
@@ -2126,7 +2862,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           case 'numbered-steps':
             html += 
               (d.title !== undefined ?
-                '<div class="studio-form-group"><label class="studio-label"><span>Steps Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Optional ritual/steps title..." /></div>' :
+                renderRichTextFieldHtml('<span>Steps Title</span>', 'data-rich-field="title"', d.title, 'Optional ritual/steps title...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
               '<div class="studio-form-group"><label class="studio-label">Sequential Ritual Steps</label><div style="display:flex;flex-direction:column;gap:10px">';
@@ -2146,8 +2882,8 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                       '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-step" data-step-id="' + st.id + '" ' + (d.steps.length <= 1 ? 'disabled' : '') + ' title="Delete step">✕</button>' +
                     '</div>' +
                   '</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Step Title</label><input type="text" class="studio-input" data-array-obj="steps" data-item-id="' + st.id + '" data-prop="title" value="' + escapeHtml(st.title || '') + '" placeholder="e.g. Telemetry Verification" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-array-obj="steps" data-item-id="' + st.id + '" data-prop="text" style="min-height:70px" placeholder="Instructions or ritual breakdown...">' + escapeHtml(st.text || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Step Title', 'data-rich-array-obj="steps" data-rich-item-id="' + st.id + '" data-rich-prop="title"', st.title, 'e.g. Telemetry Verification') +
+                  renderRichTextFieldHtml('Description', 'data-rich-array-obj="steps" data-rich-item-id="' + st.id + '" data-rich-prop="text"', st.text, 'Instructions or ritual breakdown...') +
                 '</div>';
             });
             html += '</div><div style="margin-top:6px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-step">+ Add Step</button></div></div>';
@@ -2158,12 +2894,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           case 'image-text':
             html += 
               (d.heading !== undefined ?
-                '<div class="studio-form-group"><label class="studio-label"><span>Heading</span><span class="field-label-remove" data-act="remove-field" data-opt-field="heading">✕ Remove</span></label><input type="text" class="studio-input" data-field="heading" value="' + escapeHtml(d.heading) + '" placeholder="Optional heading..." /></div>' :
+                renderRichTextFieldHtml('<span>Heading</span>', 'data-rich-field="heading"', d.heading, 'Optional heading...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="heading">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="heading">+ Add Heading</button></div>'
               ) +
-              '<div class="studio-form-group"><label class="studio-label">Body Text</label><textarea class="studio-textarea" data-field="text" style="min-height:90px" placeholder="Technical copy accompanying the image...">' + escapeHtml(d.text || '') + '</textarea></div>' +
+              renderRichTextFieldHtml('Body Text', 'data-rich-field="text"', d.text, 'Technical copy accompanying the image...') +
               '<div class="studio-form-group"><label class="studio-label">Visual Artifact</label>' +
-                renderImageTileHtml({ src: d.imageSrc, alt: d.alt, caption: d.caption, showCaption: true, propPrefix: 'imageSrc' }) +
+                renderImageTileHtml({ src: d.imageSrc, alt: d.alt, caption: d.caption, showCaption: true, propPrefix: 'imageSrc', captionAttr: 'data-rich-field="caption"' }) +
               '</div>';
             break;
 
@@ -2172,13 +2908,13 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Column 1 (Left)</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title (Optional)</label><input type="text" class="studio-input" data-field="col1Title" value="' + escapeHtml(d.col1Title || '') + '" placeholder="Column 1 header..." /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Body Text</label><textarea class="studio-textarea" data-field="col1Text" style="min-height:100px" placeholder="Primary copy...">' + escapeHtml(d.col1Text || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title (Optional)', 'data-rich-field="col1Title"', d.col1Title, 'Column 1 header...') +
+                  renderRichTextFieldHtml('Body Text', 'data-rich-field="col1Text"', d.col1Text, 'Primary copy...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Column 2 (Right)</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title (Optional)</label><input type="text" class="studio-input" data-field="col2Title" value="' + escapeHtml(d.col2Title || '') + '" placeholder="Column 2 header..." /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Body Text</label><textarea class="studio-textarea" data-field="col2Text" style="min-height:100px" placeholder="Complementary copy...">' + escapeHtml(d.col2Text || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title (Optional)', 'data-rich-field="col2Title"', d.col2Title, 'Column 2 header...') +
+                  renderRichTextFieldHtml('Body Text', 'data-rich-field="col2Text"', d.col2Text, 'Complementary copy...') +
                 '</div>' +
               '</div>';
             break;
@@ -2190,8 +2926,8 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Column ' + (cIdx + 1) + '</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Kicker</label><input type="text" class="studio-input" data-array-obj="columns" data-item-id="' + col.id + '" data-prop="kicker" value="' + escapeHtml(col.kicker || '') + '" placeholder="PILLAR ' + (cIdx + 1) + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-array-obj="columns" data-item-id="' + col.id + '" data-prop="title" value="' + escapeHtml(col.title || '') + '" placeholder="Pillar title..." /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Body</label><textarea class="studio-textarea" data-array-obj="columns" data-item-id="' + col.id + '" data-prop="text" style="min-height:90px" placeholder="Details...">' + escapeHtml(col.text || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-array-obj="columns" data-rich-item-id="' + col.id + '" data-rich-prop="title"', col.title, 'Pillar title...') +
+                  renderRichTextFieldHtml('Body', 'data-rich-array-obj="columns" data-rich-item-id="' + col.id + '" data-rich-prop="text"', col.text, 'Details...') +
                 '</div>';
             });
             html += '</div>';
@@ -2200,7 +2936,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           // ── 04. IMAGES & MEDIA ──
           case 'single-image':
           case 'full-image':
-            html += renderImageTileHtml({ src: d.src, alt: d.alt, caption: d.caption, showCaption: true, propPrefix: 'src' });
+            html += renderImageTileHtml({ src: d.src, alt: d.alt, caption: d.caption, showCaption: true, propPrefix: 'src', captionAttr: 'data-rich-field="caption"' });
             break;
 
           case 'two-images':
@@ -2208,11 +2944,11 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Image 1</div>' +
-                  renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1' }) +
+                  renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1', captionAttr: 'data-rich-field="img1Caption"' }) +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Image 2</div>' +
-                  renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2' }) +
+                  renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2', captionAttr: 'data-rich-field="img2Caption"' }) +
                 '</div>' +
               '</div>';
             break;
@@ -2222,15 +2958,15 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               '<div class="studio-cols-grid-3">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Image 1</div>' +
-                  renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1' }) +
+                  renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1', captionAttr: 'data-rich-field="img1Caption"' }) +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Image 2</div>' +
-                  renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2' }) +
+                  renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2', captionAttr: 'data-rich-field="img2Caption"' }) +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Image 3</div>' +
-                  renderImageTileHtml({ src: d.img3Src, alt: d.img3Alt, caption: d.img3Caption, showCaption: true, propPrefix: 'img3' }) +
+                  renderImageTileHtml({ src: d.img3Src, alt: d.img3Alt, caption: d.img3Caption, showCaption: true, propPrefix: 'img3', captionAttr: 'data-rich-field="img3Caption"' }) +
                 '</div>' +
               '</div>';
             break;
@@ -2249,7 +2985,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                       '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-gallery-card" data-card-id="' + c.id + '" title="Delete">✕</button>' +
                     '</div>' +
                   '</div>' +
-                  renderImageTileHtml({ src: c.src, alt: c.alt, caption: c.caption, showCaption: true, propPrefix: 'gcard_' + c.id }) +
+                  renderImageTileHtml({ src: c.src, alt: c.alt, caption: c.caption, showCaption: true, propPrefix: 'gcard_' + c.id, captionAttr: 'data-rich-array-obj="cards" data-rich-item-id="' + c.id + '" data-rich-prop="caption"' }) +
                 '</div>';
             });
             html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-gallery-card">+ Add Image Card</button></div></div>';
@@ -2262,14 +2998,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card1Title" value="' + escapeHtml(d.card1Title || '') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card1Desc" style="min-height:75px">' + escapeHtml(d.card1Desc || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-field="card1Title"', d.card1Title, 'Card 1 title...') +
+                  renderRichTextFieldHtml('Description', 'data-rich-field="card1Desc"', d.card1Desc, 'Card 1 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 2</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '◈') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card2Title" value="' + escapeHtml(d.card2Title || '') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card2Desc" style="min-height:75px">' + escapeHtml(d.card2Desc || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-field="card2Title"', d.card2Title, 'Card 2 title...') +
+                  renderRichTextFieldHtml('Description', 'data-rich-field="card2Desc"', d.card2Desc, 'Card 2 description...') +
                 '</div>' +
               '</div>';
             break;
@@ -2280,20 +3016,20 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card1Title" value="' + escapeHtml(d.card1Title || '') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card1Desc" style="min-height:75px">' + escapeHtml(d.card1Desc || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-field="card1Title"', d.card1Title, 'Card 1 title...') +
+                  renderRichTextFieldHtml('Description', 'data-rich-field="card1Desc"', d.card1Desc, 'Card 1 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 2</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '⚙') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card2Title" value="' + escapeHtml(d.card2Title || '') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card2Desc" style="min-height:75px">' + escapeHtml(d.card2Desc || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-field="card2Title"', d.card2Title, 'Card 2 title...') +
+                  renderRichTextFieldHtml('Description', 'data-rich-field="card2Desc"', d.card2Desc, 'Card 2 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 3</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card3Icon" value="' + escapeHtml(d.card3Icon || '✦') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-field="card3Title" value="' + escapeHtml(d.card3Title || '') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-field="card3Desc" style="min-height:75px">' + escapeHtml(d.card3Desc || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-field="card3Title"', d.card3Title, 'Card 3 title...') +
+                  renderRichTextFieldHtml('Description', 'data-rich-field="card3Desc"', d.card3Desc, 'Card 3 description...') +
                 '</div>' +
               '</div>';
             break;
@@ -2303,14 +3039,16 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Side A</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Header</label><input type="text" class="studio-input" data-field="col1Header" value="' + escapeHtml(d.col1Header || '') + '" placeholder="e.g. INBOUND ARCHITECTURE" /></div>' +
+                  renderRichTextFieldHtml('Header', 'data-rich-field="col1Header"', d.col1Header, 'e.g. INBOUND ARCHITECTURE') +
                   '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col1Icon" value="' + escapeHtml(d.col1Icon || '✉') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Side A Items</label><div class="studio-repeatable-list">';
+                  '<div class="studio-form-group"><label class="studio-label">Side A Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col1Items || []).forEach(function(it) {
+              var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="1" data-item-id="' + it.id + '">✕</button>';
               html += 
-                '<div class="studio-repeatable-row">' +
-                  '<input type="text" class="studio-input" data-array-obj="col1Items" data-item-id="' + it.id + '" data-prop="text" value="' + escapeHtml(it.text || '') + '" placeholder="Feature comparison point..." />' +
-                  '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="1" data-item-id="' + it.id + '">✕</button>' +
+                '<div class="studio-repeatable-row" style="align-items:flex-start">' +
+                  '<div style="flex:1">' +
+                    renderRichTextFieldHtml('', 'data-rich-array-obj="col1Items" data-rich-item-id="' + it.id + '" data-rich-prop="text"', it.text, 'Feature comparison point...', itRemove) +
+                  '</div>' +
                 '</div>';
             });
             html += 
@@ -2319,14 +3057,16 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Side B</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Header</label><input type="text" class="studio-input" data-field="col2Header" value="' + escapeHtml(d.col2Header || '') + '" placeholder="e.g. OUTBOUND DISPATCH" /></div>' +
+                  renderRichTextFieldHtml('Header', 'data-rich-field="col2Header"', d.col2Header, 'e.g. OUTBOUND DISPATCH') +
                   '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col2Icon" value="' + escapeHtml(d.col2Icon || '◈') + '" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Side B Items</label><div class="studio-repeatable-list">';
+                  '<div class="studio-form-group"><label class="studio-label">Side B Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col2Items || []).forEach(function(it) {
+              var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="2" data-item-id="' + it.id + '">✕</button>';
               html += 
-                '<div class="studio-repeatable-row">' +
-                  '<input type="text" class="studio-input" data-array-obj="col2Items" data-item-id="' + it.id + '" data-prop="text" value="' + escapeHtml(it.text || '') + '" placeholder="Feature comparison point..." />' +
-                  '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="2" data-item-id="' + it.id + '">✕</button>' +
+                '<div class="studio-repeatable-row" style="align-items:flex-start">' +
+                  '<div style="flex:1">' +
+                    renderRichTextFieldHtml('', 'data-rich-array-obj="col2Items" data-rich-item-id="' + it.id + '" data-rich-prop="text"', it.text, 'Feature comparison point...', itRemove) +
+                  '</div>' +
                 '</div>';
             });
             html += 
@@ -2342,20 +3082,20 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Metric 1</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Number / Metric</label><input type="text" class="studio-input" data-field="stat1Num" value="' + escapeHtml(d.stat1Num || '') + '" placeholder="e.g. 12" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Label</label><input type="text" class="studio-input" data-field="stat1Label" value="' + escapeHtml(d.stat1Label || '') + '" placeholder="e.g. Active Journeys" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Sub-label</label><input type="text" class="studio-input" data-field="stat1Sub" value="' + escapeHtml(d.stat1Sub || '') + '" placeholder="e.g. Multi-cloud orchestration" /></div>' +
+                  renderRichTextFieldHtml('Label', 'data-rich-field="stat1Label"', d.stat1Label, 'e.g. Active Journeys') +
+                  renderRichTextFieldHtml('Sub-label', 'data-rich-field="stat1Sub"', d.stat1Sub, 'e.g. Multi-cloud orchestration') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Metric 2</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Number / Metric</label><input type="text" class="studio-input" data-field="stat2Num" value="' + escapeHtml(d.stat2Num || '') + '" placeholder="e.g. 89%" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Label</label><input type="text" class="studio-input" data-field="stat2Label" value="' + escapeHtml(d.stat2Label || '') + '" placeholder="e.g. Engagement Rate" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Sub-label</label><input type="text" class="studio-input" data-field="stat2Sub" value="' + escapeHtml(d.stat2Sub || '') + '" placeholder="e.g. Model-guided" /></div>' +
+                  renderRichTextFieldHtml('Label', 'data-rich-field="stat2Label"', d.stat2Label, 'e.g. Engagement Rate') +
+                  renderRichTextFieldHtml('Sub-label', 'data-rich-field="stat2Sub"', d.stat2Sub, 'e.g. Model-guided') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Metric 3</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Number / Metric</label><input type="text" class="studio-input" data-field="stat3Num" value="' + escapeHtml(d.stat3Num || '') + '" placeholder="e.g. 42K" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Label</label><input type="text" class="studio-input" data-field="stat3Label" value="' + escapeHtml(d.stat3Label || '') + '" placeholder="e.g. Contacts Scored" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Sub-label</label><input type="text" class="studio-input" data-field="stat3Sub" value="' + escapeHtml(d.stat3Sub || '') + '" placeholder="e.g. Rolling window" /></div>' +
+                  renderRichTextFieldHtml('Label', 'data-rich-field="stat3Label"', d.stat3Label, 'e.g. Contacts Scored') +
+                  renderRichTextFieldHtml('Sub-label', 'data-rich-field="stat3Sub"', d.stat3Sub, 'e.g. Rolling window') +
                 '</div>' +
               '</div>';
             break;
@@ -2365,15 +3105,20 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             var cols = d.columns || [];
             var rows = d.rows || [];
             html += 
-              '<div class="studio-form-group"><label class="studio-label">Excel-Style Table Builder (' + cols.length + ' cols × ' + rows.length + ' rows)</label>' +
+              '<div class="studio-form-group">' +
+                '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
+                  '<label class="studio-label" style="margin-bottom:0">Excel-Style Table Builder (' + cols.length + ' cols × ' + rows.length + ' rows)</label>' +
+                '</div>' +
+                renderTableContextualToolbarHtml() +
                 '<div class="studio-table-builder">' +
                   '<table class="studio-table-grid">' +
                     '<thead><tr>';
             cols.forEach(function(col) {
+              var cRich = getRichData(col.label);
               html += 
                 '<th>' +
                   '<div style="display:flex;align-items:center;gap:4px">' +
-                    '<input type="text" class="studio-table-cell-input" style="font-weight:600;color:var(--studio-gold)" data-table-header="' + col.id + '" value="' + escapeHtml(col.label) + '" placeholder="Col Header" />' +
+                    '<div class="studio-table-cell-input rich-text-surface rich-align-' + cRich.align + '" contenteditable="true" spellcheck="false" style="font-weight:600;color:var(--studio-gold)" data-table-header="' + col.id + '" data-table-align="' + cRich.align + '">' + sanitizeRichText(cRich.text) + '</div>' +
                     '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-table-col" data-col-id="' + col.id + '" ' + (cols.length <= 1 ? 'disabled' : '') + ' title="Delete Column">✕</button>' +
                   '</div>' +
                 '</th>';
@@ -2382,8 +3127,9 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             rows.forEach(function(r) {
               html += '<tr>';
               cols.forEach(function(col) {
-                var val = r.cells ? (r.cells[col.id] || '') : '';
-                html += '<td><input type="text" class="studio-table-cell-input" data-table-row="' + r.id + '" data-table-col="' + col.id + '" value="' + escapeHtml(val) + '" placeholder="..." /></td>';
+                var cellVal = r.cells ? (r.cells[col.id] || '') : '';
+                var cellRich = getRichData(cellVal);
+                html += '<td><div class="studio-table-cell-input rich-text-surface rich-align-' + cellRich.align + '" contenteditable="true" spellcheck="false" data-table-row="' + r.id + '" data-table-col="' + col.id + '" data-table-align="' + cellRich.align + '">' + sanitizeRichText(cellRich.text) + '</div></td>';
               });
               html += 
                 '<td>' +
@@ -2414,22 +3160,22 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 '</div>' +
               '</div>' +
               (d.title !== undefined ?
-                '<div class="studio-form-group"><label class="studio-label"><span>Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Advisory Title..." /></div>' :
+                renderRichTextFieldHtml('<span>Title</span>', 'data-rich-field="title"', d.title, 'Advisory Title...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
-              '<div class="studio-form-group"><label class="studio-label">Content</label><textarea class="studio-textarea" data-field="text" placeholder="Advisory message body...">' + escapeHtml(d.text || '') + '</textarea></div>';
+              renderRichTextFieldHtml('Content', 'data-rich-field="text"', d.text, 'Advisory message body...');
             break;
 
           case 'pullquote':
             html += 
-              '<div class="studio-form-group"><label class="studio-label">Quote Inscription</label><textarea class="studio-textarea" data-field="quote" placeholder="Prominent doctrine quote...">' + escapeHtml(d.quote || '') + '</textarea></div>' +
-              '<div class="studio-form-group"><label class="studio-label">Author / Attrib</label><input type="text" class="studio-input" data-field="author" value="' + escapeHtml(d.author || '') + '" placeholder="— Coven Doctrine Principle" /></div>';
+              renderRichTextFieldHtml('Quote Inscription', 'data-rich-field="quote"', d.quote, 'Prominent doctrine quote...') +
+              renderRichTextFieldHtml('Author / Attrib', 'data-rich-field="author"', d.author, '— Coven Doctrine Principle');
             break;
 
           // ── 08. CODE INSCRIPTIONS ──
           case 'code-block':
             html += 
-              '<div class="studio-form-group"><label class="studio-label">Filename / Inscription Header</label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title || '') + '" placeholder="e.g. EinsteinSyncHandler.cls" /></div>' +
+              renderRichTextFieldHtml('Filename / Inscription Header', 'data-rich-field="title"', d.title, 'e.g. EinsteinSyncHandler.cls') +
               '<div class="studio-form-group"><label class="studio-label">Language</label>' +
                 '<select class="studio-select" data-field="language">' +
                   '<option value="typescript"' + (d.language === 'typescript' ? ' selected' : '') + '>TypeScript</option>' +
@@ -2457,8 +3203,8 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                       '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-faq" data-item-id="' + item.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete">✕</button>' +
                     '</div>' +
                   '</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Question</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + item.id + '" data-prop="question" value="' + escapeHtml(item.question || '') + '" placeholder="e.g. How long does training take?" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Answer</label><textarea class="studio-textarea" data-array-obj="items" data-item-id="' + item.id + '" data-prop="answer" style="min-height:70px" placeholder="Architectural resolution...">' + escapeHtml(item.answer || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Question', 'data-rich-array-obj="items" data-rich-item-id="' + item.id + '" data-rich-prop="question"', item.question, 'e.g. How long does training take?') +
+                  renderRichTextFieldHtml('Answer', 'data-rich-array-obj="items" data-rich-item-id="' + item.id + '" data-rich-prop="answer"', item.answer, 'Architectural resolution...') +
                 '</div>';
             });
             html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-faq">+ Add Question</button></div></div>';
@@ -2467,16 +3213,16 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           case 'exercise':
             html += 
               '<div class="studio-form-group"><label class="studio-label">Badge</label><input type="text" class="studio-input" data-field="badge" value="' + escapeHtml(d.badge || 'TRIAL SCENARIO 01') + '" /></div>' +
-              '<div class="studio-form-group"><label class="studio-label">Scenario Challenge</label><textarea class="studio-textarea" data-field="scenario" placeholder="Describe the practical challenge...">' + escapeHtml(d.scenario || '') + '</textarea></div>' +
+              renderRichTextFieldHtml('Scenario Challenge', 'data-rich-field="scenario"', d.scenario, 'Describe the practical challenge...') +
               '<div class="studio-form-group"><label class="studio-label">Reveal Button Text</label><input type="text" class="studio-input" data-field="buttonText" value="' + escapeHtml(d.buttonText || '✦ Reveal Answer') + '" /></div>' +
-              '<div class="studio-form-group"><label class="studio-label">Solution Title</label><input type="text" class="studio-input" data-field="solutionTitle" value="' + escapeHtml(d.solutionTitle || 'Solution: Recommended Pattern') + '" /></div>' +
-              '<div class="studio-form-group"><label class="studio-label">Solution Text</label><textarea class="studio-textarea" data-field="solutionText" placeholder="Architectural pattern resolution...">' + escapeHtml(d.solutionText || '') + '</textarea></div>';
+              renderRichTextFieldHtml('Solution Title', 'data-rich-field="solutionTitle"', d.solutionTitle, 'Solution: Recommended Pattern') +
+              renderRichTextFieldHtml('Solution Text', 'data-rich-field="solutionText"', d.solutionText, 'Architectural pattern resolution...');
             break;
 
           case 'article-trial':
             html += 
-              '<div class="studio-form-group"><label class="studio-label">Trial Title</label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title || "You've reached the trial") + '" /></div>' +
-              '<div class="studio-form-group"><label class="studio-label">Intro / Instruction</label><textarea class="studio-textarea" data-field="intro" placeholder="Instructional lead...">' + escapeHtml(d.intro || d.description || '') + '</textarea></div>' +
+              renderRichTextFieldHtml('Trial Title', 'data-rich-field="title"', d.title || "You've reached the trial", "You've reached the trial") +
+              renderRichTextFieldHtml('Intro / Instruction', 'data-rich-field="intro"', d.intro || d.description || '', 'Instructional lead...') +
               '<div class="studio-form-group"><label class="studio-label">Trial Assessment Questions</label><div style="display:flex;flex-direction:column;gap:14px">';
             (d.questions || []).forEach(function(q, qIdx) {
               html += 
@@ -2488,22 +3234,25 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                       '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-trial-q" data-q-id="' + q.id + '" ' + (d.questions.length <= 1 ? 'disabled' : '') + ' title="Delete Question">✕</button>' +
                     '</div>' +
                   '</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Question Text *</label><input type="text" class="studio-input" data-trial-q="text" data-q-id="' + q.id + '" value="' + escapeHtml(q.question || '') + '" placeholder="e.g. Which engine determines batch quiet-hours?" /></div>' +
+                  renderRichTextFieldHtml('Question Text *', 'data-rich-trial-q-id="' + q.id + '" data-rich-trial-q-prop="question"', q.question, 'e.g. Which engine determines batch quiet-hours?') +
                   '<div class="studio-form-group"><label class="studio-label">Answer Options (Select correct answer)</label><div style="display:flex;flex-direction:column;gap:6px">';
               (q.answers || []).forEach(function(ans, aIdx) {
                 var letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                var ansRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-trial-ans" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (q.answers.length <= 2 ? 'disabled' : '') + ' title="Remove option">✕</button>';
+                var ansLetter = letters[aIdx] || String(aIdx + 1);
                 html += 
-                  '<div class="trial-ans-row' + (ans.correct ? ' is-correct' : '') + '">' +
-                    '<input type="radio" name="trial_correct_' + q.id + '" class="trial-radio" data-act="mark-correct" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (ans.correct ? 'checked' : '') + ' title="Mark as correct answer" />' +
-                    '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">' + (letters[aIdx] || String(aIdx + 1)) + '</span>' +
-                    '<input type="text" class="studio-input" data-trial-ans="text" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" value="' + escapeHtml(ans.text || '') + '" placeholder="Answer option text..." style="flex:1" />' +
-                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-trial-ans" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (q.answers.length <= 2 ? 'disabled' : '') + ' title="Remove option">✕</button>' +
+                  '<div class="trial-ans-row' + (ans.correct ? ' is-correct' : '') + '" style="align-items:flex-start;padding-top:4px">' +
+                    '<input type="radio" name="trial_correct_' + q.id + '" class="trial-radio" data-act="mark-correct" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (ans.correct ? 'checked' : '') + ' title="Mark as correct answer" style="margin-top:8px" />' +
+                    '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);margin-top:8px">' + ansLetter + '</span>' +
+                    '<div style="flex:1">' +
+                      renderRichTextFieldHtml('', 'data-rich-trial-q-id="' + q.id + '" data-rich-trial-ans-id="' + ans.id + '"', ans.text, 'Answer option text...', ansRemove) +
+                    '</div>' +
                   '</div>';
               });
               html += 
                     '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-trial-ans" data-q-id="' + q.id + '">+ Add Answer Option</button></div>' +
                   '</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Explanation / Guidance (Optional)</label><textarea class="studio-textarea" data-trial-q="explanation" data-q-id="' + q.id + '" style="min-height:65px" placeholder="Explained once answered...">' + escapeHtml(q.explanation || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Explanation / Guidance (Optional)', 'data-rich-trial-q-id="' + q.id + '" data-rich-trial-q-prop="explanation"', q.explanation, 'Explained once answered...') +
                 '</div>';
             });
             html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-trial-q">+ Add Question</button></div></div>';
@@ -2513,7 +3262,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
           case 'key-takeaways':
             html += 
               (d.title !== undefined ?
-                '<div class="studio-form-group"><label class="studio-label"><span>Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" /></div>' :
+                renderRichTextFieldHtml('<span>Title</span>', 'data-rich-field="title"', d.title, 'Key Takeaways for the Initiate', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
               '<div class="studio-form-group"><label class="studio-label">Takeaway Doctrines</label><div style="display:flex;flex-direction:column;gap:10px">';
@@ -2527,8 +3276,8 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                       '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-takeaway" data-item-id="' + item.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete">✕</button>' +
                     '</div>' +
                   '</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Term / Concept</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + item.id + '" data-prop="term" value="' + escapeHtml(item.term || '') + '" placeholder="e.g. Core Rule 1" /></div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Description</label><textarea class="studio-textarea" data-array-obj="items" data-item-id="' + item.id + '" data-prop="desc" style="min-height:70px" placeholder="Principle summary...">' + escapeHtml(item.desc || '') + '</textarea></div>' +
+                  renderRichTextFieldHtml('Term / Concept', 'data-rich-array-obj="items" data-rich-item-id="' + item.id + '" data-rich-prop="term"', item.term, 'e.g. Core Rule 1') +
+                  renderRichTextFieldHtml('Description', 'data-rich-array-obj="items" data-rich-item-id="' + item.id + '" data-rich-prop="desc"', item.desc, 'Principle summary...') +
                 '</div>';
             });
             html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-takeaway">+ Add Takeaway</button></div></div>';
@@ -2574,11 +3323,11 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
                 html += 
                     '</select>' +
                   '</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="title" value="' + escapeHtml(rd.title || '') + '" /></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-array-obj="items" data-rich-item-id="' + rd.id + '" data-rich-prop="title"', rd.title, 'Scroll title...') +
                   '<div class="studio-form-group"><label class="studio-label">CTA Text</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="ctaText" value="' + escapeHtml(rd.ctaText || 'Study scroll') + '" /></div>';
               } else {
                 html += 
-                  '<div class="studio-form-group"><label class="studio-label">Title</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="title" value="' + escapeHtml(rd.title || '') + '" placeholder="e.g. Official Salesforce Documentation" /></div>' +
+                  renderRichTextFieldHtml('Title', 'data-rich-array-obj="items" data-rich-item-id="' + rd.id + '" data-rich-prop="title"', rd.title, 'e.g. Official Salesforce Documentation') +
                   '<div class="studio-form-group"><label class="studio-label">External URL</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="url" value="' + escapeHtml(rd.url || '') + '" placeholder="https://..." /></div>' +
                   '<div class="studio-form-group"><label class="studio-label">CTA Text</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="ctaText" value="' + escapeHtml(rd.ctaText || 'Official documentation') + '" /></div>';
               }
@@ -2600,9 +3349,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
       function attachBlockListeners(bBody, sec, block) {
         var d = block.data;
 
-        // Rich text listeners for Basic Typography (title-text, text-title, solo-text)
-        if (block.type === 'title-text' || block.type === 'text-title' || block.type === 'solo-text') {
+        // Rich text listeners for any block with rich-text-field-wrap
+        if (bBody.querySelector('.rich-text-field-wrap')) {
           attachRichTextListeners(bBody, sec, block);
+        }
+
+        // Table rich text listeners for technical-table
+        if (block.type === 'technical-table') {
+          attachTableRichTextListeners(bBody, sec, block);
         }
 
         // 1. Direct field inputs
@@ -2871,7 +3625,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             // Nested Bullets
             case 'add-nested-main':
               d.items = d.items || [];
-              d.items.push({ id: uid('main'), text: '', children: [] });
+              d.items.push({ id: uid('main'), text: { text: '', align: 'left' }, children: [] });
               renderSections();
               triggerAutosave();
               break;
@@ -2890,7 +3644,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               var parent = (d.items || []).find(function(m) { return m.id === pId; });
               if (parent) {
                 parent.children = parent.children || [];
-                parent.children.push({ id: uid('sub'), text: '' });
+                parent.children.push({ id: uid('sub'), text: { text: '', align: 'left' } });
                 renderSections();
                 triggerAutosave();
               }
@@ -2910,7 +3664,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             // Numbered Steps
             case 'add-step':
               d.steps = d.steps || [];
-              d.steps.push({ id: uid('step'), badge: String(d.steps.length + 1).padStart(2, '0'), title: '', text: '' });
+              d.steps.push({ id: uid('step'), badge: String(d.steps.length + 1).padStart(2, '0'), title: { text: '', align: 'left' }, text: { text: '', align: 'left' } });
               renderSections();
               triggerAutosave();
               break;
@@ -2979,7 +3733,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             // Gallery Scroll Cards
             case 'add-gallery-card':
               d.cards = d.cards || [];
-              d.cards.push({ id: uid('gcard'), src: '', alt: '', caption: '' });
+              d.cards.push({ id: uid('gcard'), src: '', alt: '', caption: { text: '', align: 'left' } });
               renderSections();
               triggerAutosave();
               break;
@@ -3008,7 +3762,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               var side = actBtn.getAttribute('data-side');
               var key = side === '1' ? 'col1Items' : 'col2Items';
               d[key] = d[key] || [];
-              d[key].push({ id: uid('cmp'), text: '' });
+              d[key].push({ id: uid('cmp'), text: { text: '', align: 'left' } });
               renderSections();
               triggerAutosave();
               break;
@@ -3026,10 +3780,10 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             case 'add-table-col':
               d.columns = d.columns || [];
               var newColId = uid('col');
-              d.columns.push({ id: newColId, label: 'Column ' + (d.columns.length + 1) });
+              d.columns.push({ id: newColId, label: { text: 'Column ' + (d.columns.length + 1), align: 'left' } });
               (d.rows || []).forEach(function(r) {
                 r.cells = r.cells || {};
-                r.cells[newColId] = '';
+                r.cells[newColId] = { text: '', align: 'left' };
               });
               renderSections();
               triggerAutosave();
@@ -3050,7 +3804,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             case 'add-table-row':
               d.rows = d.rows || [];
               var newCells = {};
-              (d.columns || []).forEach(function(c) { newCells[c.id] = ''; });
+              (d.columns || []).forEach(function(c) { newCells[c.id] = { text: '', align: 'left' }; });
               d.rows.push({ id: uid('row'), cells: newCells });
               renderSections();
               triggerAutosave();
@@ -3077,7 +3831,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             // FAQ
             case 'add-faq':
               d.items = d.items || [];
-              d.items.push({ id: uid('faq'), question: '', answer: '' });
+              d.items.push({ id: uid('faq'), question: { text: '', align: 'left' }, answer: { text: '', align: 'left' } });
               renderSections();
               triggerAutosave();
               break;
@@ -3108,12 +3862,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               d.questions = d.questions || [];
               d.questions.push({
                 id: uid('q'),
-                question: '',
+                question: { text: '', align: 'left' },
                 answers: [
-                  { id: uid('ans'), text: '', correct: true },
-                  { id: uid('ans'), text: '', correct: false }
+                  { id: uid('ans'), text: { text: '', align: 'left' }, correct: true },
+                  { id: uid('ans'), text: { text: '', align: 'left' }, correct: false }
                 ],
-                explanation: ''
+                explanation: { text: '', align: 'left' }
               });
               renderSections();
               triggerAutosave();
@@ -3146,7 +3900,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
               var targetQ = (d.questions || []).find(function(q) { return q.id === aQId; });
               if (targetQ) {
                 targetQ.answers = targetQ.answers || [];
-                targetQ.answers.push({ id: uid('ans'), text: '', correct: false });
+                targetQ.answers.push({ id: uid('ans'), text: { text: '', align: 'left' }, correct: false });
                 renderSections();
                 triggerAutosave();
               }
@@ -3182,7 +3936,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             // Key Takeaways
             case 'add-takeaway':
               d.items = d.items || [];
-              d.items.push({ id: uid('t'), term: '', desc: '' });
+              d.items.push({ id: uid('t'), term: { text: '', align: 'left' }, desc: { text: '', align: 'left' } });
               renderSections();
               triggerAutosave();
               break;
@@ -3211,7 +3965,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'tex
             // Related Docs
             case 'add-doc':
               d.items = d.items || [];
-              d.items.push({ id: uid('rd'), type: 'internal', title: '', slug: '', url: '', ctaText: 'Study scroll' });
+              d.items.push({ id: uid('rd'), type: 'internal', title: { text: '', align: 'left' }, slug: '', url: '', ctaText: 'Study scroll' });
               renderSections();
               triggerAutosave();
               break;

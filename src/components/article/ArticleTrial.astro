@@ -36,6 +36,20 @@ const {
   slug = 'scroll-trial',
 } = Astro.props;
 
+function cleanHtml(input: any): string {
+  const str = (typeof input === 'object' && input !== null) ? (input.text || input.content || '') : (typeof input === 'string' ? input : '');
+  if (!str) return '';
+  return str
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/\sstyle="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/data:/gi, '');
+}
+
 const defaultDesc = `Prove your mastery to claim ✦ ${aetherReward} Aether and advance toward ${rank}.`;
 const displayDesc = description || intro || defaultDesc;
 const rawQuestions = Array.isArray(questions) ? questions : [];
@@ -47,9 +61,9 @@ const trialId = `trial-${Math.random().toString(36).substring(2, 8)}`;
   <!-- 1. Initial State: Canonical Banner -->
   <div class="trial-initial-view">
     <div style="font-size:24px;color:#d8b56b;margin-bottom:12px;filter:drop-shadow(0 0 10px rgba(216,181,107,.35))">✦</div>
-    <h3 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:clamp(22px, 4vw, 28px);color:#f3ecdf;margin:0 0 10px;letter-spacing:1.2px">{title}</h3>
-    <p style="font-family:var(--font-body, 'EB Garamond', serif);font-size:17px;line-height:1.6;color:#b3a99d;margin:0 auto 28px;max-width:560px">{displayDesc}</p>
-    <button type="button" class="trial-start-btn" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 34px;border-radius:4px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 28px rgba(216,181,107,.32);cursor:pointer;border:none;transition:all 0.2s ease">
+    <h3 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:clamp(22px, 4vw, 28px);color:#f3ecdf;margin:0 0 10px;letter-spacing:1.2px"><Fragment set:html={cleanHtml(title)} /></h3>
+    <p style="font-family:var(--font-body, 'EB Garamond', serif);font-size:17px;line-height:1.6;color:#b3a99d;margin:0 auto 28px;max-width:560px"><Fragment set:html={cleanHtml(displayDesc)} /></p>
+    <button type="button" class="trial-start-btn" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 34px;border-radius:4px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 28px rgba(216,181,107,.32);cursor:border:none;transition:all 0.2s ease">
       <span>{buttonText}</span>
       <span>✦</span>
     </button>
@@ -75,7 +89,7 @@ const trialId = `trial-${Math.random().toString(36).substring(2, 8)}`;
           <div class={`trial-q-slide q-slide-${qIdx}`} style={qIdx === 0 ? 'display:block' : 'display:none'} data-q-index={qIdx}>
             <div style="text-align:center;margin-bottom:24px">
               <div style="font-size:22px;color:#b98fd8;margin-bottom:10px">✷</div>
-              <h4 style="font-family:var(--font-display, 'Cinzel', serif);font-weight:600;font-size:clamp(18px, 3.5vw, 24px);line-height:1.35;color:#f3ecdf;margin:0 0 8px">{q.question}</h4>
+              <h4 style="font-family:var(--font-display, 'Cinzel', serif);font-weight:600;font-size:clamp(18px, 3.5vw, 24px);line-height:1.35;color:#f3ecdf;margin:0 0 8px"><Fragment set:html={cleanHtml(q.question)} /></h4>
             </div>
 
             <!-- Options Grid -->
@@ -86,7 +100,7 @@ const trialId = `trial-${Math.random().toString(36).substring(2, 8)}`;
                 return (
                   <button type="button" class="trial-opt-btn" data-correct={ans.correct ? 'true' : 'false'} data-opt-id={ans.id} style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:6px;border:1px solid rgba(216,181,107,0.18);background:#15121c;color:#cdc3b6;cursor:pointer;text-align:left;font-family:var(--font-body, 'EB Garamond', serif);font-size:16px;line-height:1.4;transition:all 0.2s ease">
                     <span class="opt-letter" style="width:26px;height:26px;border-radius:50%;border:1px solid rgba(216,181,107,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono, monospace);font-size:11px;color:#d8b56b;flex-shrink:0">{letter}</span>
-                    <span class="opt-text" style="flex:1">{ans.text}</span>
+                    <span class="opt-text" style="flex:1"><Fragment set:html={cleanHtml(ans.text)} /></span>
                     <span class="opt-mark" style="font-size:16px;opacity:0">●</span>
                   </button>
                 );
@@ -97,7 +111,7 @@ const trialId = `trial-${Math.random().toString(36).substring(2, 8)}`;
             {q.explanation && (
               <div class="trial-explanation-box" style="display:none;background:rgba(185,143,216,0.08);border:1px solid rgba(185,143,216,0.25);border-radius:6px;padding:14px 18px;margin-bottom:20px">
                 <div style="font-family:var(--font-mono, monospace);font-size:11px;color:#d8b56b;letter-spacing:1px;margin-bottom:4px">EXPLANATION</div>
-                <div style="font-family:var(--font-body, serif);font-size:15px;color:#cdc3b6;line-height:1.5">{q.explanation}</div>
+                <div style="font-family:var(--font-body, serif);font-size:15px;color:#cdc3b6;line-height:1.5"><Fragment set:html={cleanHtml(q.explanation)} /></div>
               </div>
             )}
           </div>
