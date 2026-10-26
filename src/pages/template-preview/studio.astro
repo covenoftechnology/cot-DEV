@@ -1736,7 +1736,13 @@ const totalBlockCount = Object.keys(blockRegistry).length;
 
         // Position vertically: default directly below with 6px gap
         var top = rect.bottom + 6;
-        if (top + popoverHeight > window.innerHeight - 10) {
+        var scrollParent = triggerBtn.closest ? triggerBtn.closest('#drafts-list') : null;
+        var maxBottom = window.innerHeight - 10;
+        if (scrollParent) {
+          var pRect = scrollParent.getBoundingClientRect();
+          maxBottom = Math.min(maxBottom, pRect.bottom + 20);
+        }
+        if (top + popoverHeight > maxBottom) {
           // Flip above button if not enough room below
           top = Math.max(10, rect.top - popoverHeight - 6);
         }
@@ -1755,6 +1761,14 @@ const totalBlockCount = Object.keys(blockRegistry).length;
           if (rect.bottom < 0 || rect.top > window.innerHeight) {
             closeInlineDelete();
             return;
+          }
+          var scrollParent = activeInlineDelete.triggerBtn.closest ? activeInlineDelete.triggerBtn.closest('#drafts-list') : null;
+          if (scrollParent) {
+            var pRect = scrollParent.getBoundingClientRect();
+            if (rect.bottom < pRect.top || rect.top > pRect.bottom) {
+              closeInlineDelete();
+              return;
+            }
           }
           positionInlineConfirmation(activeInlineDelete.triggerBtn, activeInlineDelete.popoverEl);
         }
@@ -1861,10 +1875,12 @@ const totalBlockCount = Object.keys(blockRegistry).length;
 
       document.addEventListener('keydown', function(e) {
         if (e.key === 'Escape' && activeInlineDelete) {
+          e.stopPropagation();
+          e.stopImmediatePropagation();
           var prev = closeInlineDelete();
           if (prev) prev.focus();
         }
-      });
+      }, true);
 
       function deleteSection(secId, triggerBtn) {
         var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
@@ -4524,8 +4540,30 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       });
 
       document.getElementById('btn-close-drafts').addEventListener('click', function() {
+        closeInlineDelete();
         document.getElementById('drafts-modal').style.display = 'none';
       });
+
+      function deleteDraft(studioId, title, triggerBtn) {
+        showInlineDelete(
+          triggerBtn,
+          'Delete this draft?',
+          null,
+          function() {
+            if (triggerBtn) triggerBtn.disabled = true;
+            fetch('/__article-studio/drafts/' + studioId, { method: 'DELETE' })
+              .then(function(res) {
+                if (!res.ok) throw new Error('Delete failed');
+                showToast('Draft deleted');
+                loadDraftsList();
+              })
+              .catch(function(err) {
+                if (triggerBtn) triggerBtn.disabled = false;
+                showToast('Failed to delete draft', 'error');
+              });
+          }
+        );
+      }
 
       function loadDraftsList() {
         var listContainer = document.getElementById('drafts-list');
@@ -4561,14 +4599,9 @@ const totalBlockCount = Object.keys(blockRegistry).length;
                 document.getElementById('drafts-modal').style.display = 'none';
               });
 
-              card.querySelector('.btn-del-draft').addEventListener('click', function() {
-                confirmDelete('DELETE DRAFT?', 'Permanently remove draft: "' + (d.title || 'Untitled') + '"?', function() {
-                  fetch('/__article-studio/drafts/' + d.studioId, { method: 'DELETE' })
-                    .then(function() {
-                      showToast('Draft deleted');
-                      loadDraftsList();
-                    });
-                });
+              card.querySelector('.btn-del-draft').addEventListener('click', function(e) {
+                e.stopPropagation();
+                deleteDraft(d.studioId, d.title, e.currentTarget);
               });
 
               listContainer.appendChild(card);
@@ -4577,6 +4610,7 @@ const totalBlockCount = Object.keys(blockRegistry).length;
       }
 
       function openDraft(studioId) {
+        closeInlineDelete();
         fetch('/__article-studio/drafts/' + studioId)
           .then(function(res) { return res.json(); })
           .then(function(doc) {
