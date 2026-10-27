@@ -5,6 +5,14 @@ import path from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ArticleDocument } from '../types/article-document';
 import { normalizeSlug, isValidSlug } from '../lib/article-taxonomy';
+import { getAdminCenterHtml } from './article-admin-html';
+
+function isSafeSlugPath(baseDir: string, slug: string): boolean {
+  if (!isValidSlug(slug)) return false;
+  const target = path.resolve(baseDir, slug);
+  const rel = path.relative(baseDir, target);
+  return !rel.startsWith('..') && !path.isAbsolute(rel) && !rel.includes(path.sep + '..');
+}
 
 function readJsonBody(req: IncomingMessage): Promise<any> {
   return new Promise((resolve, reject) => {
@@ -117,12 +125,227 @@ export default function articleStudioIntegration(): AstroIntegration {
                     const parsedUrl = new URL(rawUrl, 'http://localhost');
                     const pathname = parsedUrl.pathname;
 
+                    // Handle dev-only admin center routes
+                    if (pathname === '/template-preview/articles' || pathname === '/template-preview/admin') {
+                      res.writeHead(200, {
+                        'Content-Type': 'text/html; charset=utf-8',
+                        'Cache-Control': 'no-cache',
+                      });
+                      return res.end(getAdminCenterHtml());
+                    }
+
                     // Only handle /__article-studio/ routes
                     if (!pathname.startsWith('/__article-studio/')) {
                       return next();
                     }
 
                     try {
+                      // 0. GET /__article-studio/articles (Persisted Studio Articles only)
+                      if (pathname === '/__article-studio/articles' && req.method === 'GET') {
+                        const articleDirs = await fsp.readdir(articlesDir);
+                        const draftFiles = await fsp.readdir(draftsDir);
+
+                        // Index active working drafts by sourceArticleSlug and studioId
+                        const draftsBySourceSlug: Record<string, string> = {};
+                        const draftsByStudioId: Record<string, string> = {};
+                        for (const file of draftFiles) {
+                          if (file.endsWith('.json')) {
+                            try {
+                              const draftContent = await fsp.readFile(path.join(draftsDir, file), 'utf-8');
+                              const d = JSON.parse(draftContent);
+                              const dId = d.studioId || file.replace('.json', '');
+                              if (d.sourceArticleSlug) {
+                                draftsBySourceSlug[d.sourceArticleSlug] = dId;
+                              }
+                              if (dId) {
+                                draftsByStudioId[dId] = dId;
+                              }
+                            } catch (e) {}
+                          }
+                        }
+
+                        const articles: any[] = [];
+                        for (const dir of articleDirs) {
+                          if (dir.startsWith('_')) continue;
+                          const contentPath = path.join(articlesDir, dir, 'content.json');
+                          // Only include structured Studio articles that have content.json
+                          if (fs.existsSync(contentPath)) {
+                            try {
+                              const content = JSON.parse(await fsp.readFile(contentPath, 'utf-8'));
+                              const stat = await fsp.stat(contentPath);
+                              const matchingDraftId = draftsBySourceSlug[dir] || (content.studioId && draftsByStudioId[content.studioId]) || null;
+                              articles.push({
+                                slug: dir,
+                                title: content.meta?.title || dir,
+                                status: content.meta?.status || 'published',
+                                category: content.meta?.category || 'Salesforce',
+                                difficulty: content.meta?.difficulty || 'Lv. 1 - Incantation',
+                                tags: Array.isArray(content.meta?.tags) ? content.meta.tags : [],
+                                publishedDate: content.meta?.publishedDate || null,
+                                updatedDate: content.meta?.updatedDate || stat.mtime.toISOString().split('T')[0],
+                                hasWorkingDraft: Boolean(matchingDraftId),
+                                workingDraftId: matchingDraftId,
+                              });
+                            } catch (e) {}
+                          }
+                        }
+
+                        articles.sort((a, b) => a.title.localeCompare(b.title));
+                        return sendJson(res, 200, { articles });
+                      }
+
+                      // 0b. GET /__article-studio/articles/:slug
+                      if (pathname.startsWith('/__article-studio/articles/') && !pathname.endsWith('/unpublish') && !pathname.endsWith('/publish') && !pathname.endsWith('/preview') && !pathname.endsWith('/create-draft') && req.method === 'GET') {
+                        const slug = path.basename(pathname);
+                        if (!isSafeSlugPath(articlesDir, slug)) {
+                          return sendJson(res, 400, { error: 'Invalid article slug.' });
+                        }
+                        const contentJsonPath = path.join(articlesDir, slug, 'content.json');
+                        if (!fs.existsSync(contentJsonPath)) {
+                          return sendJson(res, 404, { error: 'Article not found.' });
+                        }
+                        const content = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
+                        return sendJson(res, 200, content);
+                      }
+
+                      // 0c. POST /__article-studio/articles/:slug/create-draft
+                      if (pathname.startsWith('/__article-studio/articles/') && pathname.endsWith('/create-draft') && req.method === 'POST') {
+                        const parts = pathname.split('/');
+                        const slug = parts[parts.length - 2];
+                        if (!isSafeSlugPath(articlesDir, slug)) {
+                          return sendJson(res, 400, { error: 'Invalid article slug.' });
+                        }
+                        const contentJsonPath = path.join(articlesDir, slug, 'content.json');
+                        if (!fs.existsSync(contentJsonPath)) {
+                          return sendJson(res, 404, { error: 'Persisted article not found.' });
+                        }
+
+                        // Check if working draft already exists for this source article
+                        const draftFiles = await fsp.readdir(draftsDir);
+                        for (const file of draftFiles) {
+                          if (file.endsWith('.json')) {
+                            try {
+                              const draftContent = await fsp.readFile(path.join(draftsDir, file), 'utf-8');
+                              const d = JSON.parse(draftContent);
+                              if (d.sourceArticleSlug === slug) {
+                                return sendJson(res, 200, { success: true, studioId: d.studioId, isNew: false });
+                              }
+                            } catch (e) {}
+                          }
+                        }
+
+                        // Create new working draft linked to this persisted article
+                        const contentDoc: ArticleDocument = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
+                        const newStudioId = `draft_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+                        contentDoc.studioId = newStudioId;
+                        contentDoc.sourceArticleSlug = slug;
+                        const targetFile = path.join(draftsDir, `${newStudioId}.json`);
+                        await fsp.writeFile(targetFile, JSON.stringify(contentDoc, null, 2), 'utf-8');
+                        return sendJson(res, 200, { success: true, studioId: newStudioId, isNew: true });
+                      }
+
+                      // 0d. POST /__article-studio/articles/:slug/preview
+                      if (pathname.startsWith('/__article-studio/articles/') && pathname.endsWith('/preview') && req.method === 'POST') {
+                        const parts = pathname.split('/');
+                        const slug = parts[parts.length - 2];
+                        if (!isSafeSlugPath(articlesDir, slug)) {
+                          return sendJson(res, 400, { error: 'Invalid article slug.' });
+                        }
+                        const contentJsonPath = path.join(articlesDir, slug, 'content.json');
+                        if (!fs.existsSync(contentJsonPath)) {
+                          return sendJson(res, 404, { error: 'Persisted article not found.' });
+                        }
+                        const content = await fsp.readFile(contentJsonPath, 'utf-8');
+                        await fsp.writeFile(previewFile, content, 'utf-8');
+                        return sendJson(res, 200, { success: true, previewUrl: '/template-preview/article' });
+                      }
+
+                      // 0e. POST /__article-studio/articles/:slug/unpublish
+                      if (pathname.startsWith('/__article-studio/articles/') && pathname.endsWith('/unpublish') && req.method === 'POST') {
+                        const parts = pathname.split('/');
+                        const slug = parts[parts.length - 2];
+                        if (!isSafeSlugPath(articlesDir, slug)) {
+                          return sendJson(res, 400, { error: 'Invalid article slug.' });
+                        }
+                        const articleFolder = path.join(articlesDir, slug);
+                        const contentJsonPath = path.join(articleFolder, 'content.json');
+                        const metaTsPath = path.join(articleFolder, 'meta.ts');
+                        if (!fs.existsSync(contentJsonPath)) {
+                          return sendJson(res, 404, { error: 'Persisted article not found.' });
+                        }
+
+                        // Read content.json, set status: 'draft', write back (NON-DESTRUCTIVE: all other files preserved)
+                        const contentDoc: ArticleDocument = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
+                        contentDoc.meta.status = 'draft';
+                        delete contentDoc.sourceArticleSlug;
+                        await fsp.writeFile(contentJsonPath, JSON.stringify(contentDoc, null, 2), 'utf-8');
+
+                        // Regenerate meta.ts with status: 'draft'
+                        const metaTsContent = generateMetaTs(contentDoc.meta, slug);
+                        await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
+
+                        // If any working draft links to this article, update its status too
+                        const draftFiles = await fsp.readdir(draftsDir);
+                        for (const file of draftFiles) {
+                          if (file.endsWith('.json')) {
+                            try {
+                              const draftFile = path.join(draftsDir, file);
+                              const draftContent = await fsp.readFile(draftFile, 'utf-8');
+                              const d = JSON.parse(draftContent);
+                              if (d.sourceArticleSlug === slug) {
+                                d.meta.status = 'draft';
+                                await fsp.writeFile(draftFile, JSON.stringify(d, null, 2), 'utf-8');
+                              }
+                            } catch (e) {}
+                          }
+                        }
+
+                        return sendJson(res, 200, { success: true, slug, status: 'draft' });
+                      }
+
+                      // 0f. POST /__article-studio/articles/:slug/publish
+                      if (pathname.startsWith('/__article-studio/articles/') && pathname.endsWith('/publish') && req.method === 'POST') {
+                        const parts = pathname.split('/');
+                        const slug = parts[parts.length - 2];
+                        if (!isSafeSlugPath(articlesDir, slug)) {
+                          return sendJson(res, 400, { error: 'Invalid article slug.' });
+                        }
+                        const articleFolder = path.join(articlesDir, slug);
+                        const contentJsonPath = path.join(articleFolder, 'content.json');
+                        const metaTsPath = path.join(articleFolder, 'meta.ts');
+                        if (!fs.existsSync(contentJsonPath)) {
+                          return sendJson(res, 404, { error: 'Persisted article not found.' });
+                        }
+
+                        // Read content.json, set status: 'published', write back
+                        const contentDoc: ArticleDocument = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
+                        contentDoc.meta.status = 'published';
+                        delete contentDoc.sourceArticleSlug;
+                        await fsp.writeFile(contentJsonPath, JSON.stringify(contentDoc, null, 2), 'utf-8');
+
+                        // Regenerate meta.ts with status: 'published'
+                        const metaTsContent = generateMetaTs(contentDoc.meta, slug);
+                        await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
+
+                        // If any working draft links to this article, update its status too
+                        const draftFiles = await fsp.readdir(draftsDir);
+                        for (const file of draftFiles) {
+                          if (file.endsWith('.json')) {
+                            try {
+                              const draftFile = path.join(draftsDir, file);
+                              const draftContent = await fsp.readFile(draftFile, 'utf-8');
+                              const d = JSON.parse(draftContent);
+                              if (d.sourceArticleSlug === slug) {
+                                d.meta.status = 'published';
+                                await fsp.writeFile(draftFile, JSON.stringify(d, null, 2), 'utf-8');
+                              }
+                            } catch (e) {}
+                          }
+                        }
+
+                        return sendJson(res, 200, { success: true, slug, status: 'published' });
+                      }
+
                       // 1. GET /__article-studio/drafts
                       if (pathname === '/__article-studio/drafts' && req.method === 'GET') {
                         const files = await fsp.readdir(draftsDir);
@@ -139,6 +362,7 @@ export default function articleStudioIntegration(): AstroIntegration {
                                 title: doc.meta?.title || 'Untitled',
                                 category: doc.meta?.category || 'Uncategorized',
                                 status: doc.meta?.status || 'draft',
+                                sourceArticleSlug: doc.sourceArticleSlug || null,
                                 updatedAt: stat.mtimeMs,
                               });
                             } catch (e) {
@@ -293,6 +517,13 @@ export default function articleStudioIntegration(): AstroIntegration {
                           });
                         }
 
+                        // Prevent renaming a persisted article
+                        if (doc.sourceArticleSlug && doc.sourceArticleSlug !== slug) {
+                          return sendJson(res, 400, {
+                            error: 'Slug cannot be modified for an existing persisted article.',
+                          });
+                        }
+
                         const articleFolder = path.join(articlesDir, slug);
                         const contentJsonPath = path.join(articleFolder, 'content.json');
 
@@ -305,7 +536,9 @@ export default function articleStudioIntegration(): AstroIntegration {
                           }
                           try {
                             const existingContent = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
-                            if (existingContent.studioId !== doc.studioId) {
+                            const isSelfUpdate = (doc.sourceArticleSlug && doc.sourceArticleSlug === slug) ||
+                                                 existingContent.studioId === doc.studioId;
+                            if (!isSelfUpdate) {
                               return sendJson(res, 409, {
                                 error: 'This article URL is already in use.',
                               });
@@ -365,8 +598,10 @@ export default function articleStudioIntegration(): AstroIntegration {
                           }
                         }
 
-                        // Write content.json
-                        await fsp.writeFile(contentJsonPath, JSON.stringify(processedDoc, null, 2), 'utf-8');
+                        // Write content.json (persisted copy must NOT contain local authoring sourceArticleSlug)
+                        const persistedDoc: ArticleDocument = JSON.parse(JSON.stringify(processedDoc));
+                        delete persistedDoc.sourceArticleSlug;
+                        await fsp.writeFile(contentJsonPath, JSON.stringify(persistedDoc, null, 2), 'utf-8');
 
                         // Write index.astro
                         const indexAstroPath = path.join(articleFolder, 'index.astro');
@@ -384,7 +619,8 @@ import content from './content.json';
                         const metaTsContent = generateMetaTs(processedDoc.meta, slug);
                         await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
 
-                        // Update or remove draft if wanted
+                        // Record sourceArticleSlug so this draft is linked to its persisted article
+                        processedDoc.sourceArticleSlug = slug;
                         const draftPath = path.join(draftsDir, `${processedDoc.studioId}.json`);
                         await fsp.writeFile(draftPath, JSON.stringify(processedDoc, null, 2), 'utf-8');
 

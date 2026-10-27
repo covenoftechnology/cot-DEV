@@ -2148,6 +2148,109 @@
   background: #8f857a;
 }
 
+/* ── Text Highlight Dropdown & Swatches ── */
+.coven-studio .rich-highlight-dropdown-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.coven-studio .rich-btn-highlight {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.coven-studio .rich-highlight-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: #14101e;
+  border: 1px solid rgba(216, 181, 107, 0.4);
+  border-radius: 4px;
+  padding: 6px;
+  z-index: 60;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+  min-width: 155px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.coven-studio .rich-highlight-menu-title {
+  font-size: 9px;
+  font-family: var(--font-mono);
+  color: var(--studio-gold-dim);
+  letter-spacing: 0.8px;
+  margin-bottom: 2px;
+  padding: 0 4px;
+}
+
+.coven-studio .rich-highlight-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--studio-text);
+  font-size: 11px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.coven-studio .rich-highlight-item:hover {
+  background: rgba(216, 181, 107, 0.15);
+  border-color: rgba(216, 181, 107, 0.3);
+}
+
+.coven-studio .rich-highlight-item.is-active {
+  background: rgba(216, 181, 107, 0.22);
+  border-color: var(--studio-gold);
+}
+
+.coven-studio .rich-highlight-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  display: inline-block;
+  flex-shrink: 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.coven-studio .rich-highlight-swatch.swatch-bg-none {
+  background: transparent;
+  border: 1px dashed rgba(255, 255, 255, 0.4);
+}
+
+.coven-studio .rich-highlight-swatch.swatch-bg-neutral {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(216, 181, 107, 0.3);
+}
+
+.coven-studio .rich-highlight-swatch.swatch-bg-purple {
+  background: rgba(185, 143, 216, 0.35);
+  border-color: #b98fd8;
+}
+
+.coven-studio .rich-highlight-swatch.swatch-bg-gold {
+  background: rgba(216, 181, 107, 0.35);
+  border-color: #e8cf95;
+}
+
+.coven-studio .rich-highlight-swatch.swatch-bg-green {
+  background: rgba(129, 199, 132, 0.35);
+  border-color: #81c784;
+}
+
+.coven-studio .rich-highlight-swatch.swatch-bg-red {
+  background: rgba(229, 115, 115, 0.35);
+  border-color: #e57373;
+}
+
 .coven-studio .rich-text-surface {
   background: var(--studio-surface-input);
   border: 1px solid var(--studio-border);
@@ -2182,6 +2285,45 @@
 .coven-studio .article-text-purple { color: #b98fd8; }
 .coven-studio .article-text-muted { color: #8f857a; }
 .coven-studio .article-text-default { color: inherit; }
+
+/* ── Inline Text Highlight / Background Classes ── */
+.coven-studio .article-text-bg-neutral,
+.coven-studio .article-text-bg-purple,
+.coven-studio .article-text-bg-gold,
+.coven-studio .article-text-bg-green,
+.coven-studio .article-text-bg-red {
+  display: inline;
+  padding: 2px 5px;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  color: inherit;
+}
+
+.coven-studio .article-text-bg-neutral {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(216, 181, 107, 0.18);
+}
+
+.coven-studio .article-text-bg-purple {
+  background: rgba(185, 143, 216, 0.18);
+  border: 1px solid rgba(185, 143, 216, 0.35);
+}
+
+.coven-studio .article-text-bg-gold {
+  background: rgba(216, 181, 107, 0.16);
+  border: 1px solid rgba(216, 181, 107, 0.38);
+}
+
+.coven-studio .article-text-bg-green {
+  background: rgba(129, 199, 132, 0.16);
+  border: 1px solid rgba(129, 199, 132, 0.35);
+}
+
+.coven-studio .article-text-bg-red {
+  background: rgba(229, 115, 115, 0.18);
+  border: 1px solid rgba(229, 115, 115, 0.38);
+}
 
 /* ── Rich Text Hyperlinks ── */
 .coven-studio .rich-link-dropdown-wrap {
@@ -2325,4 +2467,470 @@
 .coven-studio .rich-text-surface .article-rich-link u {
   text-decoration: underline;
   text-underline-offset: 3px;
+}
+
+/* Callout Heading Control */
+.coven-studio .callout-heading-control-wrap {
+  margin-bottom: 14px;
+  border: 1px solid rgba(216, 181, 107, 0.14);
+  background: rgba(21, 18, 28, 0.4);
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.coven-studio .callout-btn-use-default {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  background: rgba(216, 181, 107, 0.1);
+  border: 1px solid rgba(216, 181, 107, 0.3);
+  color: var(--studio-gold);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.coven-studio .callout-btn-use-default:hover {
+  background: rgba(216, 181, 107, 0.2);
+  border-color: rgba(216, 181, 107, 0.5);
+  color: #fff;
+}
+
+/* ── Custom Text Color & Custom Highlight (Studio View) ── */
+.coven-studio .article-text-custom-color {
+  color: var(--coven-custom-text-color);
+}
+.coven-studio .article-text-custom-bg {
+  display: inline;
+  padding: 2px 5px;
+  border-radius: 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+  color: inherit;
+  background: var(--coven-custom-bg);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* ── Anchored Fixed Popovers (Bug 1 Fix) ── */
+.coven-studio .rich-color-menu.is-flipped-above,
+.coven-studio .rich-highlight-menu.is-flipped-above,
+.coven-studio .rich-link-popover.is-flipped-above,
+.coven-studio .coven-custom-color-popover.is-flipped-above {
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.95);
+}
+
+/* ── Custom Color Button & Saved Colors in Rich Palette ── */
+.coven-studio .rich-palette-saved-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(216, 181, 107, 0.2);
+}
+
+.coven-studio .rich-palette-saved-label {
+  font-family: var(--font-cinzel, 'Cinzel', serif);
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2d9c8;
+  letter-spacing: 0.8px;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.coven-studio .rich-saved-swatches-grid {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  min-height: 28px;
+}
+
+.coven-studio .saved-swatch-chip {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.45);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+  flex-shrink: 0;
+}
+.coven-studio .saved-swatch-chip:hover {
+  transform: scale(1.1);
+  border-color: var(--studio-gold);
+  box-shadow: 0 0 8px rgba(216, 181, 107, 0.45);
+  z-index: 2;
+}
+
+.coven-studio .saved-swatch-del {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #ff4d4f;
+  color: #fff;
+  font-size: 9px;
+  font-weight: bold;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #14101e;
+  cursor: pointer;
+}
+.coven-studio .saved-swatch-chip:hover .saved-swatch-del {
+  display: flex;
+}
+
+.coven-studio .rich-btn-custom-color {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 10px;
+  background: rgba(216, 181, 107, 0.08);
+  border: 1px dashed rgba(216, 181, 107, 0.35);
+  border-radius: 4px;
+  color: var(--studio-gold);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  margin-top: 4px;
+  transition: all 0.15s ease;
+}
+.coven-studio .rich-btn-custom-color:hover {
+  background: rgba(216, 181, 107, 0.18);
+  border-color: var(--studio-gold);
+  color: #fff;
+}
+
+/* ── Custom Color Popover Redesign ── */
+.coven-studio .coven-custom-color-popover {
+  position: fixed;
+  background: #14101e;
+  border: 1px solid rgba(216, 181, 107, 0.45);
+  border-radius: 6px;
+  padding: 10px 12px;
+  z-index: 100000;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.92), 0 0 12px rgba(196, 90, 255, 0.12);
+  width: 216px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--studio-text);
+  font-family: var(--font-body);
+}
+
+.coven-studio .coven-custom-color-popover.is-flipped-above {
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.92), 0 0 12px rgba(196, 90, 255, 0.12);
+}
+
+.coven-studio .custom-color-popover-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(216, 181, 107, 0.15);
+}
+
+.coven-studio .custom-color-popover-title {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--studio-gold);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+}
+
+.coven-studio .custom-color-swatch-badge {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
+  transition: background-color 0.15s ease;
+}
+
+.coven-studio .custom-color-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.coven-studio .custom-color-trigger-btn {
+  position: relative;
+  width: 32px;
+  height: 32px;
+  background: #1c162b;
+  border: 1px solid rgba(216, 181, 107, 0.35);
+  border-radius: 4px;
+  color: var(--studio-gold);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.coven-studio .custom-color-trigger-btn:hover {
+  background: #261f38;
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
+}
+
+.coven-studio .custom-color-trigger-indicator {
+  position: absolute;
+  bottom: 2px;
+  left: 3px;
+  right: 3px;
+  height: 3px;
+  border-radius: 2px;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  transition: background-color 0.15s ease;
+}
+
+.coven-studio .custom-color-native-hidden {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  pointer-events: none;
+  visibility: hidden;
+  border: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.coven-studio .custom-color-hex-group {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  background: #0d0a14;
+  border: 1px solid rgba(216, 181, 107, 0.3);
+  border-radius: 4px;
+  padding: 0 8px;
+  height: 32px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.coven-studio .custom-color-hex-group:focus-within {
+  border-color: var(--studio-gold);
+  box-shadow: 0 0 0 2px rgba(216, 181, 107, 0.2);
+}
+
+.coven-studio .custom-color-hex-field {
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #f5f0e6;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0;
+}
+
+.coven-studio .custom-color-hex-field::placeholder {
+  color: rgba(226, 217, 200, 0.35);
+}
+
+.coven-studio .custom-color-error {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--studio-danger, #ef4444);
+  letter-spacing: 0.4px;
+  padding-left: 2px;
+  margin-top: -3px;
+}
+
+.coven-studio .custom-color-popover-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 2px;
+}
+
+.coven-studio .custom-color-btn-cancel {
+  padding: 4px 10px;
+  font-size: 11px;
+  height: 26px;
+}
+
+.coven-studio .custom-color-btn-apply {
+  padding: 4px 12px;
+  font-size: 11px;
+  height: 26px;
+}
+
+.coven-studio .custom-color-save-row {
+  margin-top: 2px;
+  padding-top: 6px;
+  border-top: 1px dashed rgba(216, 181, 107, 0.2);
+  display: flex;
+  justify-content: center;
+}
+
+.coven-studio .custom-color-save-action {
+  background: transparent;
+  border: none;
+  color: var(--studio-gold-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.coven-studio .custom-color-save-action:hover:not(:disabled) {
+  color: var(--studio-gold-bright);
+  background: rgba(216, 181, 107, 0.1);
+}
+
+.coven-studio .custom-color-save-action:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.coven-studio .custom-color-save-star {
+  font-size: 11px;
+  color: var(--studio-gold);
+}
+
+/* ── Nested Bullet Marker Select Dropdown ── */
+.coven-studio .nested-marker-control-wrap {
+  margin-bottom: 12px;
+}
+.coven-studio .nested-marker-select-wrap {
+  position: relative;
+  display: inline-block;
+  width: 100%;
+}
+.coven-studio .nested-marker-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--studio-surface-input);
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  color: var(--studio-text);
+  font-size: 12px;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.coven-studio .nested-marker-trigger:hover {
+  border-color: var(--studio-gold);
+}
+.coven-studio .nested-marker-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #14101e;
+  border: 1px solid rgba(216, 181, 107, 0.4);
+  border-radius: 4px;
+  padding: 4px;
+  z-index: 100;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.coven-studio .nested-marker-dropdown button {
+  width: 100%;
+  padding: 6px 10px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 3px;
+  color: var(--studio-text);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  text-align: left;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.coven-studio .nested-marker-dropdown button:hover {
+  background: rgba(216, 181, 107, 0.15);
+  border-color: rgba(216, 181, 107, 0.3);
+}
+.coven-studio .nested-marker-dropdown button.is-active {
+  background: rgba(216, 181, 107, 0.22);
+  border-color: var(--studio-gold);
+  color: var(--studio-gold);
+}
+
+/* ── Callout Accent Color Row ── */
+.coven-studio .callout-accent-color-wrap {
+  margin-bottom: 12px;
+}
+.coven-studio .callout-accent-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.coven-studio .callout-accent-default {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+}
+.coven-studio .callout-accent-default.is-active {
+  background: rgba(216, 181, 107, 0.2);
+  border-color: var(--studio-gold);
+  color: var(--studio-gold);
+}
+.coven-studio .callout-saved-swatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.coven-studio .callout-accent-custom,
+.coven-studio .callout-accent-custom-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--studio-gold);
+  border: 1px solid rgba(216, 181, 107, 0.35);
+  background: #1c162b;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.coven-studio .callout-accent-custom:hover,
+.coven-studio .callout-accent-custom-btn:hover {
+  background: #261f38;
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
 }

@@ -1,0 +1,663 @@
+{
+  "version": 1,
+  "studioId": "draft_mvr44y2m_sk5su",
+  "slug": "scroll-of-properly-eliciting-requirements",
+  "meta": {
+    "title": "Scroll of Properly Eliciting Requirements",
+    "description": "",
+    "author": "Oracle of Orgs",
+    "category": "Business Analysis",
+    "difficulty": "Lv. 2 - Scroll",
+    "tags": [],
+    "rank": "Mechanic",
+    "readingTime": "8 min",
+    "aetherReward": 120,
+    "status": "published",
+    "featured": false,
+    "wide": true,
+    "cover": "",
+    "coverCaption": ""
+  },
+  "sections": [
+    {
+      "id": "sec_mvprc6nf_2jqag",
+      "title": "Intro",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvquwtq0_hvge4",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Welcome to a very special part of my work 💜. If you are familiar with my background in Language Teaching —it doesn’t matter if you aren’t—, something I am familiar and love doing is <span class=\"article-text-bg-purple\"><u>eliciting information</u></span>.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvprfodv_6nqk2",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "Eliciting —in <span class=\"article-text-gold\"><span class=\"article-text-bg-gold\">Linguistics</span></span>— refers to a set of techniques used to getting someone to provide or remember information rather than telling them the answer right away. It leverages and builds on their previous knowledge of the topic.<br>In <span class=\"article-text-purple\"></span><span class=\"article-text-purple\"><span class=\"article-text-bg-purple\">Business</span></span>, this applies to having stakeholders provide you information about their process, needs and expectations that will eventually contribute to the overall understanding of the ‘current’ and ‘future’ state of the project.",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "custom",
+            "title": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvpstr59_0evxl",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Typically the witch in charge of a process as complex as this is experienced not only understanding the technology involved, but analyzing the business’ procedures. This witch can recommend ideal solutions for performing a <u><span class=\"article-text-purple\"><span class=\"article-text-bg-purple\">Discovery</span></span></u>&nbsp;of what is currently implemented and what the goal of the enchantment is. How should you proceed? Keep reading 🪬<br>",
+                "align": "left"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvpsvdz8_xuv2a",
+      "title": "Context Comprehension",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvqx7vwx_gbbvz",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "As daunting as it sounds, <span class=\"article-text-bg-red\"><span class=\"article-text-purple\">understanding the business’ current pain points and translating them to the soon-to-be enabled technology</span></span> is the key to execute any project. The process involves actively listening to the client’s needs and requirements.",
+                "align": "left"
+              },
+              {
+                "text": "Once an initial discussion has been established, you have the necessary information to start planning the project <span class=\"article-text-bg-purple\"><u><span class=\"article-text-purple\">Discovery</span></u></span>.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqx4341_qz3fy",
+          "type": "callout",
+          "data": {
+            "calloutType": "info",
+            "text": {
+              "text": "A <span class=\"article-text-bg-purple\"><span class=\"article-text-purple\">Discovery</span></span> process involves the Product Owner, Implementation Team, and other business key stakeholders to scrutinize user needs, generate ideas, and corroborate hypotheses about the potential product features that will help ensure that whatever is being built will be valuable and useful. to the business/stakeholders.<br>",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvqxa7lt_1onjf",
+      "title": "Discovery Planning",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvqxa7lt_pbuuf",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Based on the answers and understanding the team has obtained from the initial conversation, and depending on the industry you are working with, you may need to leverage different approaches to elicit the right information from the right forum. This not only applies to the client, but to your team as well.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxa7lt_p3qvj",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "e.g. IT Team won’t be able to provide you insights on the campaign strategies the business wants to have enabled, but will definitely be the appropriate ones to explain how the Data Model and the overall architecture work.",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false
+          }
+        },
+        {
+          "id": "blk_mvqxb9pd_u6wtk",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "If you are acquainted with the fine art of gathering information, are proficient in the system(s) to implement, and can perform the whole process by yourself —kudos fellow High Sorcerer! 💜. Nevertheless, if the reunion will be related to the business’ marketing strategy, bring an expert in marketing from your team as 2 heads will always be better than 1, and they may ask more questions that you didn’t initially think of.",
+                "align": "left"
+              },
+              {
+                "text": "There are an incredible number of methods to retrieve information, some more suitable than others depending on your objective:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxd6qh_i5sud",
+          "type": "nested-bullets",
+          "data": {
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "Will you <span class=\"article-text-bg-green\">educate </span>the client on what is possible to execute?",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvqxdddd_mu7fo",
+                "text": {
+                  "text": "Perhaps <span class=\"article-text-bg-green\">explore</span> ideas with their different sectors?",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvqxdhq1_l9f6g",
+                "text": {
+                  "text": "<span class=\"article-text-bg-green\">Organize workshops</span> for each business area?",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvqxdlv4_2toj8",
+                "text": {
+                  "text": "Are you looking to <span class=\"article-text-bg-green\">verify the requirements</span>?",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxhf41_li7rq",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "Prepare in advance your goals, materials, logistics, follow-up steps, and set up a precise agenda with the proper participants.",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false
+          }
+        },
+        {
+          "id": "blk_mvqxhj0h_19soj",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "Be transparent and clearly communicate to stakeholders the expectations, roles and responsibilities they’ll undertake during the Discovery meetings.",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvqxifgq_cfvx9",
+      "title": "Active Engagement [Discovery]",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvqxis5e_c7zv4",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "If you have prepared thoroughly, your elicitation phase (Discovery) will be a tremendous success! (or not, let’s be honest 🤷🏻‍♂️). This phase is where most of the time will be invested, so do it wisely to avoid reworking incantations.",
+                "align": "left"
+              },
+              {
+                "text": "First and foremost, <span class=\"article-text-bg-purple\">eliciting information</span> is not a one-way conversation, but a dialogue between your team and the business. <span class=\"article-text-bg-red\">Engage and actively listen</span> to the stakeholders as they are the experts in their own needs.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxksvt_g68eb",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "Ask open questions, rephrase to confirm understanding in case there was any doubt, paraphrase and summarize the data you are obtaining from the client.",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false
+          }
+        },
+        {
+          "id": "blk_mvqxl8b5_u9om6",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Identify any <span class=\"article-text-bg-gold\">risks/conflicts</span> from the dialogue you are carrying out, and as a best practice, to enhance your enchantment and protect the team, place all recognized hazards on the table and <span class=\"article-text-bg-green\">be absolutely transparent</span> when communicating them. Based on all perspectives and interests, negotiate with stakeholders to have shared agreements that benefit all parties, assemble them and deliver the information to everyone involved to establish a common ground before casting any incantations in the project.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxmhsx_bck63",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "Don’t be discouraged if on your first attempt to gather information the spell doesn’t go as intended. There will typically be stones in the road, but take the time to reflect on what was learnt, and proceed accordingly adapting to the business’ objectives.",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvqxosw2_ahpat",
+      "title": "Refinement",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvqxp5pe_hilgs",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Would you confidently say completing all of the above steps is sufficient to begin with the implementation? The answer will most likely be <span class=\"article-text-bg-red\">No</span>, and it has nothing to do with your prior activities —stakeholders could have forgotten to mention something important, or more frequently, after reviewing the gathered information the team noticed they could explore more in-depth on a certain topic to fully comprehend the requirement to appropriately address the business’ need.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxpymp_hfvrr",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "Right after each session review internally the main points of the call, the use case, stakeholder needs, risks, and next steps. Refine the principle ideas to ensure they are self-explanatory, consistent, all details are clear and that the team can properly test the spells before casting them into Production.",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvqxq06y_stdoe",
+          "type": "callout",
+          "data": {
+            "calloutType": "info",
+            "text": {
+              "text": "Does your team still have questions? It is completely normal to schedule a follow-up call letting the client know you would like to <span class=\"article-text-bg-red\">clarify and confirm</span> all the insights gathered by the team. They can also validate the information to provide valuable feedback!",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvqxrgmh_wd8ft",
+      "title": "Document & Communicate",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvqxrmhu_tduva",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "As a BA you do not need to know how everything is exactly enabled, but rather be acquainted on how systems integrate and work with each other. Scrutiny the requirements with the platform Developers to clarify on any technical questions to account for technical feasibility to <span class=\"article-text-bg-red\"><span class=\"article-text-purple\">guarantee what is requested to enable is realistically possible</span></span>. You don’t want to have any surprise mid-spell-casting because the Technical Architect mentioned something is not possible to develop.",
+                "align": "left"
+              },
+              {
+                "text": "After all the implementation effort and information you now refined, it is time to document it in a fitting format to then share it to all parties and communicate findings. Leverage a wide range of techniques that are not exclusively text; provide visuals, presentations, self-explanatory <span class=\"article-text-bg-green\">artifacts</span> that will reveal the feasibility of the project, and listen to the feedback to business may provide to determine a suitable set of actions to kick off with the spell-casting.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxsqzu_tun0l",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "Most preferred methodology is <span class=\"article-text-bg-gold\">Scrum</span> (we still need to find the book with that scroll), which allows for suitably organizing the <span class=\"article-text-bg-purple\"><u>Discovery</u></span> information and translate it to manageable fragments of data.i.e. You basically get a well-designed <span class=\"article-text-bg-red\">backlog</span> of activities that will be performed in a short iteration, prioritizing needs depending on business’ requirements.",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvqxvujm_19avp",
+      "title": "Bonus: The Scrum Methodology",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvqxw1rm_8yklj",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Information on <span class=\"article-text-bg-green\">User Stories</span> and <span class=\"article-text-bg-gold\">Scrum</span> can be found in the official Scrum website. Once we have found our spell book with the Scrum scroll we’ll let you know 🔮. In the meantime, it is only essential for you to understand what the main documentary capabilities of Scrum are and how you can leverage this approach to generate a functional backlog of items that will be prioritized by the client and that the sorcery team has to craft.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxwo5x_c6mbk",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "Scrum",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "Scrum is an <span class=\"article-text-bg-gold\">agile</span> framework used primarily in software development, but can extend to different fields. It promotes iterative progress, collaboration, and flexibility. Scrum helps teams work together to <span class=\"article-text-bg-neutral\">develop complex products while adapting to changing requirements</span>. This framework utilizes several <span class=\"article-text-bg-green\">artifacts</span> to manage the project workload:<br>",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxwzuh_8jx6e",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "Epics",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "Epics represent <span class=\"article-text-bg-red\">significant features or requirements</span>. They are too big to be completed in a single <span class=\"article-text-bg-purple\">Sprint</span> and are often broken down into smaller fragments, <span class=\"article-text-bg-green\">User Stories</span>. Epics help understand the broader context and high-level functionality of what is expected to develop.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxx075_su73h",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "User Stories",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "These are concise, simple descriptions of a feature from the perspective of the users who will benefit from the project (end users). They are typically written in the format:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqy3po9_vu0zv",
+          "type": "pullquote",
+          "data": {
+            "quote": {
+              "text": "<span class=\"article-text-bg-neutral\"><em>\"As a [user role], I want [objective] so that [reasoning].\"</em></span>",
+              "align": "left"
+            },
+            "author": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvqy94tm_c7vrz",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "<span class=\"article-text-bg-green\">User Stories</span> help the team understand user needs and prioritize work based on business value. They are small enough to be completed within a <span class=\"article-text-bg-red\">Sprint</span>.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxx0kp_vco4r",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "Sub/Tasks",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "Actionable items derived from user stories. They break down <span class=\"article-text-bg-green\">User Stories</span> into specific, manageable activities that the development team can work on. Each task is assigned to a certain team member and has a <span class=\"article-text-bg-gold\">clear, self-explanatory definition of what is supposed to be done</span>.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqxx0y1_n7vqm",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "Sprint",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "A <span class=\"article-text-bg-purple\">Sprint</span> is a <span class=\"article-text-bg-green\">determined period of time</span>, having a consistent duration throughout the project usually lasting between 2 - 4 weeks, during which a specific set of work requires to be completed. Various ceremonies are scheduled to progress with the incantations:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqydv16_ynfto",
+          "type": "nested-bullets",
+          "data": {
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "Sprint Planning",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvqye0zf_ll6ln",
+                "text": {
+                  "text": "Daily Scrum",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvqye4zh_0jzcm",
+                "text": {
+                  "text": "Sprint Review",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvqyeb5u_7vlgy",
+                "text": {
+                  "text": "Sprint Retrospective",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqyfalm_9h8un",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "Backlog",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "Finally, the <span class=\"article-text-bg-red\">Backlog</span>, i.e. a <span class=\"article-text-bg-red\">comprehensive and prioritized list of work</span> that needs to be done. These can also be enhancements, fixes, and/or new requirements for the product.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqyg7b6_zi4xy",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "It is maintained by and expert Enchanter and is continuously refined.",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvqyhox6_gz5f1",
+      "title": "To Sum-Up",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvqyhvsp_40ej1",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "The highlight for this spell is the importance of collaboration, adaptability, and stakeholder engagement throughout the <span class=\"article-text-bg-green\">Discovery</span> process.",
+                "align": "left"
+              },
+              {
+                "text": "Utilize techniques such as user interviews, feedback sessions, and workshops to gather all necessary information for the project’s success, and when crafting <span class=\"article-text-bg-gold\">deliverables/artifacts</span>, consider requesting the business’ feedback to validate the data and confirm the defined agreements.",
+                "align": "left"
+              },
+              {
+                "text": "Ensure the requirements remain aligned with business’ goals and stakeholder expectations.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvqyjtn6_5klhw",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "<span class=\"article-text-bg-red\">BE CURIOUS!</span><br>",
+              "align": "left"
+            },
+            "title": {
+              "text": "Lifesaving tip",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": true
+          }
+        },
+        {
+          "id": "blk_mvqylc8z_aqspe",
+          "type": "related-docs",
+          "data": {
+            "items": [
+              {
+                "id": "rd_1",
+                "type": "external",
+                "title": {
+                  "text": "Salesforce Business Analyst",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://trailhead.salesforce.com/content/learn/trails/get-started-as-a-salesforce-business-analyst",
+                "ctaText": "Official documentation Salesforce Business Analyst"
+              },
+              {
+                "id": "rd_mvqym58a_pm6vu",
+                "type": "external",
+                "title": {
+                  "text": "Scrum Website",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://www.scrum.org/",
+                "ctaText": "Official documentation Scrum Website"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,61 +1,91 @@
 ---
-import { getPublishedArticles, getArticleCategories } from '../lib/articles';
+import { getPublishedStudioArticles } from '../lib/articles';
+import { ARTICLE_CATEGORIES } from '../lib/article-taxonomy';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const publishedArticles = getPublishedArticles();
+const publishedArticles = getPublishedStudioArticles();
 
-// Dynamic category discovery from published articles + baseline demo categories
-const publishedCats = getArticleCategories();
-const baseCategories = ['Apex & Flow', 'Mentorship', 'Business Analysis'];
-const normalizedBase = ['apex', 'flow', 'mentorship', 'mentor', 'business analysis', 'ba'];
-const extraCategories = publishedCats.filter(cat => !normalizedBase.includes(cat.toLowerCase()));
-const allFilterCategories = ['All scrolls', ...baseCategories, ...extraCategories];
+// Dynamic category discovery strictly from visible published Studio articles
+const representedCatsMap = new Map<string, string>(); // lowercase -> display name
+for (const article of publishedArticles) {
+  const cat = (article.meta.category || '').trim();
+  if (cat) {
+    const lower = cat.toLowerCase();
+    if (!representedCatsMap.has(lower)) {
+      representedCatsMap.set(lower, cat);
+    }
+  }
+}
+
+// Order: Canonical categories in canonical order first, then custom categories alphabetically
+const canonicalRepresented: string[] = [];
+for (const c of ARTICLE_CATEGORIES) {
+  const lower = c.toLowerCase();
+  if (representedCatsMap.has(lower)) {
+    canonicalRepresented.push(representedCatsMap.get(lower)!);
+    representedCatsMap.delete(lower);
+  }
+}
+
+const customRepresented = Array.from(representedCatsMap.values())
+  .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+
+const allFilterCategories = ['All scrolls', ...canonicalRepresented, ...customRepresented];
 
 const filterButtonsHtml = allFilterCategories.map((label, idx) => {
   const isAll = idx === 0;
-  const filterKey = isAll ? 'all' : label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+  const filterKey = isAll ? 'all' : label.toLowerCase().trim();
   const activeStyle = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
   const inactiveStyle = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
   return `<div class="cov-filter-chip" data-filter="${filterKey}" style="${isAll ? activeStyle : inactiveStyle}">${label}</div>`;
 }).join('\n');
 
-const collectionLibraryCardsHtml = publishedArticles.map(article => {
-  const { slug, meta } = article;
-  const tag = (meta.tags && meta.tags.length > 0)
-    ? meta.tags[0].toUpperCase()
-    : (meta.category || '').toUpperCase();
-  const rank = meta.rank || 'Mechanic';
-  const thumbBg = meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+const collectionLibraryCardsHtml = publishedArticles.length > 0
+  ? publishedArticles.map(article => {
+      const { slug, meta } = article;
+      const categoryBadge = (meta.category || '').toUpperCase();
+      const difficultyOrRank = meta.difficulty || meta.rank || '';
+      const thumbBg = meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+      const headerVisualHtml = meta.cover
+        ? `<img src="${meta.cover}" alt="${(meta.title || '').replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;" />`
+        : `[ scroll · 560×280 ]`;
 
-  return `
-    <div class="cov-library-card" data-category="${meta.category}" data-tags="${(meta.tags || []).join(',')}" data-title="${(meta.title || '').replace(/"/g, '&quot;')}" data-desc="${(meta.description || '').replace(/"/g, '&quot;')}" data-tag="${tag}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
-      <a href="/article/${slug}" style="text-decoration:none;color:inherit;display:block">
-        <div style="height:120px;background:${thumbBg};border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-        <div style="padding:20px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">${tag}</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">${rank}</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">${meta.title}</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">${meta.description}</p>
-          <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-            <div style="width:65%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span>Scroll unrolled</span>
-            <span style="color:#e8cf95">Read →</span>
-          </div>
+      return `
+        <div class="cov-library-card" data-category="${(meta.category || '').toLowerCase()}" data-tags="${(meta.tags || []).join(',').toLowerCase()}" data-title="${(meta.title || '').replace(/"/g, '&quot;')}" data-desc="${(meta.description || '').replace(/"/g, '&quot;')}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
+          <a href="/article/${slug}" style="text-decoration:none;color:inherit;display:block">
+            <div style="height:120px;background:${thumbBg};border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70;overflow:hidden;">
+              ${headerVisualHtml}
+            </div>
+            <div style="padding:20px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">${categoryBadge}</span>
+                <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">${difficultyOrRank}</span>
+              </div>
+              <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">${meta.title}</h3>
+              <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">${meta.description}</p>
+              <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
+                <div style="width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+                <span>${meta.readingTime || meta.meta || 'Scroll unrolled'}</span>
+                <span style="color:#e8cf95">Study scroll →</span>
+              </div>
+            </div>
+          </a>
         </div>
-      </a>
+      `;
+    }).join('\n')
+  : `
+    <div id="cov-library-empty" style="grid-column: 1 / -1; text-align: center; padding: 72px 24px; border: 1px dashed rgba(216,181,107,.18); border-radius: 8px; background: rgba(21,18,28,.4); margin: 20px 0;">
+      <div style="font-size: 28px; color: #d8b56b; margin-bottom: 14px; opacity: 0.85;">✦</div>
+      <h2 style="font-family: Cinzel, serif; font-size: 20px; font-weight: 600; color: #ece6dd; letter-spacing: 2px; margin: 0 0 10px; text-transform: uppercase;">No Scrolls Have Been Unsealed Yet</h2>
+      <p style="font-family: 'EB Garamond', serif; font-size: 16px; color: #9b9189; max-width: 440px; margin: 0 auto; line-height: 1.5;">Published scrolls created through Article Studio will appear here.</p>
     </div>
   `;
-}).join('\n');
 
 const libraryHtml = `<!-- ═══════════════════════════════════════════════════════════════
   SPELL BOOK (LIBRARY)
-  Edit scroll cards in CONTENT.libraryScrolls.
-  Active scrolls: set progress (0–100), statusLabel, cta.
-  Locked scrolls: set locked:true and lockNote.
+  Dynamic Coven Article Studio published catalog.
 ════════════════════════════════════════════════════════════════ -->
 <sc-if value="{{ isLibrary }}" hint-placeholder-val="{{ true }}">
 <div style="position:relative;overflow:hidden;background:radial-gradient(1100px 640px at 50% -14%,rgba(124,77,196,.40),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.24),transparent 62%),#08060e">
@@ -114,93 +144,10 @@ const libraryHtml = `<!-- ══════════════════
   <!-- Active scroll cards -->
   <div class="cov-section-pad cov-grid-3" id="cov-library-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:0 48px 52px;position:relative;z-index:1">
     ${collectionLibraryCardsHtml}
-    <!-- Demo scrolls not yet written in markdown -->
-    <div class="cov-library-card" data-category="Mentorship" data-tag="MENTORSHIP" data-title="Guiding Apprentices: The Art of the Mentor" data-desc="Grow new admins without casting for them." style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
-      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-      <div style="padding:20px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">MENTORSHIP</span>
-          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Shaper</span>
-        </div>
-        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Guiding Apprentices: The Art of the Mentor</h3>
-        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Grow new admins without casting for them.</p>
-        <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-          <div style="width:100%;height:100%;border-radius:3px;background:linear-gradient(90deg,#7bbf6a,#a9e09a)"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-          <span style="color:#a9e09a">✓ Trial passed</span>
-          <span style="color:#e8cf95">Review →</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="cov-library-card" data-category="Business Analysis" data-tag="BA · DIVINATION" data-title="Reading the Omens: Requirements Divination" data-desc="Surface what stakeholders truly need." style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
-      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-      <div style="padding:20px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">BA · DIVINATION</span>
-          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Shaper</span>
-        </div>
-        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Reading the Omens: Requirements Divination</h3>
-        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Surface what stakeholders truly need.</p>
-        <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-          <div style="width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-          <span>Not started</span>
-          <span style="color:#e8cf95">Begin →</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="cov-library-card" data-category="Flow" data-tag="FLOW" data-title="Flow Sorcery: Automations That Don't Backfire" data-desc="Orchestrate without summoning chaos." style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
-      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-      <div style="padding:20px">
-        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">FLOW</span>
-          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Mechanic</span>
-        </div>
-        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Flow Sorcery: Automations That Don't Backfire</h3>
-        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Orchestrate without summoning chaos.</p>
-        <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-          <div style="width:20%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
-        </div>
-        <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-          <span>20% complete</span>
-          <span style="color:#e8cf95">Continue →</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Locked scroll cards -->
-    <div class="cov-library-card" data-category="Architecture" data-tag="ARCHITECTURE" data-title="The Grand Design: Scalable Org Architecture" data-desc="Sealed until you reach the rank of Witch." style="background:#100d15;border:1px solid rgba(216,181,107,.1);border-radius:6px;overflow:hidden;position:relative;min-width:0">
-      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.05) 0 10px,rgba(216,181,107,.01) 10px 20px);border-bottom:1px solid rgba(216,181,107,.08);display:flex;align-items:center;justify-content:center;color:#6b6258;font-size:22px">⟡</div>
-      <div style="padding:20px;opacity:.65">
-        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#8f857a;border:1px solid rgba(216,181,107,.18);border-radius:2px;padding:3px 8px">ARCHITECTURE</span>
-          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Witch</span>
-        </div>
-        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#b3a99d;margin:0 0 8px">The Grand Design: Scalable Org Architecture</h3>
-        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#7a7066;margin:0 0 16px;line-height:1.45">Sealed until you reach the rank of Witch.</p>
-        <div style="display:flex;align-items:center;gap:8px;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-          <span style="color:#d8b56b">⚿</span><span>Locked · 13,000 Aether to unlock</span>
-        </div>
-      </div>
-    </div>
-
-    <div class="cov-library-card" data-category="Leadership" data-tag="LEADERSHIP" data-title="Convening the Circle: Leading Discovery Workshops" data-desc="Sealed until you reach the rank of Warden." style="background:#100d15;border:1px solid rgba(216,181,107,.1);border-radius:6px;overflow:hidden;position:relative;min-width:0">
-      <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.05) 0 10px,rgba(216,181,107,.01) 10px 20px);border-bottom:1px solid rgba(216,181,107,.08);display:flex;align-items:center;justify-content:center;color:#6b6258;font-size:22px">⟡</div>
-      <div style="padding:20px;opacity:.65">
-        <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-          <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#8f857a;border:1px solid rgba(216,181,107,.18);border-radius:2px;padding:3px 8px">LEADERSHIP</span>
-          <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Warden</span>
-        </div>
-        <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#b3a99d;margin:0 0 8px">Convening the Circle: Leading Discovery Workshops</h3>
-        <p style="font-family:'EB Garamond',serif;font-size:14px;color:#7a7066;margin:0 0 16px;line-height:1.45">Sealed until you reach the rank of Warden.</p>
-        <div style="display:flex;align-items:center;gap:8px;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-          <span style="color:#d8b56b">⚿</span><span>Locked · 3,000 Aether to unlock</span>
-        </div>
-      </div>
+    <div id="cov-library-no-results" style="display:none; grid-column: 1 / -1; text-align: center; padding: 48px 24px; border: 1px dashed rgba(216,181,107,.14); border-radius: 8px; background: rgba(21,18,28,.3);">
+      <div style="font-size: 20px; color: #d8b56b; margin-bottom: 8px; opacity: 0.8;">✦</div>
+      <p style="font-family: Cinzel, serif; font-size: 16px; color: #ece6dd; margin: 0 0 6px;">No scrolls match this search</p>
+      <p style="font-family: 'EB Garamond', serif; font-size: 14px; color: #8f857a; margin: 0;">Try adjusting your search query or selected category.</p>
     </div>
   </div>
 </div>
@@ -217,7 +164,7 @@ const libraryHtml = `<!-- ══════════════════
       var chips = document.querySelectorAll('.cov-filter-chip');
       var searchInput = document.getElementById('cov-library-search');
       var cards = document.querySelectorAll('.cov-library-card');
-      if (!chips.length) return;
+      var noResults = document.getElementById('cov-library-no-results');
 
       var currentFilter = 'all';
       var currentSearch = '';
@@ -226,25 +173,14 @@ const libraryHtml = `<!-- ══════════════════
       var BTN_INACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
 
       function apply() {
+        var visibleCount = 0;
         cards.forEach(function(card) {
-          var cat = (card.getAttribute('data-category') || '').toLowerCase();
+          var cat = (card.getAttribute('data-category') || '').toLowerCase().trim();
           var tags = (card.getAttribute('data-tags') || '').toLowerCase();
           var title = (card.getAttribute('data-title') || '').toLowerCase();
           var desc = (card.getAttribute('data-desc') || '').toLowerCase();
 
-          var catMatch = false;
-          if (currentFilter === 'all') {
-            catMatch = true;
-          } else if (currentFilter === 'apex-flow') {
-            catMatch = cat === 'apex' || cat === 'flow' || tags.includes('apex') || tags.includes('flow');
-          } else if (currentFilter === 'mentorship') {
-            catMatch = cat === 'mentorship' || tags.includes('mentorship') || tags.includes('mentor');
-          } else if (currentFilter === 'business-analysis') {
-            catMatch = cat === 'business analysis' || cat === 'ba' || tags.includes('business analysis') || tags.includes('ba');
-          } else {
-            var norm = currentFilter.replace(/-/g, ' ');
-            catMatch = cat === norm || tags.includes(norm) || cat.includes(norm);
-          }
+          var catMatch = (currentFilter === 'all') || (cat === currentFilter);
 
           var searchMatch = true;
           if (currentSearch) {
@@ -254,15 +190,24 @@ const libraryHtml = `<!-- ══════════════════
 
           if (catMatch && searchMatch) {
             card.style.display = '';
+            visibleCount++;
           } else {
             card.style.display = 'none';
           }
         });
+
+        if (noResults) {
+          if (cards.length > 0 && visibleCount === 0) {
+            noResults.style.display = 'block';
+          } else {
+            noResults.style.display = 'none';
+          }
+        }
       }
 
       chips.forEach(function(chip) {
         chip.addEventListener('click', function() {
-          currentFilter = chip.getAttribute('data-filter') || 'all';
+          currentFilter = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
           chips.forEach(function(c) {
             c.setAttribute('style', BTN_INACTIVE);
           });

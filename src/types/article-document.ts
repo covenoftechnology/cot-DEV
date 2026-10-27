@@ -25,4 +25,5 @@ export interface ArticleDocument {
   slug: string;
   meta: ArticleMeta;
   sections: ArticleSection[];
+  sourceArticleSlug?: string;
 }

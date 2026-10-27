@@ -12,12 +12,18 @@ const componentModules = import.meta.glob<{ default: any }>(
   { eager: true }
 );
 
+// Automatically discover all article Studio structured content files (content.json)
+const contentModules = import.meta.glob<{ default?: any }>(
+  '/src/articles/*/content.json',
+  { eager: true }
+);
+
 /**
  * Extracts the article slug from the file path.
  * Example: "/src/articles/apex-triggers-without-tears/meta.ts" -> "apex-triggers-without-tears"
  */
 function extractSlug(path: string): string | null {
-  const match = path.match(/(?:^|\/)articles\/([^/]+)\/(?:meta\.ts|index\.astro)$/);
+  const match = path.match(/(?:^|\/)articles\/([^/]+)\/(?:meta\.ts|index\.astro|content\.json)$/);
   return match ? match[1] : null;
 }
 
@@ -84,6 +90,17 @@ for (const [path, moduleExports] of Object.entries(componentModules)) {
 }
 
 /**
+ * Track slugs that have a structured Studio content.json file.
+ */
+const studioSlugs = new Set<string>();
+for (const path of Object.keys(contentModules)) {
+  const slug = extractSlug(path);
+  if (slug && !slug.startsWith('_')) {
+    studioSlugs.add(slug);
+  }
+}
+
+/**
  * Canonical sorting algorithm for articles.
  * Priority:
  * 1. `order` ascending (defaults to Infinity for unassigned)
@@ -121,6 +138,7 @@ export function getAllArticles(): Article[] {
         slug,
         meta,
         component,
+        isStudioArticle: studioSlugs.has(slug),
       });
     } else {
       console.warn(`[Article Warning] "${slug}" has mismatched meta or index.astro component.`);
@@ -135,6 +153,20 @@ export function getAllArticles(): Article[] {
  */
 export function getPublishedArticles(): Article[] {
   return getAllArticles().filter((article) => article.meta.status === 'published');
+}
+
+/**
+ * Returns all registered articles created via Article Studio (contains content.json).
+ */
+export function getStudioArticles(): Article[] {
+  return getAllArticles().filter((article) => article.isStudioArticle === true);
+}
+
+/**
+ * Returns only published articles created via Article Studio.
+ */
+export function getPublishedStudioArticles(): Article[] {
+  return getPublishedArticles().filter((article) => article.isStudioArticle === true);
 }
 
 /**

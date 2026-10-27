@@ -53,11 +53,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         <span class="status-dot" id="status-dot"></span>
         <span id="status-indicator">Ready</span>
       </div>
+      <div class="editing-indicator" id="editing-source-indicator" style="display:none;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--studio-gold-bright);background:rgba(216,181,107,0.1);border:1px solid rgba(216,181,107,0.25);padding:3px 10px;border-radius:4px;margin-left:8px;">Editing: <span id="editing-source-title"></span></div>
     </a>
 
     <div class="studio-actions">
       <button class="studio-btn studio-btn--secondary" id="btn-new" title="Create a new article draft" type="button">+ New Article</button>
-      <button class="studio-btn studio-btn--ghost" id="btn-drafts" title="Open saved drafts" type="button">Saved Drafts</button>
+      <a href="/template-preview/articles" class="studio-btn studio-btn--ghost" id="btn-article-center" title="Open Coven Article Center">Article Center</a>
       <button class="studio-btn studio-btn--ghost" id="btn-duplicate-article" title="Duplicate current article" type="button">Duplicate</button>
       <button class="studio-btn studio-btn--secondary" id="btn-save-draft" title="Save draft immediately" type="button">Save Draft</button>
       <button class="studio-btn studio-btn--secondary" id="btn-preview" title="Live preview in single reusable tab" type="button">Preview ↗</button>
@@ -298,6 +299,46 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
   <!-- Toast Notification Container -->
   <div class="studio-toast-container" id="toast-container"></div>
 
+  <!-- Custom Color Popover -->
+  <div id="coven-custom-color-popover" class="coven-custom-color-popover" style="display:none" role="dialog" aria-label="Custom color picker">
+    <div class="custom-color-popover-header">
+      <span class="custom-color-popover-title">CUSTOM COLOR</span>
+      <span class="custom-color-swatch-badge" id="coven-custom-color-preview-badge" style="background:#C45AFF" title="Active preview"></span>
+    </div>
+
+    <div class="custom-color-picker-row">
+      <button type="button" class="custom-color-trigger-btn" id="coven-custom-color-trigger-btn" aria-label="Choose custom color" title="Open color chooser">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>
+        </svg>
+        <span class="custom-color-trigger-indicator" id="coven-custom-color-trigger-swatch" style="background:#C45AFF"></span>
+      </button>
+
+      <input type="color" id="coven-custom-color-native" class="custom-color-native-hidden" value="#C45AFF" tabindex="-1" aria-hidden="true" />
+
+      <div class="custom-color-hex-group">
+        <input type="text" id="coven-custom-color-hex" class="custom-color-hex-field" value="#C45AFF" maxlength="7" spellcheck="false" aria-label="Hex color value" placeholder="#C45AFF" />
+      </div>
+    </div>
+
+    <div class="custom-color-error" id="coven-custom-color-error" style="display:none">Invalid HEX color</div>
+
+    <div class="custom-color-popover-actions">
+      <button type="button" class="studio-btn studio-btn--sm custom-color-btn-cancel" id="coven-custom-color-cancel">Cancel</button>
+      <button type="button" class="studio-btn studio-btn--sm studio-btn--primary custom-color-btn-apply" id="coven-custom-color-apply">Apply</button>
+    </div>
+
+    <div class="custom-color-save-row">
+      <button type="button" class="custom-color-save-action" id="coven-custom-color-save" title="Save this color to your reusable palette">
+        <span class="custom-color-save-star">★</span> Save to Palette
+      </button>
+    </div>
+  </div>
+
   <!-- Client-side Logic -->
   <script define:vars={{
     blockRegistry,
@@ -470,11 +511,50 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                 while (child.firstChild) u.appendChild(child.firstChild);
                 child.parentNode.replaceChild(u, child);
               } else if (tag === 'span') {
-                var allowedClasses = ['article-text-gold', 'article-text-purple', 'article-text-muted'];
-                var matched = allowedClasses.find(function(c) { return child.classList.contains(c); });
-                if (matched) {
-                  child.className = matched;
-                  child.removeAttribute('style');
+                var allowedColorClasses = ['article-text-gold', 'article-text-purple', 'article-text-muted'];
+                var allowedBgClasses = [
+                  'article-text-bg-neutral',
+                  'article-text-bg-purple',
+                  'article-text-bg-gold',
+                  'article-text-bg-green',
+                  'article-text-bg-red'
+                ];
+                var matchedColor = allowedColorClasses.find(function(c) { return child.classList.contains(c); });
+                var matchedBg = allowedBgClasses.find(function(c) { return child.classList.contains(c); });
+
+                var styleAttr = child.getAttribute('style') || '';
+                var validStyles = [];
+                var validClasses = [];
+
+                if (child.classList.contains('article-text-custom-color')) {
+                  var mCol = styleAttr.match(/--coven-custom-text-color:\s*(#[0-9a-fA-F]{3,6})/i);
+                  if (mCol && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(mCol[1])) {
+                    var normCol = normalizeHex(mCol[1]);
+                    validClasses.push('article-text-custom-color');
+                    validStyles.push('--coven-custom-text-color:' + normCol);
+                  }
+                } else if (matchedColor) {
+                  validClasses.push(matchedColor);
+                }
+
+                if (child.classList.contains('article-text-custom-bg')) {
+                  var mBg = styleAttr.match(/--coven-custom-bg:\s*(#[0-9a-fA-F]{3,6})/i);
+                  if (mBg && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(mBg[1])) {
+                    var normBg = normalizeHex(mBg[1]);
+                    validClasses.push('article-text-custom-bg');
+                    validStyles.push('--coven-custom-bg:' + normBg);
+                  }
+                } else if (matchedBg) {
+                  validClasses.push(matchedBg);
+                }
+
+                if (validClasses.length > 0) {
+                  child.className = validClasses.join(' ');
+                  if (validStyles.length > 0) {
+                    child.setAttribute('style', validStyles.join(';'));
+                  } else {
+                    child.removeAttribute('style');
+                  }
                 } else {
                   while (child.firstChild) child.parentNode.insertBefore(child.firstChild, child);
                   child.parentNode.removeChild(child);
@@ -527,26 +607,554 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         return root.innerHTML;
       }
 
-      function applyColorClass(surface, colorClass) {
+      var SAVED_COLORS_KEY = 'coven.articleStudio.savedColors.v1';
+      var DEFAULT_SAVED_COLORS = ['#C45AFF', '#52E8A5'];
+
+      function normalizeHex(hex) {
+        if (!hex || typeof hex !== 'string') return null;
+        hex = hex.trim();
+        if (!/^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(hex)) return null;
+        if (hex.length === 4) {
+          return ('#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3]).toUpperCase();
+        }
+        return hex.toUpperCase();
+      }
+
+      function getSavedColors() {
+        try {
+          var raw = localStorage.getItem(SAVED_COLORS_KEY);
+          if (raw === null) {
+            localStorage.setItem(SAVED_COLORS_KEY, JSON.stringify(DEFAULT_SAVED_COLORS));
+            return DEFAULT_SAVED_COLORS.slice();
+          }
+          var parsed = JSON.parse(raw);
+          return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_SAVED_COLORS.slice();
+        } catch (e) {
+          return DEFAULT_SAVED_COLORS.slice();
+        }
+      }
+
+      function saveColorToPalette(hex) {
+        var norm = normalizeHex(hex);
+        if (!norm) return false;
+        var colors = getSavedColors();
+        var exists = colors.some(function(c) { return c.toUpperCase() === norm.toUpperCase(); });
+        if (!exists) {
+          colors.push(norm);
+          try {
+            localStorage.setItem(SAVED_COLORS_KEY, JSON.stringify(colors));
+          } catch (e) {}
+        }
+        updateAllSavedSwatchesUI();
+        return true;
+      }
+
+      function removeColorFromPalette(hex) {
+        var norm = normalizeHex(hex);
+        if (!norm) return;
+        var colors = getSavedColors().filter(function(c) {
+          return c.toUpperCase() !== norm.toUpperCase();
+        });
+        try {
+          localStorage.setItem(SAVED_COLORS_KEY, JSON.stringify(colors));
+        } catch (e) {}
+        updateAllSavedSwatchesUI();
+      }
+
+      function updateAllSavedSwatchesUI() {
+        var saved = getSavedColors();
+
+        document.querySelectorAll('.rich-palette-saved-section').forEach(function(sec) {
+          sec.style.display = 'flex';
+          var grid = sec.querySelector('.rich-saved-swatches-grid');
+          if (!grid) return;
+          grid.innerHTML = '';
+          saved.forEach(function(hex) {
+            var chip = document.createElement('div');
+            chip.className = 'saved-swatch-chip';
+            chip.setAttribute('data-hex', hex);
+            chip.setAttribute('title', hex);
+            chip.style.backgroundColor = hex;
+
+            var delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.className = 'saved-swatch-del';
+            delBtn.setAttribute('data-del-hex', hex);
+            delBtn.setAttribute('title', 'Remove ' + hex + ' from favorites');
+            delBtn.innerHTML = '×';
+
+            chip.appendChild(delBtn);
+            grid.appendChild(chip);
+          });
+        });
+
+        document.querySelectorAll('.callout-saved-swatches').forEach(function(row) {
+          row.innerHTML = '';
+          var activeHex = (row.getAttribute('data-active-hex') || '').toUpperCase();
+          saved.forEach(function(hex) {
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'studio-swatch callout-accent-swatch' + (activeHex === hex.toUpperCase() ? ' is-active' : '');
+            btn.setAttribute('data-act', 'callout-accent-swatch');
+            btn.setAttribute('data-hex', hex);
+            btn.setAttribute('title', 'Callout accent ' + hex);
+            btn.style.width = '24px';
+            btn.style.height = '24px';
+            btn.style.borderRadius = '3px';
+            btn.style.backgroundColor = hex;
+            btn.style.border = (activeHex === hex.toUpperCase()) ? '2px solid var(--studio-gold)' : '1px solid rgba(255,255,255,0.25)';
+            btn.style.cursor = 'pointer';
+            row.appendChild(btn);
+          });
+        });
+      }
+
+      var customColorPickerState = {
+        anchorEl: null,
+        savedRange: null,
+        surface: null,
+        onApply: null,
+        onSave: null
+      };
+
+      function openAnchoredPopover(popoverEl, triggerEl) {
+        closeAllPopovers(popoverEl);
+
+        popoverEl.style.display = 'flex';
+        popoverEl.style.position = 'fixed';
+        popoverEl.style.zIndex = '99999';
+        popoverEl.style.visibility = 'hidden';
+
+        var popRect = popoverEl.getBoundingClientRect();
+        var trigRect = triggerEl.getBoundingClientRect();
+
+        var popHeight = popRect.height || 220;
+        var popWidth = popRect.width || 170;
+
+        var spaceBelow = window.innerHeight - trigRect.bottom;
+        var spaceAbove = trigRect.top;
+
+        var top;
+        if (spaceBelow < (popHeight + 12) && spaceAbove > spaceBelow) {
+          top = Math.max(8, trigRect.top - popHeight - 4);
+          popoverEl.classList.add('is-flipped-above');
+        } else {
+          top = Math.min(window.innerHeight - popHeight - 8, trigRect.bottom + 4);
+          popoverEl.classList.remove('is-flipped-above');
+        }
+
+        var left = trigRect.left;
+        if (left + popWidth > window.innerWidth - 8) {
+          left = Math.max(8, window.innerWidth - popWidth - 8);
+        }
+        if (left < 8) left = 8;
+
+        popoverEl.style.top = Math.round(top) + 'px';
+        popoverEl.style.left = Math.round(left) + 'px';
+        popoverEl.style.visibility = 'visible';
+      }
+
+      function closeAllPopovers(exceptEl) {
+        document.querySelectorAll('.rich-color-menu, .rich-highlight-menu, .rich-link-popover, .coven-custom-color-popover, .nested-marker-dropdown').forEach(function(m) {
+          if (m !== exceptEl) {
+            m.style.display = 'none';
+            m.classList.remove('is-flipped-above');
+          }
+        });
+      }
+
+      function openCustomColorPicker(anchorEl, initialHex, onApply, onSave, targetSurface, formatType) {
+        var popover = document.getElementById('coven-custom-color-popover');
+        if (!popover) return;
+
+        var hexInput = document.getElementById('coven-custom-color-hex');
+        var nativeInput = document.getElementById('coven-custom-color-native');
+        var previewBadge = document.getElementById('coven-custom-color-preview-badge');
+        var triggerSwatch = document.getElementById('coven-custom-color-trigger-swatch');
+        var errorEl = document.getElementById('coven-custom-color-error');
+        var applyBtn = document.getElementById('coven-custom-color-apply');
+        var saveBtn = document.getElementById('coven-custom-color-save');
+
+        var norm = normalizeHex(initialHex) || '#C45AFF';
+        if (hexInput) hexInput.value = norm;
+        if (nativeInput) nativeInput.value = norm;
+        if (previewBadge) previewBadge.style.background = norm;
+        if (triggerSwatch) triggerSwatch.style.background = norm;
+        if (errorEl) errorEl.style.display = 'none';
+        if (applyBtn) applyBtn.disabled = false;
+        if (saveBtn) saveBtn.disabled = false;
+
+        customColorPickerState.anchorEl = anchorEl;
+        customColorPickerState.onApply = onApply;
+        customColorPickerState.onSave = onSave;
+        customColorPickerState.surface = targetSurface || null;
+
+        if (targetSurface) {
+          var r = resolveSmartRange(targetSurface, formatType || 'color');
+          customColorPickerState.savedRange = r ? r.cloneRange() : null;
+        } else {
+          customColorPickerState.savedRange = null;
+        }
+
+        openAnchoredPopover(popover, anchorEl);
+        if (hexInput) {
+          hexInput.focus();
+          hexInput.select();
+        }
+      }
+
+      function initCustomColorPicker() {
+        var popover = document.getElementById('coven-custom-color-popover');
+        if (!popover) return;
+
+        var triggerBtn = document.getElementById('coven-custom-color-trigger-btn');
+        var triggerSwatch = document.getElementById('coven-custom-color-trigger-swatch');
+        var previewBadge = document.getElementById('coven-custom-color-preview-badge');
+        var nativeInput = document.getElementById('coven-custom-color-native');
+        var hexInput = document.getElementById('coven-custom-color-hex');
+        var errorEl = document.getElementById('coven-custom-color-error');
+        var cancelBtn = document.getElementById('coven-custom-color-cancel');
+        var applyBtn = document.getElementById('coven-custom-color-apply');
+        var saveBtn = document.getElementById('coven-custom-color-save');
+
+        if (triggerBtn && nativeInput) {
+          triggerBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            nativeInput.click();
+          });
+        }
+
+        if (nativeInput) {
+          nativeInput.addEventListener('input', function() {
+            var val = (nativeInput.value || '').toUpperCase();
+            if (hexInput) hexInput.value = val;
+            if (previewBadge) previewBadge.style.background = val;
+            if (triggerSwatch) triggerSwatch.style.background = val;
+            if (errorEl) errorEl.style.display = 'none';
+            if (applyBtn) applyBtn.disabled = false;
+            if (saveBtn) saveBtn.disabled = false;
+          });
+        }
+
+        function getNormalizedHexFromInput() {
+          if (!hexInput) return null;
+          var raw = hexInput.value.trim();
+          if (!raw) return null;
+          if (!raw.startsWith('#')) raw = '#' + raw;
+          return normalizeHex(raw);
+        }
+
+        function syncHexToPreview() {
+          var norm = getNormalizedHexFromInput();
+          if (norm) {
+            if (previewBadge) previewBadge.style.background = norm;
+            if (triggerSwatch) triggerSwatch.style.background = norm;
+            if (nativeInput) nativeInput.value = norm;
+            if (errorEl) errorEl.style.display = 'none';
+            if (applyBtn) applyBtn.disabled = false;
+            if (saveBtn) saveBtn.disabled = false;
+          } else {
+            if (errorEl) {
+              errorEl.textContent = 'Invalid HEX color';
+              errorEl.style.display = 'block';
+            }
+            if (applyBtn) applyBtn.disabled = true;
+            if (saveBtn) saveBtn.disabled = true;
+          }
+        }
+
+        if (hexInput) {
+          hexInput.addEventListener('input', syncHexToPreview);
+          hexInput.addEventListener('change', function() {
+            var norm = getNormalizedHexFromInput();
+            if (norm) hexInput.value = norm;
+          });
+        }
+
+        if (cancelBtn) {
+          cancelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            popover.style.display = 'none';
+            if (customColorPickerState.surface) {
+              customColorPickerState.surface.focus();
+            }
+          });
+        }
+
+        function finishPicker(shouldSave) {
+          var norm = getNormalizedHexFromInput();
+          if (!norm) {
+            if (errorEl) {
+              errorEl.textContent = 'Invalid HEX color';
+              errorEl.style.display = 'block';
+            }
+            if (applyBtn) applyBtn.disabled = true;
+            if (saveBtn) saveBtn.disabled = true;
+            return;
+          }
+
+          if (shouldSave) {
+            saveColorToPalette(norm);
+          }
+
+          popover.style.display = 'none';
+
+          if (customColorPickerState.surface && customColorPickerState.savedRange) {
+            customColorPickerState.surface.focus();
+            var sel = window.getSelection();
+            if (sel) {
+              sel.removeAllRanges();
+              sel.addRange(customColorPickerState.savedRange);
+            }
+          }
+
+          if (typeof customColorPickerState.onApply === 'function') {
+            customColorPickerState.onApply(norm);
+          }
+
+          updateAllSavedSwatchesUI();
+          customColorPickerState.savedRange = null;
+          customColorPickerState.surface = null;
+        }
+
+        if (applyBtn) {
+          applyBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            finishPicker(false);
+          });
+        }
+
+        if (saveBtn) {
+          saveBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            finishPicker(true);
+          });
+        }
+
+        if (hexInput) {
+          hexInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              if (applyBtn && !applyBtn.disabled) finishPicker(false);
+            } else if (e.key === 'Escape') {
+              e.preventDefault();
+              popover.style.display = 'none';
+              if (customColorPickerState.surface) customColorPickerState.surface.focus();
+            }
+          });
+        }
+      }
+
+      function resolveSmartRange(surface, formatType) {
+        var sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return null;
+        var range = sel.getRangeAt(0);
+        if (!surface.contains(range.commonAncestorContainer)) return null;
+
+        // 1. Manual non-collapsed selection
+        if (!range.collapsed && range.toString().length > 0) {
+          return range;
+        }
+
+        // 2. Collapsed caret inside existing formatting run of this type
+        var node = range.commonAncestorContainer;
+        var elem = (node.nodeType === 3) ? node.parentNode : node;
+        if (elem && surface.contains(elem)) {
+          if (formatType === 'bold') {
+            var bEl = elem.closest('b, strong');
+            if (bEl && surface.contains(bEl)) {
+              var r = document.createRange();
+              r.selectNode(bEl);
+              sel.removeAllRanges();
+              sel.addRange(r);
+              return r;
+            }
+          } else if (formatType === 'italic') {
+            var iEl = elem.closest('i, em');
+            if (iEl && surface.contains(iEl)) {
+              var r = document.createRange();
+              r.selectNode(iEl);
+              sel.removeAllRanges();
+              sel.addRange(r);
+              return r;
+            }
+          } else if (formatType === 'underline') {
+            var uEl = elem.closest('u');
+            if (uEl && surface.contains(uEl)) {
+              var r = document.createRange();
+              r.selectNode(uEl);
+              sel.removeAllRanges();
+              sel.addRange(r);
+              return r;
+            }
+          } else if (formatType === 'color') {
+            var colEl = elem.closest('.article-text-gold, .article-text-purple, .article-text-muted, .article-text-custom-color');
+            if (colEl && surface.contains(colEl)) {
+              var r = document.createRange();
+              r.selectNode(colEl);
+              sel.removeAllRanges();
+              sel.addRange(r);
+              return r;
+            }
+          } else if (formatType === 'highlight' || formatType === 'bg') {
+            var bgEl = elem.closest('.article-text-bg-neutral, .article-text-bg-purple, .article-text-bg-gold, .article-text-bg-green, .article-text-bg-red, .article-text-custom-bg');
+            if (bgEl && surface.contains(bgEl)) {
+              var r = document.createRange();
+              r.selectNode(bgEl);
+              sel.removeAllRanges();
+              sel.addRange(r);
+              return r;
+            }
+          } else if (formatType === 'link') {
+            var aEl = elem.closest('a');
+            if (aEl && surface.contains(aEl)) {
+              var r = document.createRange();
+              r.selectNode(aEl);
+              sel.removeAllRanges();
+              sel.addRange(r);
+              return r;
+            }
+          }
+        }
+
+        // 3. Target word under caret
+        if (node.nodeType === 3) {
+          var text = node.textContent || '';
+          if (!text.length) return null;
+          var offset = range.startOffset;
+
+          var charBefore = offset > 0 ? text[offset - 1] : '';
+          var charAfter = offset < text.length ? text[offset] : '';
+          var isSpaceBefore = !charBefore || /\s/.test(charBefore);
+          var isSpaceAfter = !charAfter || /\s/.test(charAfter);
+
+          if (isSpaceBefore && isSpaceAfter) {
+            return null;
+          }
+
+          function isWordChar(ch) {
+            if (!ch) return false;
+            return /[^\s.,;:!?"'()\[\]{}«»""]/.test(ch);
+          }
+
+          var start = offset;
+          if (start > 0 && !isWordChar(text[start]) && isWordChar(text[start - 1])) {
+            start = start - 1;
+          }
+          while (start > 0 && isWordChar(text[start - 1])) {
+            start--;
+          }
+
+          var end = offset;
+          while (end < text.length && isWordChar(text[end])) {
+            end++;
+          }
+
+          while (end < text.length - 1 && (text[end] === "'" || text[end] === '-') && isWordChar(text[end + 1])) {
+            end += 2;
+            while (end < text.length && isWordChar(text[end])) {
+              end++;
+            }
+          }
+
+          if (start < end) {
+            var wordRange = document.createRange();
+            wordRange.setStart(node, start);
+            wordRange.setEnd(node, end);
+            sel.removeAllRanges();
+            sel.addRange(wordRange);
+            return wordRange;
+          }
+        }
+
+        return null;
+      }
+
+      function handleCovenCopy(e, isCut, surface, getCurrentData, setCurrentData, updateToolbarActiveStates) {
         var sel = window.getSelection();
         if (!sel || !sel.rangeCount) return;
         var range = sel.getRangeAt(0);
         if (!surface.contains(range.commonAncestorContainer)) return;
-        if (range.collapsed) return;
 
-        var oldSpans = surface.querySelectorAll('.article-text-gold, .article-text-purple, .article-text-muted');
+        var container = document.createElement('div');
+        container.appendChild(range.cloneContents());
+        var sanitized = sanitizeRichText(container.innerHTML);
+        var plainText = range.toString();
+
+        if (e.clipboardData) {
+          e.preventDefault();
+          e.clipboardData.setData('text/plain', plainText);
+          e.clipboardData.setData('application/x-coven-rich-text', sanitized);
+          e.clipboardData.setData('text/html', '<!-- coven-rich-text -->' + sanitized);
+          if (isCut) {
+            document.execCommand('delete');
+            var cur = getCurrentData();
+            cur.text = sanitizeRichText(surface.innerHTML);
+            setCurrentData(cur);
+            if (updateToolbarActiveStates) updateToolbarActiveStates();
+          }
+        }
+      }
+
+      function handleCovenPaste(e, surface, getCurrentData, setCurrentData, updateToolbarActiveStates) {
+        e.preventDefault();
+        var clip = e.clipboardData || window.clipboardData;
+        if (!clip) return;
+
+        var covenHtml = clip.getData('application/x-coven-rich-text');
+        if (!covenHtml) {
+          var rawHtml = clip.getData('text/html') || '';
+          if (rawHtml.indexOf('<!-- coven-rich-text -->') !== -1) {
+            covenHtml = rawHtml.replace('<!-- coven-rich-text -->', '');
+          }
+        }
+
+        if (covenHtml) {
+          var safeHtml = sanitizeRichText(covenHtml);
+          document.execCommand('insertHTML', false, safeHtml);
+        } else {
+          var text = clip.getData('text/plain') || '';
+          document.execCommand('insertText', false, text);
+        }
+
+        var cur = getCurrentData();
+        cur.text = sanitizeRichText(surface.innerHTML);
+        setCurrentData(cur);
+        if (updateToolbarActiveStates) updateToolbarActiveStates();
+      }
+
+      function applyColorClass(surface, colorClass) {
+        var sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
+        var range = resolveSmartRange(surface, 'color');
+        if (!range) return;
+
+        var ALL_COLOR_CLASSES = ['article-text-gold', 'article-text-purple', 'article-text-muted', 'article-text-custom-color'];
+        var oldSpans = surface.querySelectorAll('.article-text-gold, .article-text-purple, .article-text-muted, .article-text-custom-color');
         for (var j = 0; j < oldSpans.length; j++) {
           var osp = oldSpans[j];
           if (range.intersectsNode ? range.intersectsNode(osp) : true) {
-            var tn = document.createTextNode(osp.textContent);
-            osp.parentNode.replaceChild(tn, osp);
+            ALL_COLOR_CLASSES.forEach(function(c) { osp.classList.remove(c); });
+            osp.style.removeProperty('--coven-custom-text-color');
+            if (osp.classList.length === 0 && !osp.id && !osp.getAttribute('style')) {
+              while (osp.firstChild) osp.parentNode.insertBefore(osp.firstChild, osp);
+              osp.parentNode.removeChild(osp);
+            }
           }
         }
 
         if (colorClass !== 'default') {
-          try {
-            var span = document.createElement('span');
+          var isCustom = colorClass.startsWith('#');
+          var normHex = isCustom ? normalizeHex(colorClass) : null;
+          var span = document.createElement('span');
+          if (isCustom && normHex) {
+            span.className = 'article-text-custom-color';
+            span.style.setProperty('--coven-custom-text-color', normHex);
+          } else {
             span.className = colorClass;
+          }
+
+          try {
             range.surroundContents(span);
             var newRange = document.createRange();
             newRange.selectNodeContents(span);
@@ -554,12 +1162,67 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             sel.addRange(newRange);
           } catch (err) {
             var fragment = range.extractContents();
-            var spanNode = document.createElement('span');
-            spanNode.className = colorClass;
-            spanNode.appendChild(fragment);
-            range.insertNode(spanNode);
+            span.appendChild(fragment);
+            range.insertNode(span);
             var reselRange = document.createRange();
-            reselRange.selectNodeContents(spanNode);
+            reselRange.selectNodeContents(span);
+            sel.removeAllRanges();
+            sel.addRange(reselRange);
+          }
+        }
+      }
+
+      function applyBgClass(surface, bgClass) {
+        var sel = window.getSelection();
+        if (!sel || !sel.rangeCount) return;
+        var range = resolveSmartRange(surface, 'highlight');
+        if (!range) return;
+
+        var ALL_BG_CLASSES = [
+          'article-text-bg-neutral',
+          'article-text-bg-purple',
+          'article-text-bg-gold',
+          'article-text-bg-green',
+          'article-text-bg-red',
+          'article-text-custom-bg'
+        ];
+
+        var oldBgSpans = surface.querySelectorAll('.article-text-bg-neutral, .article-text-bg-purple, .article-text-bg-gold, .article-text-bg-green, .article-text-bg-red, .article-text-custom-bg');
+        for (var j = 0; j < oldBgSpans.length; j++) {
+          var bsp = oldBgSpans[j];
+          if (range.intersectsNode ? range.intersectsNode(bsp) : true) {
+            ALL_BG_CLASSES.forEach(function(c) { bsp.classList.remove(c); });
+            bsp.style.removeProperty('--coven-custom-bg');
+            if (bsp.classList.length === 0 && !bsp.id && !bsp.getAttribute('style')) {
+              while (bsp.firstChild) bsp.parentNode.insertBefore(bsp.firstChild, bsp);
+              bsp.parentNode.removeChild(bsp);
+            }
+          }
+        }
+
+        if (bgClass !== 'default') {
+          var isCustom = bgClass.startsWith('#');
+          var normHex = isCustom ? normalizeHex(bgClass) : null;
+          var span = document.createElement('span');
+          if (isCustom && normHex) {
+            span.className = 'article-text-custom-bg';
+            span.style.setProperty('--coven-custom-bg', normHex);
+          } else {
+            span.className = bgClass;
+          }
+
+          try {
+            range.surroundContents(span);
+            var newRange = document.createRange();
+            newRange.selectNodeContents(span);
+            sel.removeAllRanges();
+            sel.addRange(newRange);
+          } catch (err) {
+            var fragment = range.extractContents();
+            span.appendChild(fragment);
+            range.insertNode(span);
+            var reselRange = document.createRange();
+            reselRange.selectNodeContents(span);
             sel.removeAllRanges();
             sel.addRange(reselRange);
           }
@@ -589,6 +1252,34 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   '<button type="button" class="rich-color-item" data-color="article-text-gold"><span class="rich-color-swatch swatch-gold"></span>Coven Gold</button>' +
                   '<button type="button" class="rich-color-item" data-color="article-text-purple"><span class="rich-color-swatch swatch-purple"></span>Coven Purple</button>' +
                   '<button type="button" class="rich-color-item" data-color="article-text-muted"><span class="rich-color-swatch swatch-muted"></span>Muted Parchment</button>' +
+                  '<div class="rich-palette-saved-section">' +
+                    '<div class="rich-palette-saved-label">SAVED COLORS</div>' +
+                    '<div class="rich-saved-swatches-grid" data-swatch-target="color"></div>' +
+                    '<button type="button" class="rich-btn-custom-color" data-custom-type="color">+ Custom Color</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="rich-highlight-dropdown-wrap">' +
+                '<button type="button" class="rich-btn rich-btn-highlight" data-cmd="toggle-highlight" title="Text Highlight / Background" aria-label="Text Highlight">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">' +
+                    '<path d="m9 11-6 6v3h3l6-6"></path>' +
+                    '<path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>' +
+                  '</svg>' +
+                  '<span class="rich-color-caret">▾</span>' +
+                '</button>' +
+                '<div class="rich-highlight-menu" style="display:none">' +
+                  '<div class="rich-highlight-menu-title">TEXT HIGHLIGHT</div>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="default"><span class="rich-highlight-swatch swatch-bg-none"></span>None</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-neutral"><span class="rich-highlight-swatch swatch-bg-neutral"></span>Obsidian / Neutral</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-purple"><span class="rich-highlight-swatch swatch-bg-purple"></span>Coven Purple</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-gold"><span class="rich-highlight-swatch swatch-bg-gold"></span>Coven Gold</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-green"><span class="rich-highlight-swatch swatch-bg-green"></span>Craft Green</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-red"><span class="rich-highlight-swatch swatch-bg-red"></span>Ward Red</button>' +
+                  '<div class="rich-palette-saved-section">' +
+                    '<div class="rich-palette-saved-label">SAVED COLORS</div>' +
+                    '<div class="rich-saved-swatches-grid" data-swatch-target="highlight"></div>' +
+                    '<button type="button" class="rich-btn-custom-color" data-custom-type="highlight">+ Custom Color</button>' +
+                  '</div>' +
                 '</div>' +
               '</div>' +
               '<div class="rich-link-dropdown-wrap">' +
@@ -639,6 +1330,8 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           var surface = wrap.querySelector('.rich-text-surface');
           var colorMenu = wrap.querySelector('.rich-color-menu');
           var colorTrigger = wrap.querySelector('.rich-btn-color');
+          var highlightMenu = wrap.querySelector('.rich-highlight-menu');
+          var highlightTrigger = wrap.querySelector('.rich-btn-highlight');
           var linkBtn = wrap.querySelector('.rich-btn-link');
           var linkPopover = wrap.querySelector('.rich-link-popover');
           var urlInput = linkPopover ? linkPopover.querySelector('.rich-link-popover__input') : null;
@@ -657,6 +1350,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           if (!toolbar || !surface) return;
 
           var directField = surface.getAttribute('data-rich-field');
+          var isCalloutHeading = surface.getAttribute('data-rich-callout-heading') === 'true';
           var arrayField = surface.getAttribute('data-rich-array');
           var arrayIdx = arrayField ? parseInt(surface.getAttribute('data-rich-idx'), 10) : -1;
           var arrayObjField = surface.getAttribute('data-rich-array-obj');
@@ -670,6 +1364,18 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           var trialAnsId = surface.getAttribute('data-rich-trial-ans-id');
 
           function getCurrentData() {
+            if (isCalloutHeading) {
+              var calloutDefaults = {
+                note: 'Grimoire Note',
+                info: 'Incantation Note',
+                tip: 'Craft Mastery Tip',
+                warning: 'Ward of Caution'
+              };
+              if (d.titleMode === 'custom' && d.title !== undefined) {
+                return getRichData(d.title);
+              }
+              return { text: calloutDefaults[d.calloutType || 'note'] || 'Grimoire Note', align: 'left' };
+            }
             if (directField) {
               return getRichData(d[directField]);
             }
@@ -704,7 +1410,27 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           }
 
           function setCurrentData(richObj) {
-            if (directField) {
+            if (isCalloutHeading) {
+              d.title = richObj;
+              d.titleMode = 'custom';
+              d.showTitle = true;
+              var headingBox = bBody.querySelector('.callout-heading-control-wrap');
+              if (headingBox) {
+                var headingHeader = headingBox.firstElementChild;
+                var existingBtn = headingBox.querySelector('[data-act="callout-use-default"]');
+                if (!existingBtn && headingHeader) {
+                  var btn = document.createElement('button');
+                  btn.type = 'button';
+                  btn.className = 'callout-btn-use-default';
+                  btn.setAttribute('data-act', 'callout-use-default');
+                  btn.title = 'Reset heading to default variant label';
+                  btn.textContent = 'Use Default';
+                  headingHeader.appendChild(btn);
+                }
+                var defSpan = headingBox.querySelector('.callout-default-badge');
+                if (defSpan) defSpan.remove();
+              }
+            } else if (directField) {
               d[directField] = richObj;
             } else if (arrayField && Array.isArray(d[arrayField])) {
               d[arrayField][arrayIdx] = richObj;
@@ -771,6 +1497,55 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               btn.classList.toggle('is-active', btn.getAttribute('data-align') === cur.align);
             });
 
+            // Active Highlight & Color states at selection / caret
+            var activeBgClass = 'default';
+            var activeColorClass = 'default';
+            var currentSel = window.getSelection();
+            if (currentSel && currentSel.rangeCount) {
+              var cRange = currentSel.getRangeAt(0);
+              if (surface.contains(cRange.commonAncestorContainer)) {
+                var cNode = cRange.commonAncestorContainer;
+                if (cNode.nodeType === 3) cNode = cNode.parentNode;
+                var bSpan = cNode ? cNode.closest('.article-text-bg-neutral, .article-text-bg-purple, .article-text-bg-gold, .article-text-bg-green, .article-text-bg-red') : null;
+                if (bSpan && surface.contains(bSpan)) {
+                  var ALL_BGS = ['article-text-bg-neutral', 'article-text-bg-purple', 'article-text-bg-gold', 'article-text-bg-green', 'article-text-bg-red'];
+                  for (var bi = 0; bi < ALL_BGS.length; bi++) {
+                    if (bSpan.classList.contains(ALL_BGS[bi])) {
+                      activeBgClass = ALL_BGS[bi];
+                      break;
+                    }
+                  }
+                }
+                var colSpan = cNode ? cNode.closest('.article-text-gold, .article-text-purple, .article-text-muted') : null;
+                if (colSpan && surface.contains(colSpan)) {
+                  var ALL_COLS = ['article-text-gold', 'article-text-purple', 'article-text-muted'];
+                  for (var ci = 0; ci < ALL_COLS.length; ci++) {
+                    if (colSpan.classList.contains(ALL_COLS[ci])) {
+                      activeColorClass = ALL_COLS[ci];
+                      break;
+                    }
+                  }
+                }
+              }
+            }
+
+            if (highlightTrigger) {
+              highlightTrigger.classList.toggle('is-active', activeBgClass !== 'default');
+            }
+            if (highlightMenu) {
+              highlightMenu.querySelectorAll('.rich-highlight-item').forEach(function(item) {
+                item.classList.toggle('is-active', item.getAttribute('data-bg') === activeBgClass);
+              });
+            }
+            if (colorTrigger) {
+              colorTrigger.classList.toggle('is-active', activeColorClass !== 'default');
+            }
+            if (colorMenu) {
+              colorMenu.querySelectorAll('.rich-color-item').forEach(function(item) {
+                item.classList.toggle('is-active', item.getAttribute('data-color') === activeColorClass);
+              });
+            }
+
             var selInfo = getSelectionInfo();
             if (linkBtn) {
               if (selInfo.anchor) {
@@ -813,21 +1588,28 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               e.preventDefault();
               var cmd = btn.getAttribute('data-cmd');
               surface.focus();
-              document.execCommand(cmd, false, null);
-              updateToolbarActiveStates();
-              var cur = getCurrentData();
-              cur.text = sanitizeRichText(surface.innerHTML);
-              setCurrentData(cur);
+              var range = resolveSmartRange(surface, cmd);
+              if (range) {
+                document.execCommand(cmd, false, null);
+                updateToolbarActiveStates();
+                var cur = getCurrentData();
+                cur.text = sanitizeRichText(surface.innerHTML);
+                setCurrentData(cur);
+              }
             });
           });
 
           if (colorTrigger && colorMenu) {
             colorTrigger.addEventListener('click', function(e) {
               e.preventDefault();
-              var isOpen = colorMenu.style.display === 'block';
-              document.querySelectorAll('.rich-color-menu').forEach(function(m) { m.style.display = 'none'; });
-              document.querySelectorAll('.rich-link-popover').forEach(function(p) { p.style.display = 'none'; });
-              colorMenu.style.display = isOpen ? 'none' : 'block';
+              var isOpen = colorMenu.style.display === 'flex';
+              closeAllPopovers(colorMenu);
+              if (isOpen) {
+                colorMenu.style.display = 'none';
+              } else {
+                updateAllSavedSwatchesUI();
+                openAnchoredPopover(colorMenu, colorTrigger);
+              }
             });
 
             colorMenu.querySelectorAll('.rich-color-item').forEach(function(item) {
@@ -842,6 +1624,132 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                 cur.text = sanitizeRichText(surface.innerHTML);
                 setCurrentData(cur);
               });
+            });
+
+            colorMenu.addEventListener('click', function(e) {
+              var delBtn = e.target.closest('.saved-swatch-del');
+              if (delBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                var hex = delBtn.getAttribute('data-del-hex');
+                if (hex) {
+                  removeColorFromPalette(hex);
+                  updateAllSavedSwatchesUI();
+                }
+                return;
+              }
+              var chip = e.target.closest('.saved-swatch-chip');
+              if (chip) {
+                e.preventDefault();
+                var hex = chip.getAttribute('data-hex');
+                if (hex) {
+                  surface.focus();
+                  applyColorClass(surface, hex);
+                  colorMenu.style.display = 'none';
+                  updateToolbarActiveStates();
+                  var cur = getCurrentData();
+                  cur.text = sanitizeRichText(surface.innerHTML);
+                  setCurrentData(cur);
+                }
+                return;
+              }
+              var customBtn = e.target.closest('.rich-btn-custom-color');
+              if (customBtn) {
+                e.preventDefault();
+                colorMenu.style.display = 'none';
+                openCustomColorPicker(colorTrigger, '#C45AFF', function(chosenHex) {
+                  surface.focus();
+                  applyColorClass(surface, chosenHex);
+                  updateToolbarActiveStates();
+                  var cur = getCurrentData();
+                  cur.text = sanitizeRichText(surface.innerHTML);
+                  setCurrentData(cur);
+                }, function(savedHex) {
+                  surface.focus();
+                  applyColorClass(surface, savedHex);
+                  updateToolbarActiveStates();
+                  var cur = getCurrentData();
+                  cur.text = sanitizeRichText(surface.innerHTML);
+                  setCurrentData(cur);
+                }, surface, 'color');
+              }
+            });
+          }
+
+          if (highlightTrigger && highlightMenu) {
+            highlightTrigger.addEventListener('click', function(e) {
+              e.preventDefault();
+              var isOpen = highlightMenu.style.display === 'flex';
+              closeAllPopovers(highlightMenu);
+              if (isOpen) {
+                highlightMenu.style.display = 'none';
+              } else {
+                updateAllSavedSwatchesUI();
+                openAnchoredPopover(highlightMenu, highlightTrigger);
+              }
+            });
+
+            highlightMenu.querySelectorAll('.rich-highlight-item').forEach(function(item) {
+              item.addEventListener('click', function(e) {
+                e.preventDefault();
+                var bgClass = item.getAttribute('data-bg');
+                surface.focus();
+                applyBgClass(surface, bgClass);
+                highlightMenu.style.display = 'none';
+                updateToolbarActiveStates();
+                var cur = getCurrentData();
+                cur.text = sanitizeRichText(surface.innerHTML);
+                setCurrentData(cur);
+              });
+            });
+
+            highlightMenu.addEventListener('click', function(e) {
+              var delBtn = e.target.closest('.saved-swatch-del');
+              if (delBtn) {
+                e.preventDefault();
+                e.stopPropagation();
+                var hex = delBtn.getAttribute('data-del-hex');
+                if (hex) {
+                  removeColorFromPalette(hex);
+                  updateAllSavedSwatchesUI();
+                }
+                return;
+              }
+              var chip = e.target.closest('.saved-swatch-chip');
+              if (chip) {
+                e.preventDefault();
+                var hex = chip.getAttribute('data-hex');
+                if (hex) {
+                  surface.focus();
+                  applyBgClass(surface, hex);
+                  highlightMenu.style.display = 'none';
+                  updateToolbarActiveStates();
+                  var cur = getCurrentData();
+                  cur.text = sanitizeRichText(surface.innerHTML);
+                  setCurrentData(cur);
+                }
+                return;
+              }
+              var customBtn = e.target.closest('.rich-btn-custom-color');
+              if (customBtn) {
+                e.preventDefault();
+                highlightMenu.style.display = 'none';
+                openCustomColorPicker(highlightTrigger, '#344A3D', function(chosenHex) {
+                  surface.focus();
+                  applyBgClass(surface, chosenHex);
+                  updateToolbarActiveStates();
+                  var cur = getCurrentData();
+                  cur.text = sanitizeRichText(surface.innerHTML);
+                  setCurrentData(cur);
+                }, function(savedHex) {
+                  surface.focus();
+                  applyBgClass(surface, savedHex);
+                  updateToolbarActiveStates();
+                  var cur = getCurrentData();
+                  cur.text = sanitizeRichText(surface.innerHTML);
+                  setCurrentData(cur);
+                }, surface, 'highlight');
+              }
             });
           }
 
@@ -1108,23 +2016,28 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               if (k === 'b' || k === 'i' || k === 'u') {
                 var cmd = k === 'b' ? 'bold' : (k === 'i' ? 'italic' : 'underline');
                 e.preventDefault();
-                document.execCommand(cmd, false, null);
-                updateToolbarActiveStates();
-                var cur = getCurrentData();
-                cur.text = sanitizeRichText(surface.innerHTML);
-                setCurrentData(cur);
+                var range = resolveSmartRange(surface, cmd);
+                if (range) {
+                  document.execCommand(cmd, false, null);
+                  updateToolbarActiveStates();
+                  var cur = getCurrentData();
+                  cur.text = sanitizeRichText(surface.innerHTML);
+                  setCurrentData(cur);
+                }
               }
             }
           });
 
+          surface.addEventListener('copy', function(e) {
+            handleCovenCopy(e, false, surface, getCurrentData, setCurrentData, updateToolbarActiveStates);
+          });
+
+          surface.addEventListener('cut', function(e) {
+            handleCovenCopy(e, true, surface, getCurrentData, setCurrentData, updateToolbarActiveStates);
+          });
+
           surface.addEventListener('paste', function(e) {
-            e.preventDefault();
-            var text = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
-            document.execCommand('insertText', false, text);
-            var cur = getCurrentData();
-            cur.text = sanitizeRichText(surface.innerHTML);
-            setCurrentData(cur);
-            updateToolbarActiveStates();
+            handleCovenPaste(e, surface, getCurrentData, setCurrentData, updateToolbarActiveStates);
           });
 
           surface.addEventListener('focus', function() {
@@ -1134,7 +2047,6 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
           surface.addEventListener('blur', function() {
             wrap.classList.remove('is-focused');
-            if (colorMenu) colorMenu.style.display = 'none';
             var cur = getCurrentData();
             cur.text = sanitizeRichText(surface.innerHTML);
             setCurrentData(cur);
@@ -1157,6 +2069,34 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   '<button type="button" class="rich-color-item" data-color="article-text-gold"><span class="rich-color-swatch swatch-gold"></span>Coven Gold</button>' +
                   '<button type="button" class="rich-color-item" data-color="article-text-purple"><span class="rich-color-swatch swatch-purple"></span>Coven Purple</button>' +
                   '<button type="button" class="rich-color-item" data-color="article-text-muted"><span class="rich-color-swatch swatch-muted"></span>Muted Parchment</button>' +
+                  '<div class="rich-palette-saved-section">' +
+                    '<div class="rich-palette-saved-label">SAVED COLORS</div>' +
+                    '<div class="rich-saved-swatches-grid" data-swatch-target="color"></div>' +
+                    '<button type="button" class="rich-btn-custom-color" data-custom-type="color">+ Custom Color</button>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="rich-highlight-dropdown-wrap">' +
+                '<button type="button" class="rich-btn rich-btn-highlight" data-cmd="toggle-highlight" title="Text Highlight / Background" aria-label="Text Highlight">' +
+                  '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:block">' +
+                    '<path d="m9 11-6 6v3h3l6-6"></path>' +
+                    '<path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"></path>' +
+                  '</svg>' +
+                  '<span class="rich-color-caret">▾</span>' +
+                '</button>' +
+                '<div class="rich-highlight-menu" style="display:none">' +
+                  '<div class="rich-highlight-menu-title">TEXT HIGHLIGHT</div>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="default"><span class="rich-highlight-swatch swatch-bg-none"></span>None</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-neutral"><span class="rich-highlight-swatch swatch-bg-neutral"></span>Obsidian / Neutral</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-purple"><span class="rich-highlight-swatch swatch-bg-purple"></span>Coven Purple</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-gold"><span class="rich-highlight-swatch swatch-bg-gold"></span>Coven Gold</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-green"><span class="rich-highlight-swatch swatch-bg-green"></span>Craft Green</button>' +
+                  '<button type="button" class="rich-highlight-item" data-bg="article-text-bg-red"><span class="rich-highlight-swatch swatch-bg-red"></span>Ward Red</button>' +
+                  '<div class="rich-palette-saved-section">' +
+                    '<div class="rich-palette-saved-label">SAVED COLORS</div>' +
+                    '<div class="rich-saved-swatches-grid" data-swatch-target="highlight"></div>' +
+                    '<button type="button" class="rich-btn-custom-color" data-custom-type="highlight">+ Custom Color</button>' +
+                  '</div>' +
                 '</div>' +
               '</div>' +
               '<div class="rich-link-dropdown-wrap">' +
@@ -1208,6 +2148,8 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         var indicator = tableBar.querySelector('.table-active-cell-indicator');
         var colorMenu = tableBar.querySelector('.rich-color-menu');
         var colorTrigger = tableBar.querySelector('.rich-btn-color');
+        var highlightMenu = tableBar.querySelector('.rich-highlight-menu');
+        var highlightTrigger = tableBar.querySelector('.rich-btn-highlight');
         var linkBtn = tableBar.querySelector('.rich-btn-link');
         var linkPopover = tableBar.querySelector('.rich-link-popover');
         var urlInput = linkPopover ? linkPopover.querySelector('.rich-link-popover__input') : null;
@@ -1292,6 +2234,55 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             btn.classList.toggle('is-active', btn.getAttribute('data-align') === cur.align);
           });
 
+          // Active Highlight & Color states in table toolbar
+          var activeBgClass = 'default';
+          var activeColorClass = 'default';
+          var currentTableSel = window.getSelection();
+          if (currentTableSel && currentTableSel.rangeCount) {
+            var tRange = currentTableSel.getRangeAt(0);
+            if (activeSurface.contains(tRange.commonAncestorContainer)) {
+              var tNode = tRange.commonAncestorContainer;
+              if (tNode.nodeType === 3) tNode = tNode.parentNode;
+              var bSpan = tNode ? tNode.closest('.article-text-bg-neutral, .article-text-bg-purple, .article-text-bg-gold, .article-text-bg-green, .article-text-bg-red') : null;
+              if (bSpan && activeSurface.contains(bSpan)) {
+                var ALL_BGS = ['article-text-bg-neutral', 'article-text-bg-purple', 'article-text-bg-gold', 'article-text-bg-green', 'article-text-bg-red'];
+                for (var bi = 0; bi < ALL_BGS.length; bi++) {
+                  if (bSpan.classList.contains(ALL_BGS[bi])) {
+                    activeBgClass = ALL_BGS[bi];
+                    break;
+                  }
+                }
+              }
+              var colSpan = tNode ? tNode.closest('.article-text-gold, .article-text-purple, .article-text-muted') : null;
+              if (colSpan && activeSurface.contains(colSpan)) {
+                var ALL_COLS = ['article-text-gold', 'article-text-purple', 'article-text-muted'];
+                for (var ci = 0; ci < ALL_COLS.length; ci++) {
+                  if (colSpan.classList.contains(ALL_COLS[ci])) {
+                    activeColorClass = ALL_COLS[ci];
+                    break;
+                  }
+                }
+              }
+            }
+          }
+
+          if (highlightTrigger) {
+            highlightTrigger.classList.toggle('is-active', activeBgClass !== 'default');
+          }
+          if (highlightMenu) {
+            highlightMenu.querySelectorAll('.rich-highlight-item').forEach(function(item) {
+              item.classList.toggle('is-active', item.getAttribute('data-bg') === activeBgClass);
+            });
+          }
+          if (colorTrigger) {
+            colorTrigger.classList.toggle('is-active', activeColorClass !== 'default');
+          }
+          if (colorMenu) {
+            colorMenu.querySelectorAll('.rich-color-item').forEach(function(item) {
+              item.classList.toggle('is-active', item.getAttribute('data-color') === activeColorClass);
+            });
+          }
+
           var sel = window.getSelection();
           var anchor = null;
           var hasText = false;
@@ -1347,11 +2338,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             if (!activeSurface) return;
             var cmd = btn.getAttribute('data-cmd');
             activeSurface.focus();
-            document.execCommand(cmd, false, null);
-            updateToolbarActiveStates();
-            var cur = getActiveData();
-            cur.text = sanitizeRichText(activeSurface.innerHTML);
-            setActiveData(cur);
+            var range = resolveSmartRange(activeSurface, cmd);
+            if (range) {
+              document.execCommand(cmd, false, null);
+              updateToolbarActiveStates();
+              var cur = getActiveData();
+              cur.text = sanitizeRichText(activeSurface.innerHTML);
+              setActiveData(cur);
+            }
           });
         });
 
@@ -1359,10 +2353,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           colorTrigger.addEventListener('click', function(e) {
             e.preventDefault();
             if (!activeSurface) return;
-            var isOpen = colorMenu.style.display === 'block';
-            document.querySelectorAll('.rich-color-menu').forEach(function(m) { m.style.display = 'none'; });
-            document.querySelectorAll('.rich-link-popover').forEach(function(p) { p.style.display = 'none'; });
-            colorMenu.style.display = isOpen ? 'none' : 'block';
+            var isOpen = colorMenu.style.display === 'flex';
+            closeAllPopovers(colorMenu);
+            if (isOpen) {
+              colorMenu.style.display = 'none';
+            } else {
+              updateAllSavedSwatchesUI();
+              openAnchoredPopover(colorMenu, colorTrigger);
+            }
           });
 
           colorMenu.querySelectorAll('.rich-color-item').forEach(function(item) {
@@ -1378,6 +2376,140 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               cur.text = sanitizeRichText(activeSurface.innerHTML);
               setActiveData(cur);
             });
+          });
+
+          colorMenu.addEventListener('click', function(e) {
+            if (!activeSurface) return;
+            var delBtn = e.target.closest('.saved-swatch-del');
+            if (delBtn) {
+              e.preventDefault();
+              e.stopPropagation();
+              var hex = delBtn.getAttribute('data-del-hex');
+              if (hex) {
+                removeColorFromPalette(hex);
+                updateAllSavedSwatchesUI();
+              }
+              return;
+            }
+            var chip = e.target.closest('.saved-swatch-chip');
+            if (chip) {
+              e.preventDefault();
+              var hex = chip.getAttribute('data-hex');
+              if (hex) {
+                activeSurface.focus();
+                applyColorClass(activeSurface, hex);
+                colorMenu.style.display = 'none';
+                updateToolbarActiveStates();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(activeSurface.innerHTML);
+                setActiveData(cur);
+              }
+              return;
+            }
+            var customBtn = e.target.closest('.rich-btn-custom-color');
+            if (customBtn) {
+              e.preventDefault();
+              colorMenu.style.display = 'none';
+              openCustomColorPicker(colorTrigger, '#C45AFF', function(chosenHex) {
+                if (!activeSurface) return;
+                activeSurface.focus();
+                applyColorClass(activeSurface, chosenHex);
+                updateToolbarActiveStates();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(activeSurface.innerHTML);
+                setActiveData(cur);
+              }, function(savedHex) {
+                if (!activeSurface) return;
+                activeSurface.focus();
+                applyColorClass(activeSurface, savedHex);
+                updateToolbarActiveStates();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(activeSurface.innerHTML);
+                setActiveData(cur);
+              }, activeSurface, 'color');
+            }
+          });
+        }
+
+        if (highlightTrigger && highlightMenu) {
+          highlightTrigger.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (!activeSurface) return;
+            var isOpen = highlightMenu.style.display === 'flex';
+            closeAllPopovers(highlightMenu);
+            if (isOpen) {
+              highlightMenu.style.display = 'none';
+            } else {
+              updateAllSavedSwatchesUI();
+              openAnchoredPopover(highlightMenu, highlightTrigger);
+            }
+          });
+
+          highlightMenu.querySelectorAll('.rich-highlight-item').forEach(function(item) {
+            item.addEventListener('click', function(e) {
+              e.preventDefault();
+              if (!activeSurface) return;
+              var bgClass = item.getAttribute('data-bg');
+              activeSurface.focus();
+              applyBgClass(activeSurface, bgClass);
+              highlightMenu.style.display = 'none';
+              updateToolbarActiveStates();
+              var cur = getActiveData();
+              cur.text = sanitizeRichText(activeSurface.innerHTML);
+              setActiveData(cur);
+            });
+          });
+
+          highlightMenu.addEventListener('click', function(e) {
+            if (!activeSurface) return;
+            var delBtn = e.target.closest('.saved-swatch-del');
+            if (delBtn) {
+              e.preventDefault();
+              e.stopPropagation();
+              var hex = delBtn.getAttribute('data-del-hex');
+              if (hex) {
+                removeColorFromPalette(hex);
+                updateAllSavedSwatchesUI();
+              }
+              return;
+            }
+            var chip = e.target.closest('.saved-swatch-chip');
+            if (chip) {
+              e.preventDefault();
+              var hex = chip.getAttribute('data-hex');
+              if (hex) {
+                activeSurface.focus();
+                applyBgClass(activeSurface, hex);
+                highlightMenu.style.display = 'none';
+                updateToolbarActiveStates();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(activeSurface.innerHTML);
+                setActiveData(cur);
+              }
+              return;
+            }
+            var customBtn = e.target.closest('.rich-btn-custom-color');
+            if (customBtn) {
+              e.preventDefault();
+              highlightMenu.style.display = 'none';
+              openCustomColorPicker(highlightTrigger, '#344A3D', function(chosenHex) {
+                if (!activeSurface) return;
+                activeSurface.focus();
+                applyBgClass(activeSurface, chosenHex);
+                updateToolbarActiveStates();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(activeSurface.innerHTML);
+                setActiveData(cur);
+              }, function(savedHex) {
+                if (!activeSurface) return;
+                activeSurface.focus();
+                applyBgClass(activeSurface, savedHex);
+                updateToolbarActiveStates();
+                var cur = getActiveData();
+                cur.text = sanitizeRichText(activeSurface.innerHTML);
+                setActiveData(cur);
+              }, activeSurface, 'highlight');
+            }
           });
         }
 
@@ -1655,24 +2787,28 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               if (k === 'b' || k === 'i' || k === 'u') {
                 var cmd = k === 'b' ? 'bold' : (k === 'i' ? 'italic' : 'underline');
                 e.preventDefault();
-                document.execCommand(cmd, false, null);
-                updateToolbarActiveStates();
-                var cur = getActiveData();
-                cur.text = sanitizeRichText(cell.innerHTML);
-                setActiveData(cur);
+                var range = resolveSmartRange(cell, cmd);
+                if (range) {
+                  document.execCommand(cmd, false, null);
+                  updateToolbarActiveStates();
+                  var cur = getActiveData();
+                  cur.text = sanitizeRichText(cell.innerHTML);
+                  setActiveData(cur);
+                }
               }
             }
           });
 
+          cell.addEventListener('copy', function(e) {
+            handleCovenCopy(e, false, cell, getActiveData, setActiveData, updateToolbarActiveStates);
+          });
+
+          cell.addEventListener('cut', function(e) {
+            handleCovenCopy(e, true, cell, getActiveData, setActiveData, updateToolbarActiveStates);
+          });
+
           cell.addEventListener('paste', function(e) {
-            e.preventDefault();
-            var text = (e.clipboardData || window.clipboardData).getData('text/plain') || '';
-            document.execCommand('insertText', false, text);
-            activeSurface = cell;
-            var cur = getActiveData();
-            cur.text = sanitizeRichText(cell.innerHTML);
-            setActiveData(cur);
-            updateToolbarActiveStates();
+            handleCovenPaste(e, cell, getActiveData, setActiveData, updateToolbarActiveStates);
           });
         });
       }
@@ -1966,7 +3102,20 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                 break;
 
               case 'callout':
-                if (d.title !== undefined) d.title = getRichData(d.title);
+                if (d.showTitle === undefined) {
+                  d.showTitle = true;
+                }
+                if (d.titleMode === undefined) {
+                  if (d.title !== undefined && d.title !== null && (typeof d.title === 'string' ? d.title.trim() : (d.title.text && d.title.text.trim()))) {
+                    d.titleMode = 'custom';
+                    d.title = getRichData(d.title);
+                  } else {
+                    d.titleMode = 'default';
+                    delete d.title;
+                  }
+                } else if (d.titleMode === 'custom' && d.title !== undefined) {
+                  d.title = getRichData(d.title);
+                }
                 d.text = getRichData(d.text);
                 break;
 
@@ -2600,26 +3749,42 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         }, 10);
       }
 
-      window.addEventListener('resize', handleInlineDeleteScrollOrResize, { passive: true });
-      window.addEventListener('scroll', handleInlineDeleteScrollOrResize, { capture: true, passive: true });
+      window.addEventListener('resize', function() {
+        handleInlineDeleteScrollOrResize();
+        closeAllPopovers();
+      }, { passive: true });
+      window.addEventListener('scroll', function() {
+        handleInlineDeleteScrollOrResize();
+        closeAllPopovers();
+      }, { capture: true, passive: true });
 
       document.addEventListener('mousedown', function(e) {
-        if (!activeInlineDelete) return;
-        if (activeInlineDelete.popoverEl && activeInlineDelete.popoverEl.contains(e.target)) {
-          return;
+        if (activeInlineDelete) {
+          if (!activeInlineDelete.popoverEl || !activeInlineDelete.popoverEl.contains(e.target)) {
+            if (!activeInlineDelete.triggerBtn || !activeInlineDelete.triggerBtn.contains(e.target)) {
+              closeInlineDelete();
+            }
+          }
         }
-        if (activeInlineDelete.triggerBtn && activeInlineDelete.triggerBtn.contains(e.target)) {
-          return;
+
+        var openPop = document.querySelector('.rich-color-menu[style*="display: flex"], .rich-color-menu[style*="display: block"], .rich-highlight-menu[style*="display: flex"], .rich-highlight-menu[style*="display: block"], .rich-link-popover[style*="display: flex"], .coven-custom-color-popover[style*="display: block"], .coven-custom-color-popover[style*="display: flex"], .nested-marker-dropdown[style*="display: flex"], .nested-marker-dropdown[style*="display: block"]');
+        if (openPop && !openPop.contains(e.target)) {
+          var isTrigger = e.target.closest('.rich-btn-color, .rich-btn-highlight, .rich-btn-link, .nested-marker-trigger, .callout-accent-custom-btn');
+          if (!isTrigger) {
+            closeAllPopovers();
+          }
         }
-        closeInlineDelete();
       });
 
       document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape' && activeInlineDelete) {
-          e.stopPropagation();
-          e.stopImmediatePropagation();
-          var prev = closeInlineDelete();
-          if (prev) prev.focus();
+        if (e.key === 'Escape') {
+          closeAllPopovers();
+          if (activeInlineDelete) {
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            var prev = closeInlineDelete();
+            if (prev) prev.focus();
+          }
         }
       }, true);
 
@@ -2830,11 +3995,36 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'nested-bullets':
+            var markerLabels = {
+              coven: '✦ Coven Spark',
+              decimal: '1, 2, 3',
+              alpha: 'a, b, c',
+              roman: 'I, II, III',
+              hyphen: '— Hyphen'
+            };
+            var curMarker = d.markerStyle || 'coven';
+
             html += 
               (d.title !== undefined ?
                 renderRichTextFieldHtml('<span>List Title</span>', 'data-rich-field="title"', d.title, 'Optional hierarchical title...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
+              '<div class="nested-marker-control-wrap">' +
+                '<label class="nested-marker-label">LIST MARKER STYLE</label>' +
+                '<div class="nested-marker-dropdown-wrap">' +
+                  '<button type="button" class="nested-marker-trigger" data-act="toggle-marker-dropdown">' +
+                    '<span class="nested-marker-current-val">' + (markerLabels[curMarker] || '✦ Coven Spark') + '</span>' +
+                    '<span class="nested-marker-caret">▾</span>' +
+                  '</button>' +
+                  '<div class="nested-marker-dropdown" style="display:none">' +
+                    '<div class="nested-marker-opt' + (curMarker === 'coven' ? ' is-active' : '') + '" data-act="select-marker" data-val="coven">✦ Coven Spark (Default)</div>' +
+                    '<div class="nested-marker-opt' + (curMarker === 'decimal' ? ' is-active' : '') + '" data-act="select-marker" data-val="decimal">1, 2, 3</div>' +
+                    '<div class="nested-marker-opt' + (curMarker === 'alpha' ? ' is-active' : '') + '" data-act="select-marker" data-val="alpha">a, b, c</div>' +
+                    '<div class="nested-marker-opt' + (curMarker === 'roman' ? ' is-active' : '') + '" data-act="select-marker" data-val="roman">I, II, III</div>' +
+                    '<div class="nested-marker-opt' + (curMarker === 'hyphen' ? ' is-active' : '') + '" data-act="select-marker" data-val="hyphen">— Hyphen</div>' +
+                  '</div>' +
+                '</div>' +
+              '</div>' +
               '<div class="studio-form-group"><label class="studio-label">Hierarchical Items</label><div style="display:flex;flex-direction:column;gap:12px">';
             (d.items || []).forEach(function(main, mIdx) {
               var mainLabel = '<div style="display:flex;align-items:center;gap:8px"><span class="studio-repeatable-handle">⋮⋮</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);font-weight:600">MAIN ITEM ' + String(mIdx + 1).padStart(2, '0') + '</span></div>';
@@ -3150,6 +4340,20 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           // ── 07. CALLOUTS & QUOTES ──
           case 'callout':
             var activeType = d.calloutType || 'note';
+            var showHeading = d.showTitle !== false;
+            var isCustomTitle = d.titleMode === 'custom' && d.title !== undefined;
+            var calloutDefaults = {
+              note: 'Grimoire Note',
+              info: 'Incantation Note',
+              tip: 'Craft Mastery Tip',
+              warning: 'Ward of Caution'
+            };
+            var curDefaultTitle = calloutDefaults[activeType] || 'Grimoire Note';
+            var headingVal = isCustomTitle ? d.title : { text: curDefaultTitle, align: 'left' };
+
+            var activeAccent = d.accentColor ? normalizeHex(d.accentColor) : '';
+            var isDefaultAccent = !activeAccent;
+
             html += 
               '<div class="studio-form-group"><label class="studio-label">Callout Style Variant</label>' +
                 '<div class="callout-swatches-grid">' +
@@ -3159,10 +4363,40 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   '<div class="callout-swatch-item swatch-warning' + (activeType === 'warning' ? ' active' : '') + '" data-act="select-callout" data-val="warning">Warning</div>' +
                 '</div>' +
               '</div>' +
-              (d.title !== undefined ?
-                renderRichTextFieldHtml('<span>Title</span>', 'data-rich-field="title"', d.title, 'Advisory Title...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
-                '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
-              ) +
+              '<div class="callout-accent-color-wrap">' +
+                '<div class="callout-accent-color-label">ACCENT COLOR</div>' +
+                '<div class="callout-accent-controls-row">' +
+                  '<button type="button" class="studio-btn studio-btn--sm callout-accent-default-btn' + (isDefaultAccent ? ' is-active' : '') + '" data-act="callout-accent-default">Variant Default</button>' +
+                  '<div class="callout-saved-swatches" data-active-hex="' + (activeAccent || '') + '"></div>' +
+                  (activeAccent ? '<div class="callout-active-custom-chip" style="width:24px;height:24px;border-radius:3px;background:' + activeAccent + ';border:2px solid var(--studio-gold);box-shadow:0 1px 4px rgba(0,0,0,0.5);flex-shrink:0;" title="Current custom accent: ' + activeAccent + '"></div>' : '') +
+                  '<button type="button" class="studio-btn studio-btn--sm studio-btn--icon callout-accent-custom-btn callout-accent-custom" data-act="callout-accent-custom" title="Choose custom accent color" aria-label="Choose custom accent color">' +
+                    '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+                      '<circle cx="13.5" cy="6.5" r=".5" fill="currentColor"></circle>' +
+                      '<circle cx="17.5" cy="10.5" r=".5" fill="currentColor"></circle>' +
+                      '<circle cx="8.5" cy="7.5" r=".5" fill="currentColor"></circle>' +
+                      '<circle cx="6.5" cy="12.5" r=".5" fill="currentColor"></circle>' +
+                      '<path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.926 0 1.648-.746 1.648-1.688 0-.437-.18-.835-.437-1.125-.29-.289-.438-.652-.438-1.125a1.64 1.64 0 0 1 1.668-1.668h1.996c3.051 0 5.555-2.503 5.555-5.554C21.965 6.012 17.461 2 12 2z"></path>' +
+                    '</svg>' +
+                  '</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="callout-heading-control-wrap">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:' + (showHeading ? '10px' : '0') + ';">' +
+                  '<label style="display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);letter-spacing:1px;cursor:pointer;text-transform:uppercase;margin:0;">' +
+                    '<input type="checkbox" class="callout-toggle-heading"' + (showHeading ? ' checked' : '') + ' style="accent-color:var(--studio-gold);cursor:pointer;" />' +
+                    'Show Heading' +
+                  '</label>' +
+                  (isCustomTitle ? '<button type="button" class="callout-btn-use-default" data-act="callout-use-default" title="Reset heading to default variant label">Use Default</button>' : '') +
+                '</div>' +
+                (showHeading ?
+                  renderRichTextFieldHtml(
+                    'Heading Text' + (!isCustomTitle ? ' <span class="callout-default-badge" style="font-size:10px;color:var(--studio-muted);text-transform:none;">(Default)</span>' : ''),
+                    'data-rich-callout-heading="true"',
+                    headingVal,
+                    curDefaultTitle
+                  ) : ''
+                ) +
+              '</div>' +
               renderRichTextFieldHtml('Content', 'data-rich-field="text"', d.text, 'Advisory message body...');
             break;
 
@@ -3558,6 +4792,15 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           });
         });
 
+        // Callout Show Heading Toggle
+        bBody.querySelectorAll('.callout-toggle-heading').forEach(function(cb) {
+          cb.addEventListener('change', function(e) {
+            d.showTitle = e.target.checked;
+            renderSections();
+            triggerAutosave();
+          });
+        });
+
         // 11. Unified Action Delegator for buttons
         bBody.addEventListener('click', function(e) {
           if (activeSectionId !== sec.id) {
@@ -3623,6 +4866,30 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               break;
 
             // Nested Bullets
+            case 'toggle-marker-dropdown':
+              var markerWrap = actBtn.closest('.nested-marker-dropdown-wrap');
+              if (markerWrap) {
+                var dd = markerWrap.querySelector('.nested-marker-dropdown');
+                if (dd) {
+                  var isDdOpen = dd.style.display === 'flex';
+                  closeAllPopovers(dd);
+                  if (isDdOpen) {
+                    dd.style.display = 'none';
+                  } else {
+                    openAnchoredPopover(dd, actBtn);
+                  }
+                }
+              }
+              break;
+
+            case 'select-marker':
+              var markerVal = actBtn.getAttribute('data-val') || 'coven';
+              d.markerStyle = markerVal;
+              closeAllPopovers();
+              renderSections();
+              triggerAutosave();
+              break;
+
             case 'add-nested-main':
               d.items = d.items || [];
               d.items.push({ id: uid('main'), text: { text: '', align: 'left' }, children: [] });
@@ -3822,10 +5089,42 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             // Callout Swatch Select
             case 'select-callout':
               d.calloutType = actBtn.getAttribute('data-val');
-              bBody.querySelectorAll('.callout-swatch-item').forEach(function(sw) {
-                sw.classList.toggle('active', sw.getAttribute('data-val') === d.calloutType);
-              });
+              renderSections();
               triggerAutosave();
+              break;
+
+            case 'callout-use-default':
+              d.titleMode = 'default';
+              delete d.title;
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'callout-accent-default':
+              delete d.accentColor;
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'callout-accent-swatch':
+              var hexVal = actBtn.getAttribute('data-hex');
+              if (hexVal) {
+                d.accentColor = normalizeHex(hexVal);
+                renderSections();
+                triggerAutosave();
+              }
+              break;
+
+            case 'callout-accent-custom':
+              openCustomColorPicker(actBtn, d.accentColor || '#C45AFF', function(chosenHex) {
+                d.accentColor = chosenHex;
+                renderSections();
+                triggerAutosave();
+              }, function(savedHex) {
+                d.accentColor = savedHex;
+                renderSections();
+                triggerAutosave();
+              });
               break;
 
             // FAQ
@@ -4355,6 +5654,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           card.appendChild(blocksWrap);
           container.appendChild(card);
         });
+        updateAllSavedSwatchesUI();
       }
 
       function handleBlockDrop(e, targetSecId, insertIdx) {
@@ -4423,8 +5723,36 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
         // Slug
         var sVal = currentDoc.slug || '';
-        document.getElementById('meta-slug').value = sVal;
+        var slugInputEl = document.getElementById('meta-slug');
+        slugInputEl.value = sVal;
         document.getElementById('slug-url-preview').textContent = '/article/' + (sVal || 'untitled-scroll');
+
+        // Persisted Article Editing Mode & Slug Lock
+        var editingIndicator = document.getElementById('editing-source-indicator');
+        var editingTitleSpan = document.getElementById('editing-source-title');
+        if (currentDoc.sourceArticleSlug) {
+          if (editingIndicator) {
+            editingIndicator.style.display = 'inline-flex';
+            if (editingTitleSpan) {
+              editingTitleSpan.textContent = currentDoc.meta.title || currentDoc.sourceArticleSlug;
+            }
+          }
+          if (slugInputEl) {
+            slugInputEl.readOnly = true;
+            slugInputEl.style.opacity = '0.6';
+            slugInputEl.style.cursor = 'not-allowed';
+            slugInputEl.title = 'Slug is locked for persisted articles.';
+          }
+        } else {
+          if (editingIndicator) editingIndicator.style.display = 'none';
+          if (slugInputEl) {
+            slugInputEl.readOnly = false;
+            slugInputEl.style.opacity = '1';
+            slugInputEl.style.cursor = 'text';
+            slugInputEl.title = '';
+          }
+        }
+
         if (isExistingPublished && originalPublishedSlug && originalPublishedSlug !== sVal) {
           document.getElementById('slug-published-warning').style.display = 'block';
         } else {
@@ -4475,12 +5803,17 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       // Title Input (Does NOT alter Slug!)
       document.getElementById('meta-title').addEventListener('input', function(e) {
         currentDoc.meta.title = e.target.value;
+        var editingTitleSpan = document.getElementById('editing-source-title');
+        if (editingTitleSpan && currentDoc.sourceArticleSlug) {
+          editingTitleSpan.textContent = e.target.value || currentDoc.sourceArticleSlug;
+        }
         triggerAutosave();
       });
 
       // Slug Input (Live Safe URL Normalization)
       var slugInput = document.getElementById('meta-slug');
       slugInput.addEventListener('input', function(e) {
+        if (currentDoc.sourceArticleSlug) return;
         var raw = e.target.value;
         var normalized = normalizeSlugClient(raw, true);
         currentDoc.slug = normalized;
@@ -4496,6 +5829,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       });
 
       slugInput.addEventListener('blur', function(e) {
+        if (currentDoc.sourceArticleSlug) return;
         var finalSlug = normalizeSlugClient(currentDoc.slug, false);
         currentDoc.slug = finalSlug;
         e.target.value = finalSlug;
@@ -4505,6 +5839,10 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
       // Generate from Title button
       document.getElementById('btn-slug-generate').addEventListener('click', function() {
+        if (currentDoc.sourceArticleSlug) {
+          showToast('Slug is locked for persisted articles.', 'error');
+          return;
+        }
         var titleVal = (document.getElementById('meta-title').value || '').trim();
         var genSlug = normalizeSlugClient(titleVal, false);
         currentDoc.slug = genSlug;
@@ -4537,6 +5875,21 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       function updatePublishButtonState() {
         var btnPublish = document.getElementById('btn-publish');
         if (!btnPublish) return;
+
+        var isLinkedToPersisted = Boolean(currentDoc.sourceArticleSlug);
+        if (isLinkedToPersisted) {
+          if (currentDoc.meta.status === 'published') {
+            btnPublish.textContent = 'Update Published ✦';
+            btnPublish.title = 'Update persisted published article';
+          } else {
+            btnPublish.textContent = 'Publish ✦';
+            btnPublish.title = 'Publish updated article';
+          }
+        } else {
+          btnPublish.textContent = 'Publish ✦';
+          btnPublish.title = 'Publish article to src/articles';
+        }
+
         if (currentDoc.meta.status !== 'published') {
           btnPublish.style.opacity = '0.45';
           btnPublish.style.cursor = 'not-allowed';
@@ -4544,7 +5897,6 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         } else {
           btnPublish.style.opacity = '1';
           btnPublish.style.cursor = 'pointer';
-          btnPublish.title = 'Publish article to src/articles';
         }
       }
 
@@ -5077,10 +6429,15 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         window._renderTagChips = renderTagChips;
       }
 
-      // Close rich text color menus and link popovers on outside click
+      // Close rich text color menus, highlight menus, and link popovers on outside click
       document.addEventListener('click', function(e) {
         if (!e.target.closest('.rich-color-dropdown-wrap')) {
           document.querySelectorAll('.rich-color-menu').forEach(function(m) {
+            m.style.display = 'none';
+          });
+        }
+        if (!e.target.closest('.rich-highlight-dropdown-wrap')) {
+          document.querySelectorAll('.rich-highlight-menu').forEach(function(m) {
             m.style.display = 'none';
           });
         }
@@ -5288,10 +6645,13 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       }
 
       // ── Drafts Modal ────────────────────────────────────
-      document.getElementById('btn-drafts').addEventListener('click', function() {
-        loadDraftsList();
-        document.getElementById('drafts-modal').style.display = 'flex';
-      });
+      var btnDraftsEl = document.getElementById('btn-drafts');
+      if (btnDraftsEl) {
+        btnDraftsEl.addEventListener('click', function() {
+          loadDraftsList();
+          document.getElementById('drafts-modal').style.display = 'flex';
+        });
+      }
 
       document.getElementById('btn-close-drafts').addEventListener('click', function() {
         closeInlineDelete();
@@ -5365,6 +6725,9 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
       function openDraft(studioId) {
         closeInlineDelete();
+        try {
+          localStorage.setItem('covenArticleStudio:lastDraftId', studioId);
+        } catch (e) {}
         fetch('/__article-studio/drafts/' + studioId)
           .then(function(res) { return res.json(); })
           .then(function(doc) {
@@ -5531,32 +6894,43 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       initCategoryCombobox();
       initDifficultyDropdown();
       initTagsCombobox();
+      initCustomColorPicker();
 
-      // Restore last draft or create default
-      var lastDraftId = null;
-      try {
-        lastDraftId = localStorage.getItem('covenArticleStudio:lastDraftId');
-      } catch (e) {}
+      // Restore draft from URL query, lastDraftId, or create new
+      var urlParams = new URLSearchParams(window.location.search);
+      var paramDraftId = urlParams.get('draft');
+      var paramNew = urlParams.get('new');
 
-      if (lastDraftId) {
-        fetch('/__article-studio/drafts/' + lastDraftId)
-          .then(function(res) {
-            if (res.ok) return res.json();
-            throw new Error('Not found');
-          })
-          .then(function(doc) {
-            normalizeDocument(doc);
-            currentDoc = doc;
-            activeSectionId = doc.sections.length > 0 ? doc.sections[0].id : null;
-            renderSections();
-            syncMetaInputsFromState();
-            setStatus('Draft restored', 'saved');
-          })
-          .catch(function() {
-            createNewArticle();
-          });
-      } else {
+      if (paramDraftId) {
+        openDraft(paramDraftId);
+      } else if (paramNew === '1') {
         createNewArticle();
+      } else {
+        var lastDraftId = null;
+        try {
+          lastDraftId = localStorage.getItem('covenArticleStudio:lastDraftId');
+        } catch (e) {}
+
+        if (lastDraftId) {
+          fetch('/__article-studio/drafts/' + lastDraftId)
+            .then(function(res) {
+              if (res.ok) return res.json();
+              throw new Error('Not found');
+            })
+            .then(function(doc) {
+              normalizeDocument(doc);
+              currentDoc = doc;
+              activeSectionId = doc.sections.length > 0 ? doc.sections[0].id : null;
+              renderSections();
+              syncMetaInputsFromState();
+              setStatus('Draft restored', 'saved');
+            })
+            .catch(function() {
+              createNewArticle();
+            });
+        } else {
+          createNewArticle();
+        }
       }
 
       // Expose state globally for browser QA automation
@@ -5565,6 +6939,15 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       window.renderMetadata = syncMetaInputsFromState;
       window.calculateReadingTime = calculateReadingTime;
       window.saveDraft = saveDraft;
+      window.sanitizeRichText = sanitizeRichText;
+      window.applyColorClass = applyColorClass;
+      window.applyBgClass = applyBgClass;
+      window.getSavedColors = getSavedColors;
+      window.saveColorToPalette = saveColorToPalette;
+      window.removeColorFromPalette = removeColorFromPalette;
+      window.closeAllPopovers = closeAllPopovers;
+      window.openCustomColorPicker = openCustomColorPicker;
+      window.normalizeHex = normalizeHex;
 
     })();
   </script>

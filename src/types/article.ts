@@ -30,6 +30,7 @@ export interface Article {
   slug: string;
   meta: ArticleMeta;
   component: any;
+  isStudioArticle?: boolean;
 }
 
 export interface ArticleNavigation {

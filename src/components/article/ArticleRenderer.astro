@@ -58,6 +58,59 @@ function cleanHtml(input: string): string {
     return `<a href="${href}" class="${safeClass}"${targetRel}>${content}</a>`;
   });
 
+  // Sanitize spans to allow only approved article-text-* and article-text-bg-* classes and custom colors
+  sanitized = sanitized.replace(/<span\b([^>]*)>([\s\S]*?)<\/span>/gi, (_match, attrs, content) => {
+    const classMatch = attrs.match(/class="([^"]*)"/i) || attrs.match(/class='([^']*)'/i);
+    if (!classMatch) return content;
+    const allowed = [
+      'article-text-gold',
+      'article-text-purple',
+      'article-text-muted',
+      'article-text-default',
+      'article-text-bg-neutral',
+      'article-text-bg-purple',
+      'article-text-bg-gold',
+      'article-text-bg-green',
+      'article-text-bg-red',
+      'article-text-custom-color',
+      'article-text-custom-bg'
+    ];
+    const rawClasses = classMatch[1].split(/\s+/).filter((c: string) => allowed.includes(c));
+    if (rawClasses.length === 0) return content;
+
+    const styleMatch = attrs.match(/style="([^"]*)"/i) || attrs.match(/style='([^']*)'/i);
+    const styleAttr = styleMatch ? styleMatch[1] : '';
+
+    const validStyles: string[] = [];
+    const validClasses: string[] = [];
+
+    rawClasses.forEach((cls: string) => {
+      if (cls === 'article-text-custom-color') {
+        const m = styleAttr.match(/--coven-custom-text-color:\s*(#[0-9a-fA-F]{3,6})/i);
+        if (m && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(m[1])) {
+          let hex = m[1].toUpperCase();
+          if (hex.length === 4) hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+          validClasses.push(cls);
+          validStyles.push(`--coven-custom-text-color:${hex}`);
+        }
+      } else if (cls === 'article-text-custom-bg') {
+        const m = styleAttr.match(/--coven-custom-bg:\s*(#[0-9a-fA-F]{3,6})/i);
+        if (m && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(m[1])) {
+          let hex = m[1].toUpperCase();
+          if (hex.length === 4) hex = '#' + hex[1] + hex[1] + hex[2] + hex[2] + hex[3] + hex[3];
+          validClasses.push(cls);
+          validStyles.push(`--coven-custom-bg:${hex}`);
+        }
+      } else {
+        validClasses.push(cls);
+      }
+    });
+
+    if (validClasses.length === 0) return content;
+    const styleStr = validStyles.length > 0 ? ` style="${validStyles.join(';')}"` : '';
+    return `<span class="${validClasses.join(' ')}"${styleStr}>${content}</span>`;
+  });
+
   return sanitized;
 }
 
@@ -98,10 +151,12 @@ function getRich(input: any): { text: string; align: string } {
 <div class="article-template">
   {doc.sections.map((section: ArticleSection, sIndex: number) => {
     const sectionId = slugify(section.title) || `section-${sIndex + 1}`;
+    const sectionTitle = (typeof section.title === 'string' ? section.title.trim() : '') ||
+                         (typeof section.heading === 'string' ? section.heading.trim() : '');
     return (
       <section id={sectionId} class="article-section" data-toc-title={section.title}>
         {section.kicker && <div class="section-kicker">{section.kicker}</div>}
-        {section.heading && <h2>{section.heading}</h2>}
+        {sectionTitle && <h2 class="article-section-title">{sectionTitle}</h2>}
 
         {section.blocks.map((block: ArticleBlock, bIndex: number) => {
           const d = block.data || {};
@@ -223,11 +278,12 @@ function getRich(input: any): { text: string; align: string } {
 
             case 'nested-bullets': {
               const items = Array.isArray(d.items) ? d.items : [];
+              const markerStyle = d.markerStyle || 'coven';
               const titleData = typeof d.title === 'object' && d.title !== null
                 ? { text: d.title.text || d.title.content || '', align: d.title.align || 'left' }
                 : { text: typeof d.title === 'string' ? d.title : '', align: 'left' };
               return (
-                <div class="block-nested-bullets">
+                <div class="block-nested-bullets" data-marker-style={markerStyle}>
                   {titleData.text && (
                     <h3 class={`list-title${titleData.align && titleData.align !== 'left' ? ` rich-align-${titleData.align}` : ''}`}>
                       <Fragment set:html={cleanHtml(titleData.text)} />
@@ -693,10 +749,17 @@ function getRich(input: any): { text: string; align: string } {
             }
 
             case 'callout': {
-              const cTitle = getRich(d.title);
+              const showTitle = d.showTitle !== false && d.titleMode !== 'hidden';
+              const isCustom = d.titleMode === 'custom' && d.title;
+              const cTitle = isCustom ? getRich(d.title) : null;
               const cText = getRich(d.text);
               return (
-                <Callout type={d.calloutType || 'info'} title={cTitle.text ? cleanHtml(cTitle.text) : undefined}>
+                <Callout
+                  type={d.calloutType || 'info'}
+                  showTitle={showTitle}
+                  title={cTitle && cTitle.text ? cleanHtml(cTitle.text) : undefined}
+                  accentColor={d.accentColor}
+                >
                   <p class={cText.align !== 'left' ? `rich-align-${cText.align}` : undefined}><Fragment set:html={cleanHtml(cText.text || '')} /></p>
                 </Callout>
               );
@@ -705,10 +768,22 @@ function getRich(input: any): { text: string; align: string } {
             case 'pullquote': {
               const qRich = getRich(d.quote);
               const aRich = getRich(d.author);
+              const rawCleanedQuote = cleanHtml(qRich.text || '');
+              const plainQuote = rawCleanedQuote.replace(/<[^>]+>/g, '').trim();
+              const hasStartQuote = /^["“'«]/.test(plainQuote);
+              const hasEndQuote = /["”'»]$/.test(plainQuote);
+              const needsQuotes = plainQuote.length > 0 && !(hasStartQuote && hasEndQuote);
+
               return (
                 <div class="pullquote">
-                  <p class={`pullquote-text${qRich.align !== 'left' ? ` rich-align-${qRich.align}` : ''}`}>"{cleanHtml(qRich.text)}"</p>
-                  {aRich.text && <span class={`pullquote-author${aRich.align !== 'left' ? ` rich-align-${aRich.align}` : ''}`}><Fragment set:html={cleanHtml(aRich.text)} /></span>}
+                  <p class={`pullquote-text${qRich.align !== 'left' ? ` rich-align-${qRich.align}` : ''}`}>
+                    {needsQuotes ? '"' : ''}<Fragment set:html={rawCleanedQuote} />{needsQuotes ? '"' : ''}
+                  </p>
+                  {aRich.text && (
+                    <span class={`pullquote-author${aRich.align !== 'left' ? ` rich-align-${aRich.align}` : ''}`}>
+                      <Fragment set:html={cleanHtml(aRich.text)} />
+                    </span>
+                  )}
                 </div>
               );
             }
@@ -853,6 +928,45 @@ function getRich(input: any): { text: string; align: string } {
   .article-template .article-text-purple { color: #b98fd8; }
   .article-template .article-text-muted { color: #8f857a; }
   .article-template .article-text-default { color: inherit; }
+
+  /* ── Inline Text Highlight / Background Classes ── */
+  .article-template .article-text-bg-neutral,
+  .article-template .article-text-bg-purple,
+  .article-template .article-text-bg-gold,
+  .article-template .article-text-bg-green,
+  .article-template .article-text-bg-red {
+    display: inline;
+    padding: 2px 5px;
+    border-radius: 3px;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+    color: inherit;
+  }
+
+  .article-template .article-text-bg-neutral {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(216, 181, 107, 0.18);
+  }
+
+  .article-template .article-text-bg-purple {
+    background: rgba(185, 143, 216, 0.18);
+    border: 1px solid rgba(185, 143, 216, 0.35);
+  }
+
+  .article-template .article-text-bg-gold {
+    background: rgba(216, 181, 107, 0.16);
+    border: 1px solid rgba(216, 181, 107, 0.38);
+  }
+
+  .article-template .article-text-bg-green {
+    background: rgba(129, 199, 132, 0.16);
+    border: 1px solid rgba(129, 199, 132, 0.35);
+  }
+
+  .article-template .article-text-bg-red {
+    background: rgba(229, 115, 115, 0.18);
+    border: 1px solid rgba(229, 115, 115, 0.38);
+  }
 
   /* ── Rich Text Hyperlinks ── */
   .article-template .article-rich-link {
