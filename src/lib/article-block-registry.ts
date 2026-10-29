@@ -4,6 +4,7 @@ export interface BlockDefinition {
   category: string;
   description: string;
   defaultData: Record<string, any>;
+  canNestInCallout?: boolean;
 }
 
 export const ARTICLE_BLOCK_CATEGORIES = [
@@ -29,6 +30,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     defaultData: {
       heading: '',
       paragraphs: [''],
+      showText: true,
     },
   },
   'text-title': {
@@ -70,6 +72,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '02 Lists & Steps',
     description: 'Hierarchical bullets with primary and sub-level items.',
     defaultData: {
+      layout: 'vertical',
       items: [
         {
           id: 'nb_item_1',
@@ -98,6 +101,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '03 Column Layouts',
     description: '50/50 layout with technical copy on left and diagram on right.',
     defaultData: {
+      paragraphs: [{ text: '', align: 'left' }],
       text: '',
       imageSrc: '',
       alt: '',
@@ -110,6 +114,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '03 Column Layouts',
     description: '50/50 layout with diagram on left and narrative on right.',
     defaultData: {
+      paragraphs: [{ text: '', align: 'left' }],
       imageSrc: '',
       alt: '',
       caption: '',
@@ -138,6 +143,27 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
         { id: 'col_1', kicker: 'PILLAR I', title: '', text: '' },
         { id: 'col_2', kicker: 'PILLAR II', title: '', text: '' },
         { id: 'col_3', kicker: 'PILLAR III', title: '', text: '' },
+      ],
+    },
+  },
+  'flex-layout': {
+    type: 'flex-layout',
+    label: 'Flexible Layout',
+    category: '03 Column Layouts',
+    description: 'Arrange existing Coven blocks across responsive columns.',
+    canNestInCallout: false,
+    defaultData: {
+      columnCount: 2,
+      ratio: '50-50',
+      columns: [
+        {
+          id: 'col_1',
+          blocks: [],
+        },
+        {
+          id: 'col_2',
+          blocks: [],
+        },
       ],
     },
   },
@@ -300,9 +326,11 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Callout Advisory',
     category: '07 Callouts & Quotes',
     description: 'System warnings, practical tips, or arcane notices.',
+    canNestInCallout: false,
     defaultData: {
       calloutType: 'note',
       text: '',
+      blocks: [],
     },
   },
   'pullquote': {
@@ -363,6 +391,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Article Trial',
     category: '09 Interactive Blocks',
     description: 'Trial challenge with structured questions where initiates test mastery and claim Aether.',
+    canNestInCallout: false,
     defaultData: {
       title: "You've reached the trial",
       intro: 'Test your mastery of this knowledge scroll. Earn Aether and prove your standing among the initiates.',
@@ -420,4 +449,30 @@ export function getBlockRegistryList(): BlockDefinition[] {
 
 export function getBlockDefinition(type: string): BlockDefinition | undefined {
   return ARTICLE_BLOCK_REGISTRY[type];
+}
+
+export function isInsertablePaletteBlock(block: { type: string } | string): boolean {
+  const type = typeof block === 'string' ? block : block.type;
+  return type !== 'text-title' && type !== 'bullet-list';
+}
+
+export function getInsertablePaletteBlocks(): BlockDefinition[] {
+  return Object.values(ARTICLE_BLOCK_REGISTRY).filter(isInsertablePaletteBlock);
+}
+
+export const CALLOUT_FORBIDDEN_BLOCK_TYPES = ['callout', 'flex-layout', 'article-trial'] as const;
+
+export function canNestInCallout(block: { type: string } | string): boolean {
+  const type = typeof block === 'string' ? block : block?.type;
+  if (!type) return false;
+  const def = ARTICLE_BLOCK_REGISTRY[type];
+  if (def && typeof def.canNestInCallout === 'boolean') {
+    return def.canNestInCallout;
+  }
+  return !CALLOUT_FORBIDDEN_BLOCK_TYPES.includes(type as any);
+}
+
+export function canNestInFlexLayout(block: { type: string } | string): boolean {
+  const type = typeof block === 'string' ? block : block?.type;
+  return type !== 'flex-layout';
 }

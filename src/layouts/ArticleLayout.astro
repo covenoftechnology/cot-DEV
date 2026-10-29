@@ -1,6 +1,7 @@
 ---
 import BaseLayout from './BaseLayout.astro';
 import SpiritProgress from '../components/article/SpiritProgress.astro';
+import ArticleImageLightbox from '../components/article/ArticleImageLightbox.astro';
 import type { Article, ArticleMeta } from '../types/article';
 
 interface Props {
@@ -648,6 +649,8 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
       });
     })();
   </script>
+
+  <ArticleImageLightbox />
 </BaseLayout>
 
 <style is:global>

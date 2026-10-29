@@ -75,10 +75,43 @@ const displayTitle = title ?? config.defaultTitle;
 </div>
 
 <style is:global>
+  .cov-callout {
+    box-sizing: border-box;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .cov-callout-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+  .cov-callout-content > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .cov-callout-content > * > :first-child {
+    margin-top: 0 !important;
+  }
+  .cov-callout-content > * > :last-child {
+    margin-bottom: 0 !important;
+  }
   .cov-callout-content p {
     margin: 0 0 10px !important;
   }
-  .cov-callout-content p:last-child {
+  .cov-callout-content p:last-child,
+  .cov-callout-content > * p:last-child {
     margin-bottom: 0 !important;
+  }
+  .cov-callout-content .nested-bullets-list {
+    margin-bottom: 0;
+  }
+  .cov-callout-content figure.figure-single {
+    margin-left: 0;
+    margin-right: 0;
   }
 </style>

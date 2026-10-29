@@ -581,20 +581,39 @@ export default function articleStudioIntegration(): AstroIntegration {
                           processedDoc.meta.cover = await processImageString(processedDoc.meta.cover);
                         }
 
-                        // Walk sections and blocks to migrate upload paths
-                        for (const sec of processedDoc.sections) {
-                          for (const blk of sec.blocks) {
-                            const d = blk.data || {};
-                            if (d.imageSrc) d.imageSrc = await processImageString(d.imageSrc);
-                            if (d.src) d.src = await processImageString(d.src);
-                            if (d.img1Src) d.img1Src = await processImageString(d.img1Src);
-                            if (d.img2Src) d.img2Src = await processImageString(d.img2Src);
-                            if (d.img3Src) d.img3Src = await processImageString(d.img3Src);
-                            if (Array.isArray(d.cards)) {
-                              for (const c of d.cards) {
-                                if (c.src) c.src = await processImageString(c.src);
+                        // Walk sections and blocks (including nested container blocks) to migrate upload paths
+                        async function migrateBlockImages(blk: any) {
+                          if (!blk || !blk.data) return;
+                          const d = blk.data;
+                          if (d.imageSrc) d.imageSrc = await processImageString(d.imageSrc);
+                          if (d.src) d.src = await processImageString(d.src);
+                          if (d.img1Src) d.img1Src = await processImageString(d.img1Src);
+                          if (d.img2Src) d.img2Src = await processImageString(d.img2Src);
+                          if (d.img3Src) d.img3Src = await processImageString(d.img3Src);
+                          if (Array.isArray(d.cards)) {
+                            for (const c of d.cards) {
+                              if (c.src) c.src = await processImageString(c.src);
+                            }
+                          }
+                          if (Array.isArray(d.blocks)) {
+                            for (const childBlk of d.blocks) {
+                              await migrateBlockImages(childBlk);
+                            }
+                          }
+                          if (Array.isArray(d.columns)) {
+                            for (const col of d.columns) {
+                              if (Array.isArray(col.blocks)) {
+                                for (const childBlk of col.blocks) {
+                                  await migrateBlockImages(childBlk);
+                                }
                               }
                             }
+                          }
+                        }
+
+                        for (const sec of processedDoc.sections) {
+                          for (const blk of sec.blocks) {
+                            await migrateBlockImages(blk);
                           }
                         }
 

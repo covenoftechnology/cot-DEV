@@ -1,5 +1,5 @@
 ---
-import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES } from '../../lib/article-block-registry';
+import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES, getInsertablePaletteBlocks } from '../../lib/article-block-registry';
 import {
   ARTICLE_CATEGORIES,
   ARTICLE_DIFFICULTIES,
@@ -28,7 +28,7 @@ const canonicalCategories = ARTICLE_CATEGORIES;
 const canonicalDifficulties = ARTICLE_DIFFICULTIES;
 const canonicalTags = ARTICLE_TAGS;
 const difficultyGlyphs = DIFFICULTY_GLYPHS;
-const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bullet-list').length;
+const totalBlockCount = getInsertablePaletteBlocks().length;
 ---
 
 <!DOCTYPE html>
@@ -78,6 +78,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
       <div class="library-search-wrap">
         <input type="text" id="library-search-input" class="studio-input" placeholder="Search blocks..." autocomplete="off" />
+        <button type="button" id="library-search-clear" class="library-search-clear-btn" aria-label="Clear block search" title="Clear search" style="display:none">×</button>
       </div>
 
       <div class="library-categories-list" id="palette-categories-container">
@@ -361,6 +362,37 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
     window.STUDIO_MERGED_TAGS = mergedTags;
     window.STUDIO_PUBLISHED_ARTICLES = publishedArticles;
 
+    function isInsertablePaletteBlock(b) {
+      var type = typeof b === 'string' ? b : (b ? b.type : '');
+      return type !== 'text-title' && type !== 'bullet-list';
+    }
+    window.isInsertablePaletteBlock = isInsertablePaletteBlock;
+    window.getInsertablePaletteBlocks = function() {
+      return Object.values(window.STUDIO_REGISTRY).filter(isInsertablePaletteBlock);
+    };
+
+    function canNestInCallout(b) {
+      var type = typeof b === 'string' ? b : (b ? b.type : '');
+      if (!type) return false;
+      var def = window.STUDIO_REGISTRY ? window.STUDIO_REGISTRY[type] : null;
+      if (def && typeof def.canNestInCallout === 'boolean') {
+        return def.canNestInCallout;
+      }
+      return type !== 'callout' && type !== 'flex-layout' && type !== 'article-trial';
+    }
+    window.canNestInCallout = canNestInCallout;
+
+    function canNestInFlexLayout(b) {
+      var type = typeof b === 'string' ? b : (b ? b.type : '');
+      if (!type) return false;
+      var def = window.STUDIO_REGISTRY ? window.STUDIO_REGISTRY[type] : null;
+      if (def && typeof def.canNestInFlexLayout === 'boolean') {
+        return def.canNestInFlexLayout;
+      }
+      return type !== 'flex-layout';
+    }
+    window.canNestInFlexLayout = canNestInFlexLayout;
+
     // Abstract glyphs for each block type in library and card headers
     var BLOCK_GLYPHS = {
       'title-text': '=',
@@ -373,6 +405,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       'image-text': '◪',
       'two-columns': '▥',
       'three-columns': '▤',
+      'flex-layout': '⊞',
       'single-image': '📷',
       'full-image': '🖼',
       'two-images': '⚏',
@@ -725,9 +758,15 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         popoverEl.style.zIndex = '99999';
         popoverEl.style.visibility = 'hidden';
 
-        var popRect = popoverEl.getBoundingClientRect();
         var trigRect = triggerEl.getBoundingClientRect();
 
+        if (popoverEl.classList.contains('nested-marker-dropdown')) {
+          var targetWidth = Math.max(180, Math.round(trigRect.width));
+          popoverEl.style.width = targetWidth + 'px';
+          popoverEl.style.right = 'auto';
+        }
+
+        var popRect = popoverEl.getBoundingClientRect();
         var popHeight = popRect.height || 220;
         var popWidth = popRect.width || 170;
 
@@ -759,6 +798,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           if (m !== exceptEl) {
             m.style.display = 'none';
             m.classList.remove('is-flipped-above');
+            m.style.top = '';
+            m.style.left = '';
+            m.style.width = '';
+            m.style.right = '';
+            m.style.position = '';
+            m.style.zIndex = '';
           }
         });
       }
@@ -2875,21 +2920,66 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           originalPublishedSlug = '';
         }
 
-        doc.sections.forEach(function(sec) {
-          if (!sec.id) sec.id = uid('sec');
-          if (!sec.blocks) sec.blocks = [];
+        function migrateV1UnitToBlock(u) {
+          if (!u || !u.type) return null;
+          if (u.type === 'text') {
+            var hasHeading = u.heading && ((typeof u.heading === 'string' && u.heading.trim().length > 0) || (u.heading.text && u.heading.text.trim().length > 0));
+            if (hasHeading) {
+              return {
+                id: uid('blk'),
+                type: 'title-text',
+                data: {
+                  heading: getRichData(u.heading),
+                  paragraphs: Array.isArray(u.paragraphs) ? u.paragraphs.map(function(p) { return getRichData(p); }) : [{ text: '', align: 'left' }]
+                }
+              };
+            } else {
+              return {
+                id: uid('blk'),
+                type: 'solo-text',
+                data: {
+                  paragraphs: Array.isArray(u.paragraphs) ? u.paragraphs.map(function(p) { return getRichData(p); }) : [{ text: '', align: 'left' }]
+                }
+              };
+            }
+          } else if (u.type === 'list') {
+            return {
+              id: uid('blk'),
+              type: 'nested-bullets',
+              data: {
+                title: getRichData(u.title || ''),
+                markers: u.markers || { level1: 'coven', level2: 'upper-alpha', level3: 'hyphen' },
+                items: Array.isArray(u.items) ? u.items : [{ id: uid('main'), text: getRichData(''), children: [] }]
+              }
+            };
+          } else if (u.type === 'image') {
+            return {
+              id: uid('blk'),
+              type: 'single-image',
+              data: {
+                src: u.imageSrc || '',
+                alt: u.alt || '',
+                caption: getRichData(u.caption || '')
+              }
+            };
+          }
+          return null;
+        }
 
-          sec.blocks.forEach(function(blk) {
-            if (!blk.id) blk.id = uid('blk');
-            var d = blk.data || {};
+        function normalizeBlock(blk) {
+          if (!blk.id) blk.id = uid('blk');
+          var d = blk.data = blk.data || {};
 
-            switch (blk.type) {
+          switch (blk.type) {
               case 'title-text':
                 if (!Array.isArray(d.paragraphs)) {
                   d.paragraphs = d.paragraph || d.text ? [d.paragraph || d.text] : [''];
                 }
                 d.paragraphs = d.paragraphs.map(function(p) { return getRichData(p); });
                 d.heading = getRichData(d.heading);
+                if (d.showText !== undefined) {
+                  d.showText = d.showText !== false;
+                }
                 break;
 
               case 'text-title':
@@ -2995,6 +3085,39 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               case 'two-images':
                 if (d.img1Caption !== undefined) d.img1Caption = getRichData(d.img1Caption);
                 if (d.img2Caption !== undefined) d.img2Caption = getRichData(d.img2Caption);
+                break;
+
+              case 'flex-layout':
+                d.columnCount = (d.columnCount === 3) ? 3 : 2;
+                d.ratio = (d.ratio === '40-60' || d.ratio === '60-40') ? d.ratio : '50-50';
+                if (!Array.isArray(d.columns) || d.columns.length === 0) {
+                  d.columns = [
+                    { id: uid('fcol'), blocks: [] },
+                    { id: uid('fcol'), blocks: [] }
+                  ];
+                }
+                while (d.columns.length < d.columnCount) {
+                  d.columns.push({ id: uid('fcol'), blocks: [] });
+                }
+                d.columns.forEach(function(col, cIdx) {
+                  col.id = col.id || ('col_' + (cIdx + 1));
+                  if (!Array.isArray(col.blocks)) {
+                    if (Array.isArray(col.units) && col.units.length > 0) {
+                      col.blocks = col.units.map(function(u) {
+                        return migrateV1UnitToBlock(u);
+                      }).filter(Boolean);
+                      delete col.units;
+                    } else {
+                      col.blocks = [];
+                    }
+                  }
+                  col.blocks = col.blocks.filter(function(b) {
+                    return b && b.type && b.type !== 'flex-layout';
+                  });
+                  col.blocks.forEach(function(childBlock) {
+                    normalizeBlock(childBlock);
+                  });
+                });
                 break;
 
               case 'three-images':
@@ -3116,7 +3239,19 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                 } else if (d.titleMode === 'custom' && d.title !== undefined) {
                   d.title = getRichData(d.title);
                 }
-                d.text = getRichData(d.text);
+                if (d.text === undefined && d.body !== undefined) {
+                  d.text = getRichData(d.body);
+                } else {
+                  d.text = getRichData(d.text);
+                }
+                if (Array.isArray(d.blocks)) {
+                  d.blocks = d.blocks.filter(function(b) {
+                    return b && b.type && canNestInCallout(b);
+                  });
+                  d.blocks.forEach(function(childBlock) {
+                    normalizeBlock(childBlock);
+                  });
+                }
                 break;
 
               case 'pullquote':
@@ -3203,8 +3338,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                 }
                 break;
             }
-          });
+        }
+
+        doc.sections.forEach(function(sec) {
+          if (!sec.id) sec.id = uid('sec');
+          if (!sec.blocks) sec.blocks = [];
+          sec.blocks.forEach(normalizeBlock);
         });
+        return doc;
       }
 
       // ── Reading Time Auto Calculator ────────────────────
@@ -3234,8 +3375,10 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             addWords(d.title);
             addWords(d.heading);
             addWords(d.intro);
-            addWords(d.text);
-            addWords(d.paragraph);
+            if (blk.type !== 'title-text' || d.showText !== false) {
+              addWords(d.text);
+              addWords(d.paragraph);
+            }
             addWords(d.quote);
             addWords(d.author);
             addWords(d.caption);
@@ -3273,7 +3416,9 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             }
 
             if (Array.isArray(d.paragraphs)) {
-              d.paragraphs.forEach(function(p) { addWords(typeof p === 'object' ? p.text : p); });
+              if (blk.type !== 'title-text' || d.showText !== false) {
+                d.paragraphs.forEach(function(p) { addWords(typeof p === 'object' ? p.text : p); });
+              }
             }
 
             if (Array.isArray(d.items)) {
@@ -3330,6 +3475,30 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               d.cards.forEach(function(c) {
                 addWords(c.caption);
                 addWords(c.alt);
+              });
+            }
+
+            if (Array.isArray(d.blocks)) {
+              d.blocks.forEach(function(cb) {
+                var cd = cb.data || {};
+                addWords(cd.text);
+                addWords(cd.heading);
+                if (Array.isArray(cd.paragraphs)) {
+                  cd.paragraphs.forEach(function(p) { addWords(typeof p === 'object' ? p.text : p); });
+                }
+                if (Array.isArray(cd.items)) {
+                  cd.items.forEach(function(it) {
+                    addWords(typeof it === 'object' ? it.text : it);
+                    if (it && Array.isArray(it.children)) {
+                      it.children.forEach(function(c) { addWords(typeof c === 'object' ? c.text : c); });
+                    }
+                  });
+                }
+                if (Array.isArray(cd.rows)) {
+                  cd.rows.forEach(function(r) {
+                    if (r.cells) Object.values(r.cells).forEach(addWords);
+                  });
+                }
               });
             }
           });
@@ -3470,10 +3639,10 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           header.className = 'category-accordion-header';
 
           var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
-            return b.category === cat && b.type !== 'text-title' && b.type !== 'bullet-list';
+            return b.category === cat && isInsertablePaletteBlock(b);
           });
 
-          header.innerHTML = 
+          header.innerHTML =
             '<div class="category-accordion-title">' +
               '<span class="category-arrow">▸</span>' +
               '<span>' + escapeHtml(cat) + '</span>' +
@@ -3496,7 +3665,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
             var glyph = BLOCK_GLYPHS[blk.type] || '✦';
 
-            card.innerHTML = 
+            card.innerHTML =
               '<div class="lib-card-handle" title="Drag to insert into section">⋮⋮</div>' +
               '<div class="lib-card-glyph">' + glyph + '</div>' +
               '<div class="lib-card-content">' +
@@ -3518,6 +3687,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               draggedBlockData = { source: 'library', type: blk.type };
               e.dataTransfer.setData('text/plain', JSON.stringify(draggedBlockData));
               e.dataTransfer.effectAllowed = 'copy';
+              startDragAutoScroll();
+            });
+
+            card.addEventListener('dragend', function() {
+              draggedBlockData = null;
+              stopDragAutoScroll();
             });
 
             body.appendChild(card);
@@ -3529,37 +3704,71 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         });
       }
 
-      // Search Filter
-      document.getElementById('library-search-input').addEventListener('input', function(e) {
-        var query = (e.target.value || '').trim().toLowerCase();
-        var accordions = document.querySelectorAll('.category-accordion');
+      // Search Filter & Clear Control
+      var librarySearchInput = document.getElementById('library-search-input');
+      var librarySearchClearBtn = document.getElementById('library-search-clear');
 
-        accordions.forEach(function(acc) {
-          var cards = acc.querySelectorAll('.library-block-card');
-          var hasMatch = false;
+      function updateLibrarySearchClearBtn() {
+        if (!librarySearchClearBtn || !librarySearchInput) return;
+        librarySearchClearBtn.style.display = librarySearchInput.value ? 'flex' : 'none';
+      }
 
-          cards.forEach(function(c) {
-            var kw = c.getAttribute('data-keywords') || '';
-            if (!query || kw.includes(query)) {
-              c.style.display = 'flex';
-              hasMatch = true;
-            } else {
-              c.style.display = 'none';
-            }
-          });
+      function clearLibrarySearch() {
+        if (!librarySearchInput) return;
+        librarySearchInput.value = '';
+        updateLibrarySearchClearBtn();
+        librarySearchInput.dispatchEvent(new Event('input', { bubbles: true }));
+        librarySearchInput.focus();
+      }
 
-          if (query) {
-            if (hasMatch) {
-              acc.style.display = 'block';
-              acc.classList.add('open');
-            } else {
-              acc.style.display = 'none';
-            }
-          } else {
-            acc.style.display = 'block';
+      if (librarySearchClearBtn) {
+        librarySearchClearBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          clearLibrarySearch();
+        });
+      }
+
+      if (librarySearchInput) {
+        librarySearchInput.addEventListener('keydown', function(e) {
+          if (e.key === 'Escape' && librarySearchInput.value) {
+            e.preventDefault();
+            e.stopPropagation();
+            clearLibrarySearch();
           }
         });
-      });
+
+        librarySearchInput.addEventListener('input', function(e) {
+          updateLibrarySearchClearBtn();
+          var query = (e.target.value || '').trim().toLowerCase();
+          var accordions = document.querySelectorAll('.category-accordion');
+
+          accordions.forEach(function(acc) {
+            var cards = acc.querySelectorAll('.library-block-card');
+            var hasMatch = false;
+
+            cards.forEach(function(c) {
+              var kw = c.getAttribute('data-keywords') || '';
+              if (!query || kw.includes(query)) {
+                c.style.display = 'flex';
+                hasMatch = true;
+              } else {
+                c.style.display = 'none';
+              }
+            });
+
+            if (query) {
+              if (hasMatch) {
+                acc.style.display = 'block';
+                acc.classList.add('open');
+              } else {
+                acc.style.display = 'none';
+              }
+            } else {
+              acc.style.display = 'block';
+            }
+          });
+        });
+      }
 
       // ── Sections Management ─────────────────────────────
       function addSection(title) {
@@ -3588,6 +3797,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         copy.title = copy.title + ' — Copy';
         copy.blocks.forEach(function(b) {
           b.id = uid('blk');
+          regenerateBlockNestedIds(b);
         });
         currentDoc.sections.splice(idx + 1, 0, copy);
         activeSectionId = copy.id;
@@ -3749,6 +3959,220 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         }, 10);
       }
 
+      // ── Drag Auto-Scroll Coordinator ───────────────────────────
+      var dragAutoScrollState = {
+        isDragging: false,
+        clientX: 0,
+        clientY: 0,
+        activeFlexCanvas: null,
+        rafId: null
+      };
+
+      function startDragAutoScroll() {
+        dragAutoScrollState.isDragging = true;
+        if (!dragAutoScrollState.rafId) {
+          dragAutoScrollState.rafId = requestAnimationFrame(dragAutoScrollLoop);
+        }
+      }
+
+      function stopDragAutoScroll() {
+        dragAutoScrollState.isDragging = false;
+        dragAutoScrollState.activeFlexCanvas = null;
+        if (dragAutoScrollState.rafId) {
+          cancelAnimationFrame(dragAutoScrollState.rafId);
+          dragAutoScrollState.rafId = null;
+        }
+        document.querySelectorAll('.drag-target-above, .drag-target-below, .drag-target-forbidden, .drag-over').forEach(function(el) {
+          el.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden', 'drag-over');
+        });
+      }
+
+      function updateDragTargetUnderPointer(x, y) {
+        if (!x || !y) return;
+        var el = document.elementFromPoint(x, y);
+        if (!el) return;
+
+        // Check if inside a Callout Composable Content panel
+        var calloutPanel = el.closest('.studio-callout-blocks-panel');
+        if (calloutPanel) {
+          document.querySelectorAll('.studio-callout-blocks-panel.drag-over').forEach(function(p) {
+            if (p !== calloutPanel) p.classList.remove('drag-over');
+          });
+          calloutPanel.classList.add('drag-over');
+          document.querySelectorAll('.block-editor-card.drag-target-above, .block-editor-card.drag-target-below').forEach(function(c) {
+            if (!calloutPanel.contains(c)) {
+              c.classList.remove('drag-target-above', 'drag-target-below');
+            }
+          });
+          var cBlocks = calloutPanel.querySelector('.studio-callout-blocks');
+          if (!cBlocks) return;
+          var cChildCards = Array.from(cBlocks.querySelectorAll(':scope > .block-editor-card'));
+          if (cChildCards.length === 0) {
+            var cEmptyDz = cBlocks.querySelector('.studio-callout-empty-dropzone');
+            if (cEmptyDz) cEmptyDz.classList.add('drag-over');
+          } else {
+            for (var ci = 0; ci < cChildCards.length; ci++) {
+              var cr = cChildCards[ci].getBoundingClientRect();
+              var cmid = cr.top + cr.height / 2;
+              cChildCards[ci].classList.remove('drag-target-above', 'drag-target-below');
+              if (y < cmid) {
+                cChildCards[ci].classList.add('drag-target-above');
+                break;
+              } else if (ci === cChildCards.length - 1) {
+                cChildCards[ci].classList.add('drag-target-below');
+              }
+            }
+          }
+          return;
+        }
+
+        document.querySelectorAll('.studio-callout-blocks-panel.drag-over').forEach(function(p) {
+          p.classList.remove('drag-over');
+        });
+
+        // Check if inside a Flexible Layout column
+        var flexCol = el.closest('.studio-flex-col-panel');
+        if (flexCol) {
+          document.querySelectorAll('.studio-flex-col-panel.drag-over').forEach(function(p) {
+            if (p !== flexCol) p.classList.remove('drag-over');
+          });
+          flexCol.classList.add('drag-over');
+          document.querySelectorAll('.block-editor-card.drag-target-above, .block-editor-card.drag-target-below').forEach(function(c) {
+            if (!flexCol.contains(c)) {
+              c.classList.remove('drag-target-above', 'drag-target-below');
+            }
+          });
+          var colBlocks = flexCol.querySelector('.studio-flex-col-blocks');
+          if (!colBlocks) return;
+          var childCards = Array.from(colBlocks.querySelectorAll(':scope > .block-editor-card'));
+          if (childCards.length === 0) {
+            var emptyDz = colBlocks.querySelector('.studio-flex-empty-dropzone');
+            if (emptyDz) emptyDz.classList.add('drag-over');
+          } else {
+            for (var i = 0; i < childCards.length; i++) {
+              var r = childCards[i].getBoundingClientRect();
+              var mid = r.top + r.height / 2;
+              childCards[i].classList.remove('drag-target-above', 'drag-target-below');
+              if (y < mid) {
+                childCards[i].classList.add('drag-target-above');
+                break;
+              } else if (i === childCards.length - 1) {
+                childCards[i].classList.add('drag-target-below');
+              }
+            }
+          }
+          return;
+        }
+
+        document.querySelectorAll('.studio-flex-col-panel.drag-over').forEach(function(p) {
+          p.classList.remove('drag-over');
+        });
+
+        // Section root level card
+        var card = el.closest('.block-editor-card');
+        if (card && !card.classList.contains('is-flex-child') && !card.classList.contains('is-callout-child')) {
+          var rect = card.getBoundingClientRect();
+          var midY = rect.top + rect.height / 2;
+          document.querySelectorAll('.drag-target-above, .drag-target-below').forEach(function(c) {
+            if (c !== card) c.classList.remove('drag-target-above', 'drag-target-below');
+          });
+          if (y < midY) {
+            card.classList.add('drag-target-above');
+            card.classList.remove('drag-target-below');
+          } else {
+            card.classList.add('drag-target-below');
+            card.classList.remove('drag-target-above');
+          }
+        }
+      }
+
+      function dragAutoScrollLoop() {
+        if (!dragAutoScrollState.isDragging) {
+          dragAutoScrollState.rafId = null;
+          return;
+        }
+
+        var centerPane = document.querySelector('.studio-center-pane');
+        var didScroll = false;
+
+        // 1. Vertical Auto-Scroll on .studio-center-pane
+        if (centerPane && dragAutoScrollState.clientY > 0) {
+          var paneRect = centerPane.getBoundingClientRect();
+          var cx = dragAutoScrollState.clientX;
+          var cy = dragAutoScrollState.clientY;
+
+          if (cx >= paneRect.left && cx <= paneRect.right) {
+            var topEdge = paneRect.top;
+            var bottomEdge = paneRect.bottom;
+            var edgeZone = 80;
+
+            if (cy >= topEdge && cy <= topEdge + edgeZone) {
+              var ratio = 1 - ((cy - topEdge) / edgeZone);
+              var speed = Math.ceil(3 + ratio * 20);
+              if (centerPane.scrollTop > 0) {
+                centerPane.scrollTop = Math.max(0, centerPane.scrollTop - speed);
+                didScroll = true;
+              }
+            } else if (cy >= bottomEdge - edgeZone && cy <= bottomEdge) {
+              var ratio = 1 - ((bottomEdge - cy) / edgeZone);
+              var speed = Math.ceil(3 + ratio * 20);
+              var maxScroll = centerPane.scrollHeight - centerPane.clientHeight;
+              if (centerPane.scrollTop < maxScroll) {
+                centerPane.scrollTop = Math.min(maxScroll, centerPane.scrollTop + speed);
+                didScroll = true;
+              }
+            }
+          }
+        }
+
+        // 2. Local Horizontal Auto-Scroll on active Flexible Layout canvas
+        var flexCanvas = dragAutoScrollState.activeFlexCanvas;
+        if (flexCanvas && flexCanvas.isConnected) {
+          var cRect = flexCanvas.getBoundingClientRect();
+          var fx = dragAutoScrollState.clientX;
+          var fy = dragAutoScrollState.clientY;
+
+          if (fy >= cRect.top && fy <= cRect.bottom) {
+            var hZone = 80;
+            if (fx >= cRect.left && fx <= cRect.left + hZone) {
+              var ratio = 1 - ((fx - cRect.left) / hZone);
+              var hSpeed = Math.ceil(3 + ratio * 18);
+              if (flexCanvas.scrollLeft > 0) {
+                flexCanvas.scrollLeft = Math.max(0, flexCanvas.scrollLeft - hSpeed);
+                didScroll = true;
+              }
+            } else if (fx >= cRect.right - hZone && fx <= cRect.right) {
+              var ratio = 1 - ((cRect.right - fx) / hZone);
+              var hSpeed = Math.ceil(3 + ratio * 18);
+              var maxH = flexCanvas.scrollWidth - flexCanvas.clientWidth;
+              if (flexCanvas.scrollLeft < maxH) {
+                flexCanvas.scrollLeft = Math.min(maxH, flexCanvas.scrollLeft + hSpeed);
+                didScroll = true;
+              }
+            }
+          }
+        }
+
+        if (didScroll) {
+          updateDragTargetUnderPointer(dragAutoScrollState.clientX, dragAutoScrollState.clientY);
+        }
+
+        dragAutoScrollState.rafId = requestAnimationFrame(dragAutoScrollLoop);
+      }
+
+      window.addEventListener('dragover', function(e) {
+        if (!dragAutoScrollState.isDragging && !draggedBlockData) return;
+        dragAutoScrollState.clientX = e.clientX;
+        dragAutoScrollState.clientY = e.clientY;
+        dragAutoScrollState.activeFlexCanvas = e.target ? e.target.closest('.studio-flex-canvas-wrap') : null;
+        if (!dragAutoScrollState.isDragging && draggedBlockData) {
+          startDragAutoScroll();
+        }
+      }, { passive: true });
+
+      window.addEventListener('dragend', stopDragAutoScroll);
+      window.addEventListener('drop', stopDragAutoScroll);
+
       window.addEventListener('resize', function() {
         handleInlineDeleteScrollOrResize();
         closeAllPopovers();
@@ -3791,7 +4215,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       function deleteSection(secId, triggerBtn) {
         var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
         if (!sec) return;
-        
+
         var subtitle = sec.blocks.length === 1 ? 'Contains 1 block.' : ('Contains ' + sec.blocks.length + ' block(s).');
 
         showInlineDelete(
@@ -3839,11 +4263,174 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           type: type,
           data: JSON.parse(JSON.stringify(def.defaultData))
         };
+        if (type === 'flex-layout') {
+          newBlock.data.columns = [
+            { id: uid('fcol'), blocks: [] },
+            { id: uid('fcol'), blocks: [] }
+          ];
+        }
+        if (type === 'callout') {
+          newBlock.data.blocks = [
+            {
+              id: uid('blk'),
+              type: 'solo-text',
+              data: { paragraphs: [''] }
+            }
+          ];
+        }
         sec.blocks.push(newBlock);
+        normalizeDocument(currentDoc);
+        currentDoc = normalizeDocument(currentDoc);
         activeSectionId = sec.id;
         renderSections();
         triggerAutosave();
         showToast('Inserted: ' + def.label);
+      }
+
+      function regenerateBlockNestedIds(block) {
+        if (!block || !block.data) return;
+        var d = block.data;
+        if (block.type === 'nested-bullets' && Array.isArray(d.items)) {
+          d.items.forEach(function(l1) {
+            l1.id = uid('main');
+            if (Array.isArray(l1.children)) {
+              l1.children.forEach(function(l2) {
+                l2.id = uid('sub');
+                if (Array.isArray(l2.children)) {
+                  l2.children.forEach(function(l3) { l3.id = uid('fl3'); });
+                }
+              });
+            }
+          });
+        } else if (block.type === 'numbered-steps' && Array.isArray(d.steps)) {
+          d.steps.forEach(function(s) { s.id = uid('step'); });
+        } else if (block.type === 'bullet-list' && Array.isArray(d.items)) {
+          d.items.forEach(function(it) { it.id = uid('item'); });
+        } else if (block.type === 'gallery-scroll' && Array.isArray(d.cards)) {
+          d.cards.forEach(function(c) { c.id = uid('gcard'); });
+        } else if (block.type === 'faq' && Array.isArray(d.items)) {
+          d.items.forEach(function(it) { it.id = uid('faq'); });
+        } else if (block.type === 'technical-table' && Array.isArray(d.rows)) {
+          d.rows.forEach(function(r) { r.id = uid('row'); });
+        } else if (block.type === 'related-docs' && Array.isArray(d.items)) {
+          d.items.forEach(function(rd) { rd.id = uid('rd'); });
+        } else if (block.type === 'key-takeaways' && Array.isArray(d.items)) {
+          d.items.forEach(function(it) { it.id = uid('kt'); });
+        } else if (block.type === 'callout' && Array.isArray(d.blocks)) {
+          d.blocks.forEach(function(cb) {
+            cb.id = uid('blk');
+            regenerateBlockNestedIds(cb);
+          });
+        } else if (block.type === 'flex-layout' && Array.isArray(d.columns)) {
+          d.columns.forEach(function(col) {
+            col.id = uid('fcol');
+            if (Array.isArray(col.blocks)) {
+              col.blocks.forEach(function(cb) {
+                cb.id = uid('blk');
+                regenerateBlockNestedIds(cb);
+              });
+            }
+          });
+        }
+      }
+
+      function resolveBlockLocation(blockId) {
+        if (!blockId || !currentDoc || !Array.isArray(currentDoc.sections)) return null;
+        for (var s = 0; s < currentDoc.sections.length; s++) {
+          var sec = currentDoc.sections[s];
+          if (!Array.isArray(sec.blocks)) continue;
+          for (var b = 0; b < sec.blocks.length; b++) {
+            var blk = sec.blocks[b];
+            if (blk.id === blockId) {
+              return {
+                block: blk,
+                section: sec,
+                parentType: 'section',
+                parentBlockId: null,
+                columnId: null
+              };
+            }
+            if (blk.type === 'callout' && blk.data && Array.isArray(blk.data.blocks)) {
+              var calloutBlocks = blk.data.blocks;
+              for (var cb = 0; cb < calloutBlocks.length; cb++) {
+                if (calloutBlocks[cb].id === blockId) {
+                  return {
+                    block: calloutBlocks[cb],
+                    section: sec,
+                    parentType: 'callout',
+                    parentBlockId: blk.id,
+                    columnId: null
+                  };
+                }
+              }
+            }
+            if (blk.type === 'flex-layout' && blk.data && Array.isArray(blk.data.columns)) {
+              var cols = blk.data.columns;
+              for (var c = 0; c < cols.length; c++) {
+                var cBlocks = cols[c].blocks || [];
+                for (var cb = 0; cb < cBlocks.length; cb++) {
+                  if (cBlocks[cb].id === blockId) {
+                    return {
+                      block: cBlocks[cb],
+                      section: sec,
+                      parentType: 'flex-col',
+                      parentBlockId: blk.id,
+                      columnId: cols[c].id
+                    };
+                  }
+                  if (cBlocks[cb].type === 'callout' && cBlocks[cb].data && Array.isArray(cBlocks[cb].data.blocks)) {
+                    var cChildren = cBlocks[cb].data.blocks;
+                    for (var ck = 0; ck < cChildren.length; ck++) {
+                      if (cChildren[ck].id === blockId) {
+                        return {
+                          block: cChildren[ck],
+                          section: sec,
+                          parentType: 'callout',
+                          parentBlockId: cBlocks[cb].id,
+                          columnId: null
+                        };
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+        return null;
+      }
+
+      function findBlockById(blockId) {
+        var loc = resolveBlockLocation(blockId);
+        return loc ? loc.block : null;
+      }
+
+      function isDraggingFlexLayout() {
+        if (!draggedBlockData) return false;
+        if (draggedBlockData.source === 'library') {
+          return draggedBlockData.type === 'flex-layout';
+        }
+        if (draggedBlockData.source === 'block') {
+          if (draggedBlockData.type) {
+            return draggedBlockData.type === 'flex-layout';
+          }
+          if (draggedBlockData.blockType) {
+            return draggedBlockData.blockType === 'flex-layout';
+          }
+          var b = findBlockById(draggedBlockData.blockId);
+          return b && b.type === 'flex-layout';
+        }
+        return false;
+      }
+
+      function isDraggingForbiddenInCallout() {
+        if (!draggedBlockData) return false;
+        var type = draggedBlockData.type || draggedBlockData.blockType;
+        if (!type && draggedBlockData.blockId) {
+          var b = findBlockById(draggedBlockData.blockId);
+          type = b ? b.type : '';
+        }
+        return !canNestInCallout(type);
       }
 
       function duplicateBlock(secId, blockId) {
@@ -3854,6 +4441,28 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         var original = sec.blocks[bIdx];
         var copy = JSON.parse(JSON.stringify(original));
         copy.id = uid('blk');
+        if (copy.type === 'flex-layout' && copy.data && Array.isArray(copy.data.columns)) {
+          copy.data.columns = copy.data.columns.map(function(c) {
+            return {
+              id: uid('fcol'),
+              blocks: (c.blocks || []).map(function(child) {
+                var childCopy = JSON.parse(JSON.stringify(child));
+                childCopy.id = uid('blk');
+                regenerateBlockNestedIds(childCopy);
+                return childCopy;
+              })
+            };
+          });
+        } else if (copy.type === 'callout' && copy.data && Array.isArray(copy.data.blocks)) {
+          copy.data.blocks = copy.data.blocks.map(function(child) {
+            var childCopy = JSON.parse(JSON.stringify(child));
+            childCopy.id = uid('blk');
+            regenerateBlockNestedIds(childCopy);
+            return childCopy;
+          });
+        } else {
+          regenerateBlockNestedIds(copy);
+        }
         sec.blocks.splice(bIdx + 1, 0, copy);
         activeSectionId = secId;
         renderSections();
@@ -3864,13 +4473,147 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
       function deleteBlock(secId, blockId, triggerBtn) {
         var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
         if (!sec) return;
-        
+        var b = sec.blocks.find(function(blk) { return blk.id === blockId; });
+        if (!b) return;
+
+        var title = 'Delete block?';
+        var subtitle = null;
+        if (b.type === 'flex-layout' && b.data && Array.isArray(b.data.columns)) {
+          var totalChildBlocks = 0;
+          b.data.columns.forEach(function(col) {
+            totalChildBlocks += (col.blocks || []).length;
+          });
+          if (totalChildBlocks > 0) {
+            title = 'Delete Flexible Layout?';
+            subtitle = 'Contains ' + totalChildBlocks + ' block' + (totalChildBlocks !== 1 ? 's' : '') + '.';
+          }
+        } else if (b.type === 'callout' && b.data && Array.isArray(b.data.blocks)) {
+          var totalChildBlocks = b.data.blocks.length;
+          if (totalChildBlocks > 0) {
+            title = 'Delete Callout Advisory?';
+            subtitle = 'Contains ' + totalChildBlocks + ' block' + (totalChildBlocks !== 1 ? 's' : '') + '.';
+          }
+        }
+
+        showInlineDelete(
+          triggerBtn,
+          title,
+          subtitle,
+          function() {
+            sec.blocks = sec.blocks.filter(function(blk) { return blk.id !== blockId; });
+            renderSections();
+            triggerAutosave();
+            showToast('Block removed');
+          }
+        );
+      }
+
+      function moveFlexChild(secId, flexBlockId, colId, childBlockId, direction) {
+        var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
+        if (!sec) return;
+        var flexBlock = sec.blocks.find(function(b) { return b.id === flexBlockId; });
+        if (!flexBlock || !flexBlock.data) return;
+        var col = (flexBlock.data.columns || []).find(function(c) { return c.id === colId; });
+        if (!col || !Array.isArray(col.blocks)) return;
+        var idx = col.blocks.findIndex(function(b) { return b.id === childBlockId; });
+        if (idx === -1) return;
+        var targetIdx = idx + direction;
+        if (targetIdx < 0 || targetIdx >= col.blocks.length) return;
+        var temp = col.blocks[idx];
+        col.blocks[idx] = col.blocks[targetIdx];
+        col.blocks[targetIdx] = temp;
+        renderSections();
+        triggerAutosave();
+      }
+
+      function duplicateFlexChild(secId, flexBlockId, colId, childBlockId) {
+        var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
+        if (!sec) return;
+        var flexBlock = sec.blocks.find(function(b) { return b.id === flexBlockId; });
+        if (!flexBlock || !flexBlock.data) return;
+        var col = (flexBlock.data.columns || []).find(function(c) { return c.id === colId; });
+        if (!col || !Array.isArray(col.blocks)) return;
+        var idx = col.blocks.findIndex(function(b) { return b.id === childBlockId; });
+        if (idx === -1) return;
+        var original = col.blocks[idx];
+        var copy = JSON.parse(JSON.stringify(original));
+        copy.id = uid('blk');
+        regenerateBlockNestedIds(copy);
+        col.blocks.splice(idx + 1, 0, copy);
+        renderSections();
+        triggerAutosave();
+        showToast('Block duplicated');
+      }
+
+      function deleteFlexChild(secId, flexBlockId, colId, childBlockId, triggerBtn) {
+        var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
+        if (!sec) return;
+        var flexBlock = sec.blocks.find(function(b) { return b.id === flexBlockId; });
+        if (!flexBlock || !flexBlock.data) return;
+        var col = (flexBlock.data.columns || []).find(function(c) { return c.id === colId; });
+        if (!col || !Array.isArray(col.blocks)) return;
+
         showInlineDelete(
           triggerBtn,
           'Delete block?',
           null,
           function() {
-            sec.blocks = sec.blocks.filter(function(b) { return b.id !== blockId; });
+            col.blocks = col.blocks.filter(function(b) { return b.id !== childBlockId; });
+            renderSections();
+            triggerAutosave();
+            showToast('Block removed');
+          }
+        );
+      }
+
+      function moveCalloutChild(secId, calloutBlockId, childBlockId, direction) {
+        var loc = resolveBlockLocation(calloutBlockId);
+        var calloutBlock = loc ? loc.block : null;
+        if (!calloutBlock || !calloutBlock.data) return;
+        var blocks = calloutBlock.data.blocks;
+        if (!Array.isArray(blocks)) return;
+        var idx = blocks.findIndex(function(b) { return b.id === childBlockId; });
+        if (idx === -1) return;
+        var targetIdx = idx + direction;
+        if (targetIdx < 0 || targetIdx >= blocks.length) return;
+        var temp = blocks[idx];
+        blocks[idx] = blocks[targetIdx];
+        blocks[targetIdx] = temp;
+        renderSections();
+        triggerAutosave();
+      }
+
+      function duplicateCalloutChild(secId, calloutBlockId, childBlockId) {
+        var loc = resolveBlockLocation(calloutBlockId);
+        var calloutBlock = loc ? loc.block : null;
+        if (!calloutBlock || !calloutBlock.data) return;
+        var blocks = calloutBlock.data.blocks;
+        if (!Array.isArray(blocks)) return;
+        var idx = blocks.findIndex(function(b) { return b.id === childBlockId; });
+        if (idx === -1) return;
+        var original = blocks[idx];
+        var copy = JSON.parse(JSON.stringify(original));
+        copy.id = uid('blk');
+        regenerateBlockNestedIds(copy);
+        blocks.splice(idx + 1, 0, copy);
+        renderSections();
+        triggerAutosave();
+        showToast('Block duplicated');
+      }
+
+      function deleteCalloutChild(secId, calloutBlockId, childBlockId, triggerBtn) {
+        var loc = resolveBlockLocation(calloutBlockId);
+        var calloutBlock = loc ? loc.block : null;
+        if (!calloutBlock || !calloutBlock.data) return;
+        var blocks = calloutBlock.data.blocks;
+        if (!Array.isArray(blocks)) return;
+
+        showInlineDelete(
+          triggerBtn,
+          'Delete block?',
+          null,
+          function() {
+            calloutBlock.data.blocks = blocks.filter(function(b) { return b.id !== childBlockId; });
             renderSections();
             triggerAutosave();
             showToast('Block removed');
@@ -3921,30 +4664,49 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         switch (block.type) {
           // ── 01. BASIC TYPOGRAPHY ──
           case 'title-text':
-            html += 
+            var isTextShown = d.showText !== false;
+            html +=
               (d.kicker !== undefined ?
                 '<div class="studio-form-group"><label class="studio-label"><span>Kicker</span><span class="field-label-remove" data-act="remove-field" data-opt-field="kicker">✕ Remove</span></label><input type="text" class="studio-input" data-field="kicker" value="' + escapeHtml(d.kicker) + '" placeholder="01 · Kicker text..." /></div>' :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="kicker">+ Add Kicker</button></div>'
               ) +
               renderRichTextFieldHtml('Heading *', 'data-rich-field="heading"', d.heading, 'Primary section heading...') +
-              '<div class="studio-form-group"><label class="studio-label">Paragraphs</label><div class="studio-repeatable-list">';
-            (d.paragraphs || ['']).forEach(function(p, pIdx) {
-              html += 
-                '<div class="studio-repeatable-row">' +
-                  '<span class="studio-repeatable-handle">⋮⋮</span>' +
-                  '<div class="studio-repeatable-content">' +
-                    renderRichTextFieldHtml('Paragraph ' + (pIdx + 1), 'data-rich-array="paragraphs" data-rich-idx="' + pIdx + '"', p, 'Write paragraph...') +
-                  '</div>' +
-                  '<div class="studio-repeatable-actions">' +
-                    '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-paragraph" data-idx="' + pIdx + '" ' + (d.paragraphs.length <= 1 ? 'disabled' : '') + ' title="Delete paragraph">✕</button>' +
-                  '</div>' +
+              '<div class="studio-form-group">' +
+                '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">' +
+                  '<label class="studio-label" style="margin-bottom:0">Paragraphs</label>' +
+                  '<button type="button" class="studio-btn studio-btn--sm' + (isTextShown ? ' is-active' : '') + '" data-act="toggle-show-text" title="' + (isTextShown ? 'Hide paragraph text from publication' : 'Show paragraph text in publication') + '" style="font-size:10px;font-family:var(--font-mono);letter-spacing:0.5px;padding:3px 8px;display:inline-flex;align-items:center;gap:5px">' +
+                    (isTextShown ? '<span>SHOW TEXT</span><span style="color:var(--studio-gold);font-weight:700">✓</span>' : '<span style="color:var(--studio-text-muted)">SHOW TEXT</span><span style="color:var(--studio-text-muted)">○</span>') +
+                  '</button>' +
                 '</div>';
-            });
-            html += '</div><div style="margin-top:6px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-paragraph">+ Add Paragraph</button></div></div>';
+
+            if (isTextShown) {
+              html += '<div class="studio-repeatable-list">';
+              (d.paragraphs || ['']).forEach(function(p, pIdx) {
+                html +=
+                  '<div class="studio-repeatable-row">' +
+                    '<span class="studio-repeatable-handle">⋮⋮</span>' +
+                    '<div class="studio-repeatable-content">' +
+                      renderRichTextFieldHtml('Paragraph ' + (pIdx + 1), 'data-rich-array="paragraphs" data-rich-idx="' + pIdx + '"', p, 'Write paragraph...') +
+                    '</div>' +
+                    '<div class="studio-repeatable-actions">' +
+                      '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-paragraph" data-idx="' + pIdx + '" ' + (d.paragraphs.length <= 1 ? 'disabled' : '') + ' title="Delete paragraph">✕</button>' +
+                    '</div>' +
+                  '</div>';
+              });
+              html += '</div><div style="margin-top:6px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-paragraph">+ Add Paragraph</button></div>';
+            } else {
+              html +=
+                '<div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted);padding:8px 10px;background:rgba(18,14,26,0.5);border:1px dashed rgba(216,181,107,0.15);border-radius:4px;display:flex;align-items:center;justify-content:space-between">' +
+                  '<span>Body text hidden</span>' +
+                  '<button type="button" class="studio-btn--add-field" data-act="toggle-show-text" style="margin:0">+ Enable Text</button>' +
+                '</div>';
+            }
+
+            html += '</div>';
             break;
 
           case 'text-title':
-            html += 
+            html +=
               (d.kicker !== undefined ?
                 '<div class="studio-form-group"><label class="studio-label"><span>Kicker</span><span class="field-label-remove" data-act="remove-field" data-opt-field="kicker">✕ Remove</span></label><input type="text" class="studio-input" data-field="kicker" value="' + escapeHtml(d.kicker) + '" /></div>' :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="kicker">+ Add Kicker</button></div>'
@@ -3957,7 +4719,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           case 'solo-text':
             html += '<div class="studio-form-group"><label class="studio-label">Editorial Paragraphs</label><div class="studio-repeatable-list">';
             (d.paragraphs || ['']).forEach(function(p, pIdx) {
-              html += 
+              html +=
                 '<div class="studio-repeatable-row">' +
                   '<span class="studio-repeatable-handle">⋮⋮</span>' +
                   '<div class="studio-repeatable-content">' +
@@ -3973,14 +4735,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
           // ── 02. LISTS & STEPS ──
           case 'bullet-list':
-            html += 
+            html +=
               (d.title !== undefined ?
                 '<div class="studio-form-group"><label class="studio-label"><span>List Title</span><span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span></label><input type="text" class="studio-input" data-field="title" value="' + escapeHtml(d.title) + '" placeholder="Optional list title..." /></div>' :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
               '<div class="studio-form-group"><label class="studio-label">Bullet Items</label><div class="studio-repeatable-list">';
             (d.items || []).forEach(function(it, iIdx) {
-              html += 
+              html +=
                 '<div class="studio-repeatable-row">' +
                   '<span class="studio-repeatable-handle">⋮⋮</span>' +
                   '<div class="studio-repeatable-content">' +
@@ -4003,25 +4765,35 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               hyphen: '— Hyphen'
             };
             var curMarker = d.markerStyle || 'coven';
+            var curLayout = d.layout === 'horizontal' ? 'horizontal' : 'vertical';
 
-            html += 
+            html +=
               (d.title !== undefined ?
                 renderRichTextFieldHtml('<span>List Title</span>', 'data-rich-field="title"', d.title, 'Optional hierarchical title...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
-              '<div class="nested-marker-control-wrap">' +
-                '<label class="nested-marker-label">LIST MARKER STYLE</label>' +
-                '<div class="nested-marker-dropdown-wrap">' +
-                  '<button type="button" class="nested-marker-trigger" data-act="toggle-marker-dropdown">' +
-                    '<span class="nested-marker-current-val">' + (markerLabels[curMarker] || '✦ Coven Spark') + '</span>' +
-                    '<span class="nested-marker-caret">▾</span>' +
-                  '</button>' +
-                  '<div class="nested-marker-dropdown" style="display:none">' +
-                    '<div class="nested-marker-opt' + (curMarker === 'coven' ? ' is-active' : '') + '" data-act="select-marker" data-val="coven">✦ Coven Spark (Default)</div>' +
-                    '<div class="nested-marker-opt' + (curMarker === 'decimal' ? ' is-active' : '') + '" data-act="select-marker" data-val="decimal">1, 2, 3</div>' +
-                    '<div class="nested-marker-opt' + (curMarker === 'alpha' ? ' is-active' : '') + '" data-act="select-marker" data-val="alpha">a, b, c</div>' +
-                    '<div class="nested-marker-opt' + (curMarker === 'roman' ? ' is-active' : '') + '" data-act="select-marker" data-val="roman">I, II, III</div>' +
-                    '<div class="nested-marker-opt' + (curMarker === 'hyphen' ? ' is-active' : '') + '" data-act="select-marker" data-val="hyphen">— Hyphen</div>' +
+              '<div style="display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap;margin-bottom:12px;">' +
+                '<div class="nested-marker-control-wrap" style="margin-bottom:0;flex:1;min-width:160px;">' +
+                  '<label class="nested-marker-label">LIST MARKER STYLE</label>' +
+                  '<div class="nested-marker-dropdown-wrap">' +
+                    '<button type="button" class="nested-marker-trigger" data-act="toggle-marker-dropdown">' +
+                      '<span class="nested-marker-current-val">' + (markerLabels[curMarker] || '✦ Coven Spark') + '</span>' +
+                      '<span class="nested-marker-caret">▾</span>' +
+                    '</button>' +
+                    '<div class="nested-marker-dropdown" style="display:none">' +
+                      '<div class="nested-marker-opt' + (curMarker === 'coven' ? ' is-active' : '') + '" data-act="select-marker" data-val="coven">✦ Coven Spark (Default)</div>' +
+                      '<div class="nested-marker-opt' + (curMarker === 'decimal' ? ' is-active' : '') + '" data-act="select-marker" data-val="decimal">1, 2, 3</div>' +
+                      '<div class="nested-marker-opt' + (curMarker === 'alpha' ? ' is-active' : '') + '" data-act="select-marker" data-val="alpha">a, b, c</div>' +
+                      '<div class="nested-marker-opt' + (curMarker === 'roman' ? ' is-active' : '') + '" data-act="select-marker" data-val="roman">I, II, III</div>' +
+                      '<div class="nested-marker-opt' + (curMarker === 'hyphen' ? ' is-active' : '') + '" data-act="select-marker" data-val="hyphen">— Hyphen</div>' +
+                    '</div>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="nested-marker-control-wrap" style="margin-bottom:0;">' +
+                  '<label class="nested-marker-label">LIST LAYOUT</label>' +
+                  '<div class="nested-layout-btn-group" style="display:inline-flex;gap:4px;background:rgba(18,14,25,0.7);padding:2px;border:1px solid rgba(216,181,107,0.2);border-radius:4px;">' +
+                    '<button type="button" class="studio-btn studio-btn--sm' + (curLayout === 'vertical' ? ' is-active' : '') + '" data-act="set-nested-layout" data-layout="vertical">Vertical</button>' +
+                    '<button type="button" class="studio-btn studio-btn--sm' + (curLayout === 'horizontal' ? ' is-active' : '') + '" data-act="set-nested-layout" data-layout="horizontal">Horizontal</button>' +
                   '</div>' +
                 '</div>' +
               '</div>' +
@@ -4029,19 +4801,19 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             (d.items || []).forEach(function(main, mIdx) {
               var mainLabel = '<div style="display:flex;align-items:center;gap:8px"><span class="studio-repeatable-handle">⋮⋮</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);font-weight:600">MAIN ITEM ' + String(mIdx + 1).padStart(2, '0') + '</span></div>';
               var mainRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-main" data-item-id="' + main.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete parent item">✕</button>';
-              html += 
+              html +=
                 '<div class="nested-parent-card">' +
                   renderRichTextFieldHtml(mainLabel, 'data-rich-array-obj="items" data-rich-item-id="' + main.id + '" data-rich-prop="text"', main.text, 'Main invocation / parent item...', mainRemove) +
                   '<div class="nested-sub-items-wrap">';
               (main.children || []).forEach(function(sub, sIdx) {
                 var subLabel = '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-purple)">↳ SUB-ITEM</span>';
                 var subRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-sub" data-parent-id="' + main.id + '" data-sub-id="' + sub.id + '" title="Delete sub-item">✕</button>';
-                html += 
+                html +=
                   '<div class="nested-sub-item-card" style="margin-bottom:6px">' +
                     renderRichTextFieldHtml(subLabel, 'data-rich-nested-sub="true" data-rich-parent-id="' + main.id + '" data-rich-sub-id="' + sub.id + '"', sub.text, 'Sub-item detail...', subRemove) +
                   '</div>';
               });
-              html += 
+              html +=
                   '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-nested-sub" data-parent-id="' + main.id + '">+ Add Sub-item</button></div>' +
                 '</div>' +
               '</div>';
@@ -4050,7 +4822,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'numbered-steps':
-            html += 
+            html +=
               (d.title !== undefined ?
                 renderRichTextFieldHtml('<span>Steps Title</span>', 'data-rich-field="title"', d.title, 'Optional ritual/steps title...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
@@ -4058,7 +4830,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               '<div class="studio-form-group"><label class="studio-label">Sequential Ritual Steps</label><div style="display:flex;flex-direction:column;gap:10px">';
             (d.steps || []).forEach(function(st, sIdx) {
               var badge = String(sIdx + 1).padStart(2, '0');
-              html += 
+              html +=
                 '<div class="studio-step-card">' +
                   '<div class="studio-step-top">' +
                     '<div style="display:flex;align-items:center;gap:10px">' +
@@ -4082,7 +4854,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           // ── 03. COLUMN LAYOUTS ──
           case 'text-image':
           case 'image-text':
-            html += 
+            html +=
               (d.heading !== undefined ?
                 renderRichTextFieldHtml('<span>Heading</span>', 'data-rich-field="heading"', d.heading, 'Optional heading...', '<span class="field-label-remove" data-act="remove-field" data-opt-field="heading">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="heading">+ Add Heading</button></div>'
@@ -4094,7 +4866,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'two-columns':
-            html += 
+            html +=
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Column 1 (Left)</div>' +
@@ -4112,7 +4884,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           case 'three-columns':
             html += '<div class="studio-cols-grid-3">';
             (d.columns || []).forEach(function(col, cIdx) {
-              html += 
+              html +=
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Column ' + (cIdx + 1) + '</div>' +
                   '<div class="studio-form-group"><label class="studio-label">Kicker</label><input type="text" class="studio-input" data-array-obj="columns" data-item-id="' + col.id + '" data-prop="kicker" value="' + escapeHtml(col.kicker || '') + '" placeholder="PILLAR ' + (cIdx + 1) + '" /></div>' +
@@ -4123,6 +4895,54 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             html += '</div>';
             break;
 
+          case 'flex-layout':
+            var curColCount = d.columnCount === 3 ? 3 : 2;
+            var curRatio = d.ratio || (curColCount === 3 ? 'equal' : '50-50');
+
+            html +=
+              '<div class="studio-flex-toolbar">' +
+                '<div class="studio-flex-toolbar-group">' +
+                  '<span class="studio-flex-toolbar-label">COLUMNS:</span>' +
+                  '<button type="button" class="studio-btn studio-btn--sm' + (curColCount === 2 ? ' is-active' : '') + '" data-act="set-flex-col-count" data-count="2">2 Columns</button>' +
+                  '<button type="button" class="studio-btn studio-btn--sm' + (curColCount === 3 ? ' is-active' : '') + '" data-act="set-flex-col-count" data-count="3">3 Columns</button>' +
+                '</div>';
+
+            if (curColCount === 2) {
+              html +=
+                '<div class="studio-flex-toolbar-group" style="margin-left:auto">' +
+                  '<span class="studio-flex-toolbar-label">RATIO:</span>' +
+                  '<button type="button" class="studio-btn studio-btn--sm' + (curRatio === '50-50' ? ' is-active' : '') + '" data-act="set-flex-ratio" data-ratio="50-50">50 / 50</button>' +
+                  '<button type="button" class="studio-btn studio-btn--sm' + (curRatio === '40-60' ? ' is-active' : '') + '" data-act="set-flex-ratio" data-ratio="40-60">40 / 60</button>' +
+                  '<button type="button" class="studio-btn studio-btn--sm' + (curRatio === '60-40' ? ' is-active' : '') + '" data-act="set-flex-ratio" data-ratio="60-40">60 / 40</button>' +
+                '</div>';
+            } else {
+              html +=
+                '<div class="studio-flex-toolbar-group" style="margin-left:auto">' +
+                  '<span class="studio-flex-toolbar-label" style="opacity:0.8">33 / 33 / 33 (Equal Width)</span>' +
+                '</div>';
+            }
+
+            html += '</div>';
+
+            html += '<div class="studio-flex-canvas-wrap">' +
+              '<div class="studio-flex-cols-row studio-flex-cols-' + curColCount + ' is-' + curColCount + '-cols">';
+
+            var colsToRender = (d.columns || []).slice(0, curColCount);
+            colsToRender.forEach(function(col, cIdx) {
+              var childCount = (col.blocks || []).length;
+              html +=
+                '<div class="studio-flex-col-panel" data-flex-id="' + block.id + '" data-col-id="' + col.id + '" data-col-idx="' + cIdx + '">' +
+                  '<div class="studio-flex-col-header">' +
+                    '<span class="studio-flex-col-badge">COLUMN ' + (cIdx + 1) + '</span>' +
+                    '<span class="studio-flex-col-count">' + childCount + ' block' + (childCount !== 1 ? 's' : '') + '</span>' +
+                  '</div>' +
+                  '<div class="studio-flex-col-blocks" data-flex-id="' + block.id + '" data-col-id="' + col.id + '" data-col-idx="' + cIdx + '"></div>' +
+                '</div>';
+            });
+
+            html += '</div></div>';
+            break;
+
           // ── 04. IMAGES & MEDIA ──
           case 'single-image':
           case 'full-image':
@@ -4130,7 +4950,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'two-images':
-            html += 
+            html +=
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Image 1</div>' +
@@ -4144,29 +4964,31 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'three-images':
-            html += 
-              '<div class="studio-cols-grid-3">' +
-                '<div class="studio-col-panel">' +
-                  '<div class="studio-col-panel-title">Image 1</div>' +
-                  renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1', captionAttr: 'data-rich-field="img1Caption"' }) +
-                '</div>' +
-                '<div class="studio-col-panel">' +
-                  '<div class="studio-col-panel-title">Image 2</div>' +
-                  renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2', captionAttr: 'data-rich-field="img2Caption"' }) +
-                '</div>' +
-                '<div class="studio-col-panel">' +
-                  '<div class="studio-col-panel-title">Image 3</div>' +
-                  renderImageTileHtml({ src: d.img3Src, alt: d.img3Alt, caption: d.img3Caption, showCaption: true, propPrefix: 'img3', captionAttr: 'data-rich-field="img3Caption"' }) +
+            html +=
+              '<div class="studio-multi-image-scroll">' +
+                '<div class="studio-multi-image-grid">' +
+                  '<div class="studio-col-panel">' +
+                    '<div class="studio-col-panel-title">Image 1</div>' +
+                    renderImageTileHtml({ src: d.img1Src, alt: d.img1Alt, caption: d.img1Caption, showCaption: true, propPrefix: 'img1', captionAttr: 'data-rich-field="img1Caption"' }) +
+                  '</div>' +
+                  '<div class="studio-col-panel">' +
+                    '<div class="studio-col-panel-title">Image 2</div>' +
+                    renderImageTileHtml({ src: d.img2Src, alt: d.img2Alt, caption: d.img2Caption, showCaption: true, propPrefix: 'img2', captionAttr: 'data-rich-field="img2Caption"' }) +
+                  '</div>' +
+                  '<div class="studio-col-panel">' +
+                    '<div class="studio-col-panel-title">Image 3</div>' +
+                    renderImageTileHtml({ src: d.img3Src, alt: d.img3Alt, caption: d.img3Caption, showCaption: true, propPrefix: 'img3', captionAttr: 'data-rich-field="img3Caption"' }) +
+                  '</div>' +
                 '</div>' +
               '</div>';
             break;
 
           case 'gallery-scroll':
-            html += 
+            html +=
               '<div class="studio-form-group"><label class="studio-label">Scroll Hint</label><input type="text" class="studio-input" data-field="hint" value="' + escapeHtml(d.hint || '') + '" placeholder="✦ Scroll horizontally to inspect model artifacts" /></div>' +
               '<div class="studio-form-group"><label class="studio-label">Gallery Artifacts (' + (d.cards || []).length + ')</label><div style="display:flex;flex-direction:column;gap:12px">';
             (d.cards || []).forEach(function(c, cIdx) {
-              html += 
+              html +=
                 '<div class="nested-parent-card">' +
                   '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.14);padding-bottom:6px">' +
                     '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">CARD ' + String(cIdx + 1).padStart(2, '0') + '</span>' +
@@ -4183,7 +5005,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
           // ── 05. CARDS & COMPARISONS ──
           case 'card-grid-2':
-            html += 
+            html +=
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
@@ -4201,7 +5023,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'card-grid-3':
-            html += 
+            html +=
               '<div class="studio-cols-grid-3">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
@@ -4225,7 +5047,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'comparison':
-            html += 
+            html +=
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Side A</div>' +
@@ -4234,14 +5056,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   '<div class="studio-form-group"><label class="studio-label">Side A Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col1Items || []).forEach(function(it) {
               var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="1" data-item-id="' + it.id + '">✕</button>';
-              html += 
+              html +=
                 '<div class="studio-repeatable-row" style="align-items:flex-start">' +
                   '<div style="flex:1">' +
                     renderRichTextFieldHtml('', 'data-rich-array-obj="col1Items" data-rich-item-id="' + it.id + '" data-rich-prop="text"', it.text, 'Feature comparison point...', itRemove) +
                   '</div>' +
                 '</div>';
             });
-            html += 
+            html +=
                     '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-col-item" data-side="1">+ Add Item</button></div>' +
                   '</div>' +
                 '</div>' +
@@ -4252,14 +5074,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   '<div class="studio-form-group"><label class="studio-label">Side B Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col2Items || []).forEach(function(it) {
               var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="2" data-item-id="' + it.id + '">✕</button>';
-              html += 
+              html +=
                 '<div class="studio-repeatable-row" style="align-items:flex-start">' +
                   '<div style="flex:1">' +
                     renderRichTextFieldHtml('', 'data-rich-array-obj="col2Items" data-rich-item-id="' + it.id + '" data-rich-prop="text"', it.text, 'Feature comparison point...', itRemove) +
                   '</div>' +
                 '</div>';
             });
-            html += 
+            html +=
                     '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-col-item" data-side="2">+ Add Item</button></div>' +
                   '</div>' +
                 '</div>' +
@@ -4267,7 +5089,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'stats-metrics':
-            html += 
+            html +=
               '<div class="studio-cols-grid-3">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Metric 1</div>' +
@@ -4294,7 +5116,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           case 'technical-table':
             var cols = d.columns || [];
             var rows = d.rows || [];
-            html += 
+            html +=
               '<div class="studio-form-group">' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">' +
                   '<label class="studio-label" style="margin-bottom:0">Excel-Style Table Builder (' + cols.length + ' cols × ' + rows.length + ' rows)</label>' +
@@ -4305,7 +5127,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                     '<thead><tr>';
             cols.forEach(function(col) {
               var cRich = getRichData(col.label);
-              html += 
+              html +=
                 '<th>' +
                   '<div style="display:flex;align-items:center;gap:4px">' +
                     '<div class="studio-table-cell-input rich-text-surface rich-align-' + cRich.align + '" contenteditable="true" spellcheck="false" style="font-weight:600;color:var(--studio-gold)" data-table-header="' + col.id + '" data-table-align="' + cRich.align + '">' + sanitizeRichText(cRich.text) + '</div>' +
@@ -4321,12 +5143,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                 var cellRich = getRichData(cellVal);
                 html += '<td><div class="studio-table-cell-input rich-text-surface rich-align-' + cellRich.align + '" contenteditable="true" spellcheck="false" data-table-row="' + r.id + '" data-table-col="' + col.id + '" data-table-align="' + cellRich.align + '">' + sanitizeRichText(cellRich.text) + '</div></td>';
               });
-              html += 
+              html +=
                 '<td>' +
                   '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-table-row" data-row-id="' + r.id + '" ' + (rows.length <= 1 ? 'disabled' : '') + ' title="Delete Row">✕</button>' +
                 '</td></tr>';
             });
-            html += 
+            html +=
                   '</tbody>' +
                 '</table>' +
               '</div>' +
@@ -4354,7 +5176,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             var activeAccent = d.accentColor ? normalizeHex(d.accentColor) : '';
             var isDefaultAccent = !activeAccent;
 
-            html += 
+            html +=
               '<div class="studio-form-group"><label class="studio-label">Callout Style Variant</label>' +
                 '<div class="callout-swatches-grid">' +
                   '<div class="callout-swatch-item swatch-note' + (activeType === 'note' ? ' active' : '') + '" data-act="select-callout" data-val="note">Note</div>' +
@@ -4396,19 +5218,43 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                     curDefaultTitle
                   ) : ''
                 ) +
-              '</div>' +
-              renderRichTextFieldHtml('Content', 'data-rich-field="text"', d.text, 'Advisory message body...');
+              '</div>';
+
+            var legacyVal = d.text !== undefined ? d.text : d.body;
+            var isLegacyCallout = (!Array.isArray(d.blocks) || d.blocks.length === 0) && (
+              typeof legacyVal === 'string' ? legacyVal.trim().length > 0 : (legacyVal && typeof legacyVal === 'object' && legacyVal.text && legacyVal.text.trim().length > 0)
+            );
+
+            if (isLegacyCallout) {
+              html +=
+                renderRichTextFieldHtml('Content', 'data-rich-field="text"', legacyVal, 'Advisory message body...') +
+                '<div class="callout-legacy-upgrade-bar">' +
+                  '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);">✦ Legacy Callout Body Active</span>' +
+                  '<button type="button" class="studio-btn studio-btn--sm" data-act="callout-upgrade-composable" style="font-size:10px;">Upgrade to Composable Blocks</button>' +
+                '</div>';
+            } else {
+              html +=
+                '<div class="studio-form-group" style="margin-top:14px;">' +
+                  '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">' +
+                    '<label class="studio-label" style="margin:0;">Composable Content Blocks</label>' +
+                    '<button type="button" class="studio-btn studio-btn--sm callout-add-text-btn" data-act="callout-add-text" style="font-size:10px;">+ Add Solo Text</button>' +
+                  '</div>' +
+                  '<div class="studio-callout-blocks-panel" data-callout-id="' + block.id + '">' +
+                    '<div class="studio-callout-blocks" data-callout-id="' + block.id + '"></div>' +
+                  '</div>' +
+                '</div>';
+            }
             break;
 
           case 'pullquote':
-            html += 
+            html +=
               renderRichTextFieldHtml('Quote Inscription', 'data-rich-field="quote"', d.quote, 'Prominent doctrine quote...') +
               renderRichTextFieldHtml('Author / Attrib', 'data-rich-field="author"', d.author, '— Coven Doctrine Principle');
             break;
 
           // ── 08. CODE INSCRIPTIONS ──
           case 'code-block':
-            html += 
+            html +=
               renderRichTextFieldHtml('Filename / Inscription Header', 'data-rich-field="title"', d.title, 'e.g. EinsteinSyncHandler.cls') +
               '<div class="studio-form-group"><label class="studio-label">Language</label>' +
                 '<select class="studio-select" data-field="language">' +
@@ -4428,7 +5274,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           case 'faq':
             html += '<div class="studio-form-group"><label class="studio-label">FAQ Inquiries</label><div style="display:flex;flex-direction:column;gap:10px">';
             (d.items || []).forEach(function(item, iIdx) {
-              html += 
+              html +=
                 '<div class="nested-parent-card">' +
                   '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.12);padding-bottom:6px">' +
                     '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-purple)">INQUIRY ' + String(iIdx + 1).padStart(2, '0') + '</span>' +
@@ -4445,7 +5291,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'exercise':
-            html += 
+            html +=
               '<div class="studio-form-group"><label class="studio-label">Badge</label><input type="text" class="studio-input" data-field="badge" value="' + escapeHtml(d.badge || 'TRIAL SCENARIO 01') + '" /></div>' +
               renderRichTextFieldHtml('Scenario Challenge', 'data-rich-field="scenario"', d.scenario, 'Describe the practical challenge...') +
               '<div class="studio-form-group"><label class="studio-label">Reveal Button Text</label><input type="text" class="studio-input" data-field="buttonText" value="' + escapeHtml(d.buttonText || '✦ Reveal Answer') + '" /></div>' +
@@ -4454,12 +5300,12 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             break;
 
           case 'article-trial':
-            html += 
+            html +=
               renderRichTextFieldHtml('Trial Title', 'data-rich-field="title"', d.title || "You've reached the trial", "You've reached the trial") +
               renderRichTextFieldHtml('Intro / Instruction', 'data-rich-field="intro"', d.intro || d.description || '', 'Instructional lead...') +
               '<div class="studio-form-group"><label class="studio-label">Trial Assessment Questions</label><div style="display:flex;flex-direction:column;gap:14px">';
             (d.questions || []).forEach(function(q, qIdx) {
-              html += 
+              html +=
                 '<div class="trial-q-card">' +
                   '<div class="trial-q-topbar">' +
                     '<span class="trial-q-title">QUESTION ' + String(qIdx + 1).padStart(2, '0') + '</span>' +
@@ -4474,7 +5320,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                 var letters = ['A', 'B', 'C', 'D', 'E', 'F'];
                 var ansRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-trial-ans" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (q.answers.length <= 2 ? 'disabled' : '') + ' title="Remove option">✕</button>';
                 var ansLetter = letters[aIdx] || String(aIdx + 1);
-                html += 
+                html +=
                   '<div class="trial-ans-row' + (ans.correct ? ' is-correct' : '') + '" style="align-items:flex-start;padding-top:4px">' +
                     '<input type="radio" name="trial_correct_' + q.id + '" class="trial-radio" data-act="mark-correct" data-q-id="' + q.id + '" data-ans-id="' + ans.id + '" ' + (ans.correct ? 'checked' : '') + ' title="Mark as correct answer" style="margin-top:8px" />' +
                     '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);margin-top:8px">' + ansLetter + '</span>' +
@@ -4483,7 +5329,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                     '</div>' +
                   '</div>';
               });
-              html += 
+              html +=
                     '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-trial-ans" data-q-id="' + q.id + '">+ Add Answer Option</button></div>' +
                   '</div>' +
                   renderRichTextFieldHtml('Explanation / Guidance (Optional)', 'data-rich-trial-q-id="' + q.id + '" data-rich-trial-q-prop="explanation"', q.explanation, 'Explained once answered...') +
@@ -4494,14 +5340,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
           // ── 10. CLOSING CONTENT ──
           case 'key-takeaways':
-            html += 
+            html +=
               (d.title !== undefined ?
                 renderRichTextFieldHtml('<span>Title</span>', 'data-rich-field="title"', d.title, 'Key Takeaways for the Initiate', '<span class="field-label-remove" data-act="remove-field" data-opt-field="title">✕ Remove</span>') :
                 '<div style="margin-bottom:8px"><button type="button" class="studio-btn--add-field" data-act="add-field" data-opt-field="title">+ Add Title</button></div>'
               ) +
               '<div class="studio-form-group"><label class="studio-label">Takeaway Doctrines</label><div style="display:flex;flex-direction:column;gap:10px">';
             (d.items || []).forEach(function(item, tIdx) {
-              html += 
+              html +=
                 '<div class="nested-parent-card">' +
                   '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.12);padding-bottom:6px">' +
                     '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">DOCTRINE ' + String(tIdx + 1).padStart(2, '0') + '</span>' +
@@ -4522,7 +5368,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             html += '<div class="studio-form-group"><label class="studio-label">Related Scrolls & External Docs</label><div style="display:flex;flex-direction:column;gap:12px">';
             (d.items || []).forEach(function(rd, rIdx) {
               var isInternal = rd.type !== 'external';
-              html += 
+              html +=
                 '<div class="nested-parent-card">' +
                   '<div style="display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(216,181,107,0.12);padding-bottom:6px">' +
                     '<span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold)">DOC ' + String(rIdx + 1).padStart(2, '0') + '</span>' +
@@ -4546,7 +5392,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   '</div>';
 
               if (isInternal) {
-                html += 
+                html +=
                   '<div class="studio-form-group"><label class="studio-label">Select Published Scroll</label>' +
                     '<select class="studio-select" data-doc-select-slug="' + rd.id + '">' +
                       '<option value="">-- Choose scroll or keep custom --</option>';
@@ -4554,13 +5400,13 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   var sel = (rd.slug === pa.slug || rd.url === '/article/' + pa.slug) ? ' selected' : '';
                   html += '<option value="' + pa.slug + '"' + sel + '>' + escapeHtml(pa.title) + ' (' + escapeHtml(pa.category) + ')</option>';
                 });
-                html += 
+                html +=
                     '</select>' +
                   '</div>' +
                   renderRichTextFieldHtml('Title', 'data-rich-array-obj="items" data-rich-item-id="' + rd.id + '" data-rich-prop="title"', rd.title, 'Scroll title...') +
                   '<div class="studio-form-group"><label class="studio-label">CTA Text</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="ctaText" value="' + escapeHtml(rd.ctaText || 'Study scroll') + '" /></div>';
               } else {
-                html += 
+                html +=
                   renderRichTextFieldHtml('Title', 'data-rich-array-obj="items" data-rich-item-id="' + rd.id + '" data-rich-prop="title"', rd.title, 'e.g. Official Salesforce Documentation') +
                   '<div class="studio-form-group"><label class="studio-label">External URL</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="url" value="' + escapeHtml(rd.url || '') + '" placeholder="https://..." /></div>' +
                   '<div class="studio-form-group"><label class="studio-label">CTA Text</label><input type="text" class="studio-input" data-array-obj="items" data-item-id="' + rd.id + '" data-prop="ctaText" value="' + escapeHtml(rd.ctaText || 'Official documentation') + '" /></div>';
@@ -4803,6 +5649,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
         // 11. Unified Action Delegator for buttons
         bBody.addEventListener('click', function(e) {
+          if (e.target.closest('.block-editor-body') !== bBody) return;
           if (activeSectionId !== sec.id) {
             setActiveSection(sec.id);
           }
@@ -4829,6 +5676,15 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               delete d[remField];
               renderSections();
               triggerAutosave();
+              break;
+
+            // Toggle Show Text
+            case 'toggle-show-text':
+              d.showText = d.showText === false ? true : false;
+              renderSections();
+              triggerAutosave();
+              calculateReadingTime();
+              showToast(d.showText ? 'Paragraphs visible' : 'Paragraphs hidden');
               break;
 
             // Paragraphs
@@ -4867,6 +5723,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
             // Nested Bullets
             case 'toggle-marker-dropdown':
+              e.stopPropagation();
               var markerWrap = actBtn.closest('.nested-marker-dropdown-wrap');
               if (markerWrap) {
                 var dd = markerWrap.querySelector('.nested-marker-dropdown');
@@ -4883,9 +5740,34 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               break;
 
             case 'select-marker':
+              e.stopPropagation();
               var markerVal = actBtn.getAttribute('data-val') || 'coven';
-              d.markerStyle = markerVal;
+              var blkCard = actBtn.closest('.block-card, .block-editor-card');
+              var blkId = blkCard ? blkCard.getAttribute('data-block-id') : block.id;
+              var loc = resolveBlockLocation(blkId);
+              var targetBlock = loc ? loc.block : block;
+              if (targetBlock && targetBlock.data) {
+                targetBlock.data.markerStyle = markerVal;
+              } else {
+                d.markerStyle = markerVal;
+              }
               closeAllPopovers();
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'set-nested-layout':
+              e.stopPropagation();
+              var layoutVal = actBtn.getAttribute('data-layout') || 'vertical';
+              var blkCard = actBtn.closest('.block-card, .block-editor-card');
+              var blkId = blkCard ? blkCard.getAttribute('data-block-id') : block.id;
+              var loc = resolveBlockLocation(blkId);
+              var targetBlock = loc ? loc.block : block;
+              if (targetBlock && targetBlock.data) {
+                targetBlock.data.layout = layoutVal;
+              } else {
+                d.layout = layoutVal;
+              }
               renderSections();
               triggerAutosave();
               break;
@@ -4971,6 +5853,24 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
                   triggerAutosave();
                 }
               }
+              break;
+
+            // ── FLEXIBLE LAYOUT COMPOSER ACTIONS ──
+            case 'set-flex-col-count':
+              var targetCount = parseInt(actBtn.getAttribute('data-count'), 10);
+              d.columnCount = targetCount;
+              if (targetCount === 3 && d.columns.length < 3) {
+                d.columns.push({ id: uid('fcol'), blocks: [] });
+              }
+              renderSections();
+              triggerAutosave();
+              break;
+
+            case 'set-flex-ratio':
+              var rVal = actBtn.getAttribute('data-ratio');
+              d.ratio = rVal;
+              renderSections();
+              triggerAutosave();
               break;
 
             // Image Upload & Removal
@@ -5372,7 +6272,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
           var emptyState = document.createElement('div');
           emptyState.className = 'empty-scroll-state';
-          emptyState.innerHTML = 
+          emptyState.innerHTML =
             '<div class="empty-scroll-icon">✦</div>' +
             '<h3 class="empty-scroll-title">BEGIN YOUR SCROLL</h3>' +
             '<p class="empty-scroll-desc">Add your first section to start building the article structure.</p>' +
@@ -5404,7 +6304,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
           var header = document.createElement('div');
           header.className = 'section-card-header';
 
-          header.innerHTML = 
+          header.innerHTML =
             '<div class="section-card-topbar">' +
               '<div class="section-header-left">' +
                 '<span class="section-drag-handle" title="Drag to reorder section" draggable="true">⋮⋮</span>' +
@@ -5474,9 +6374,11 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             card.classList.add('dragging');
             e.dataTransfer.setData('text/plain', JSON.stringify({ source: 'section', secId: sec.id }));
             e.dataTransfer.effectAllowed = 'move';
+            startDragAutoScroll();
           });
           secHandle.addEventListener('dragend', function() {
             card.classList.remove('dragging');
+            stopDragAutoScroll();
           });
 
           card.addEventListener('dragover', function(e) {
@@ -5517,7 +6419,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             // Empty Dropzone
             var dropzone = document.createElement('div');
             dropzone.className = 'section-empty-dropzone';
-            dropzone.innerHTML = 
+            dropzone.innerHTML =
               '<div class="dropzone-icon">✧</div>' +
               '<div class="dropzone-text">+ DROP BLOCK HERE</div>' +
               '<div class="dropzone-sub">or choose one from Block Library</div>';
@@ -5535,107 +6437,14 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
               e.preventDefault();
               e.stopPropagation();
               dropzone.classList.remove('drag-over');
-              handleBlockDrop(e, sec.id, 0);
+              handleBlockDrop(e, { type: 'section', secId: sec.id, insertIdx: 0 });
             });
 
             blocksWrap.appendChild(dropzone);
           } else {
             // Render Block Cards
             sec.blocks.forEach(function(b, bIndex) {
-              var isFirstBlock = bIndex === 0;
-              var isLastBlock = bIndex === sec.blocks.length - 1;
-              var blkDef = window.STUDIO_REGISTRY[b.type] || { label: b.type };
-              var glyph = BLOCK_GLYPHS[b.type] || '✦';
-
-              var bCard = document.createElement('div');
-              bCard.className = 'block-editor-card';
-              bCard.setAttribute('draggable', 'true');
-              bCard.setAttribute('data-sec-id', sec.id);
-              bCard.setAttribute('data-block-id', b.id);
-
-              var bHeader = document.createElement('div');
-              bHeader.className = 'block-editor-header';
-              bHeader.innerHTML = 
-                '<div class="block-header-title">' +
-                  '<span class="block-drag-handle" title="Drag to reorder or move across sections">⋮⋮</span>' +
-                  '<span style="font-family:var(--font-mono);font-size:12px;color:var(--studio-gold);opacity:0.9">' + glyph + '</span>' +
-                  '<span class="block-type-badge">' + escapeHtml(blkDef.label) + '</span>' +
-                '</div>' +
-                '<div class="block-header-actions">' +
-                  '<button type="button" class="studio-btn studio-btn--icon" data-action="dup" title="Duplicate block">⧉</button>' +
-                  '<button type="button" class="studio-btn studio-btn--icon" data-action="up" title="Move up" ' + (isFirstBlock ? 'disabled' : '') + '>▲</button>' +
-                  '<button type="button" class="studio-btn studio-btn--icon" data-action="down" title="Move down" ' + (isLastBlock ? 'disabled' : '') + '>▼</button>' +
-                  '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-action="del" title="Delete block">×</button>' +
-                '</div>';
-
-              bHeader.querySelector('[data-action="dup"]').addEventListener('click', function(e) {
-                e.stopPropagation();
-                duplicateBlock(sec.id, b.id);
-              });
-              bHeader.querySelector('[data-action="up"]').addEventListener('click', function(e) {
-                e.stopPropagation();
-                moveBlock(sec.id, b.id, -1);
-              });
-              bHeader.querySelector('[data-action="down"]').addEventListener('click', function(e) {
-                e.stopPropagation();
-                moveBlock(sec.id, b.id, 1);
-              });
-              bHeader.querySelector('[data-action="del"]').addEventListener('click', function(e) {
-                e.stopPropagation();
-                deleteBlock(sec.id, b.id, e.currentTarget);
-              });
-
-              // Block Drag & Drop
-              bCard.addEventListener('dragstart', function(e) {
-                bCard.classList.add('dragging');
-                draggedBlockData = { source: 'block', secId: sec.id, blockId: b.id };
-                e.dataTransfer.setData('text/plain', JSON.stringify(draggedBlockData));
-                e.dataTransfer.effectAllowed = 'move';
-              });
-
-              bCard.addEventListener('dragend', function() {
-                bCard.classList.remove('dragging');
-              });
-
-              bCard.addEventListener('dragover', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                var rect = bCard.getBoundingClientRect();
-                var relY = e.clientY - rect.top;
-                if (relY < rect.height / 2) {
-                  bCard.classList.add('drag-target-above');
-                  bCard.classList.remove('drag-target-below');
-                } else {
-                  bCard.classList.add('drag-target-below');
-                  bCard.classList.remove('drag-target-above');
-                }
-              });
-
-              bCard.addEventListener('dragleave', function() {
-                bCard.classList.remove('drag-target-above');
-                bCard.classList.remove('drag-target-below');
-              });
-
-              bCard.addEventListener('drop', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                var insertIdx = bIndex;
-                if (bCard.classList.contains('drag-target-below')) insertIdx = bIndex + 1;
-                bCard.classList.remove('drag-target-above');
-                bCard.classList.remove('drag-target-below');
-                handleBlockDrop(e, sec.id, insertIdx);
-              });
-
-              // Block Fields Body
-              var bBody = document.createElement('div');
-              bBody.className = 'block-editor-body';
-              bBody.innerHTML = renderBlockFields(sec, b);
-
-              // Attach Structured Field Event Handlers
-              attachBlockListeners(bBody, sec, b);
-
-              bCard.appendChild(bHeader);
-              bCard.appendChild(bBody);
+              var bCard = createBlockCardElement(sec, b, bIndex, sec.blocks.length, null);
               blocksWrap.appendChild(bCard);
             });
 
@@ -5646,7 +6455,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             blocksWrap.addEventListener('drop', function(e) {
               if (e.target === blocksWrap) {
                 e.preventDefault();
-                handleBlockDrop(e, sec.id, sec.blocks.length);
+                handleBlockDrop(e, { type: 'section', secId: sec.id, insertIdx: sec.blocks.length });
               }
             });
           }
@@ -5657,33 +6466,729 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
         updateAllSavedSwatchesUI();
       }
 
-      function handleBlockDrop(e, targetSecId, insertIdx) {
+      function createBlockCardElement(sec, b, bIndex, totalCount, context) {
+        var isFlexChild = context && context.isFlexChild;
+        var isCalloutChild = context && context.isCalloutChild;
+        var isFirstBlock = bIndex === 0;
+        var isLastBlock = bIndex === totalCount - 1;
+        var blkDef = window.STUDIO_REGISTRY[b.type] || { label: b.type };
+        var glyph = BLOCK_GLYPHS[b.type] || '✦';
+
+        var bCard = document.createElement('div');
+        bCard.className = 'block-editor-card' + (isFlexChild ? ' is-flex-child' : '') + (isCalloutChild ? ' is-callout-child' : '');
+        bCard.setAttribute('draggable', 'true');
+        bCard.setAttribute('data-sec-id', sec.id);
+        bCard.setAttribute('data-block-id', b.id);
+        bCard.setAttribute('data-block-type', b.type);
+        if (isFlexChild) {
+          bCard.setAttribute('data-flex-id', context.flexBlockId);
+          bCard.setAttribute('data-col-id', context.colId);
+        }
+        if (isCalloutChild) {
+          bCard.setAttribute('data-callout-id', context.calloutBlockId);
+        }
+
+        var bHeader = document.createElement('div');
+        bHeader.className = 'block-editor-header';
+        bHeader.innerHTML =
+          '<div class="block-header-title">' +
+            '<span class="block-drag-handle" title="Drag to reorder or move across sections">⋮⋮</span>' +
+            '<span style="font-family:var(--font-mono);font-size:12px;color:var(--studio-gold);opacity:0.9">' + glyph + '</span>' +
+            '<span class="block-type-badge">' + escapeHtml(blkDef.label) + '</span>' +
+          '</div>' +
+          '<div class="block-header-actions">' +
+            '<button type="button" class="studio-btn studio-btn--icon" data-action="dup" title="Duplicate block">⧉</button>' +
+            '<button type="button" class="studio-btn studio-btn--icon" data-action="up" title="Move up" ' + (isFirstBlock ? 'disabled' : '') + '>▲</button>' +
+            '<button type="button" class="studio-btn studio-btn--icon" data-action="down" title="Move down" ' + (isLastBlock ? 'disabled' : '') + '>▼</button>' +
+            '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-action="del" title="Delete block">×</button>' +
+          '</div>';
+
+        bHeader.querySelector('[data-action="dup"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (isFlexChild) {
+            duplicateFlexChild(sec.id, context.flexBlockId, context.colId, b.id);
+          } else if (isCalloutChild) {
+            duplicateCalloutChild(sec.id, context.calloutBlockId, b.id);
+          } else {
+            duplicateBlock(sec.id, b.id);
+          }
+        });
+        bHeader.querySelector('[data-action="up"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (isFlexChild) {
+            moveFlexChild(sec.id, context.flexBlockId, context.colId, b.id, -1);
+          } else if (isCalloutChild) {
+            moveCalloutChild(sec.id, context.calloutBlockId, b.id, -1);
+          } else {
+            moveBlock(sec.id, b.id, -1);
+          }
+        });
+        bHeader.querySelector('[data-action="down"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (isFlexChild) {
+            moveFlexChild(sec.id, context.flexBlockId, context.colId, b.id, 1);
+          } else if (isCalloutChild) {
+            moveCalloutChild(sec.id, context.calloutBlockId, b.id, 1);
+          } else {
+            moveBlock(sec.id, b.id, 1);
+          }
+        });
+        bHeader.querySelector('[data-action="del"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          if (isFlexChild) {
+            deleteFlexChild(sec.id, context.flexBlockId, context.colId, b.id, e.currentTarget);
+          } else if (isCalloutChild) {
+            deleteCalloutChild(sec.id, context.calloutBlockId, b.id, e.currentTarget);
+          } else {
+            deleteBlock(sec.id, b.id, e.currentTarget);
+          }
+        });
+
+        // Block Drag & Drop
+        bCard.addEventListener('dragstart', function(e) {
+          if (e.target && e.target.closest('input, textarea, select, [contenteditable="true"]')) {
+            return;
+          }
+          e.stopPropagation();
+          bCard.classList.add('dragging');
+          if (isFlexChild) {
+            draggedBlockData = { source: 'block', type: b.type, blockType: b.type, secId: sec.id, flexBlockId: context.flexBlockId, colId: context.colId, colIdx: context.colIdx, blockId: b.id };
+          } else if (isCalloutChild) {
+            draggedBlockData = { source: 'block', type: b.type, blockType: b.type, secId: sec.id, calloutBlockId: context.calloutBlockId, blockId: b.id };
+          } else {
+            draggedBlockData = { source: 'block', type: b.type, blockType: b.type, secId: sec.id, blockId: b.id };
+          }
+          e.dataTransfer.setData('text/plain', JSON.stringify(draggedBlockData));
+          e.dataTransfer.effectAllowed = 'move';
+          startDragAutoScroll();
+        });
+
+        bCard.addEventListener('dragend', function(e) {
+          if (e && e.stopPropagation) e.stopPropagation();
+          bCard.classList.remove('dragging');
+          draggedBlockData = null;
+          stopDragAutoScroll();
+        });
+
+        bCard.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (isFlexChild || isCalloutChild) {
+            var parentContainerCard = bCard.parentElement ? bCard.parentElement.closest('.block-editor-card') : null;
+            if (parentContainerCard) {
+              parentContainerCard.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+            }
+          }
+          if (isFlexChild && isDraggingFlexLayout()) {
+            bCard.classList.add('drag-target-forbidden');
+            bCard.classList.remove('drag-target-above', 'drag-target-below');
+            e.dataTransfer.dropEffect = 'none';
+            return;
+          }
+          if (isCalloutChild && isDraggingForbiddenInCallout()) {
+            bCard.classList.add('drag-target-forbidden');
+            bCard.classList.remove('drag-target-above', 'drag-target-below');
+            e.dataTransfer.dropEffect = 'none';
+            return;
+          }
+          if (isFlexChild) {
+            var parentCol = bCard.closest('.studio-flex-col-panel');
+            if (parentCol) parentCol.classList.add('drag-over');
+          }
+          if (isCalloutChild) {
+            var parentCallout = bCard.closest('.studio-callout-blocks-panel');
+            if (parentCallout) parentCallout.classList.add('drag-over');
+          }
+          var rect = bCard.getBoundingClientRect();
+          var relY = e.clientY - rect.top;
+          if (relY < rect.height / 2) {
+            bCard.classList.add('drag-target-above');
+            bCard.classList.remove('drag-target-below');
+          } else {
+            bCard.classList.add('drag-target-below');
+            bCard.classList.remove('drag-target-above');
+          }
+        });
+
+        bCard.addEventListener('dragleave', function(e) {
+          if (e.relatedTarget && bCard.contains(e.relatedTarget)) return;
+          bCard.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+        });
+
+        bCard.addEventListener('drop', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (bCard.classList.contains('drag-target-forbidden')) {
+            bCard.classList.remove('drag-target-forbidden');
+            return;
+          }
+          if (isFlexChild) {
+            var parentCol = bCard.closest('.studio-flex-col-panel');
+            if (parentCol) parentCol.classList.remove('drag-over', 'drag-target-forbidden');
+          }
+          if (isCalloutChild) {
+            var parentCallout = bCard.closest('.studio-callout-blocks-panel');
+            if (parentCallout) parentCallout.classList.remove('drag-over', 'drag-target-forbidden');
+          }
+          var insertIdx = bIndex;
+          if (bCard.classList.contains('drag-target-below')) insertIdx = bIndex + 1;
+          bCard.classList.remove('drag-target-above', 'drag-target-below');
+
+          if (isFlexChild) {
+            handleBlockDrop(e, { type: 'flex-col', secId: sec.id, flexBlockId: context.flexBlockId, colId: context.colId, colIdx: context.colIdx, insertIdx: insertIdx });
+          } else if (isCalloutChild) {
+            handleBlockDrop(e, { type: 'callout', secId: sec.id, calloutBlockId: context.calloutBlockId, insertIdx: insertIdx });
+          } else {
+            handleBlockDrop(e, { type: 'section', secId: sec.id, insertIdx: insertIdx });
+          }
+        });
+
+        // Block Fields Body
+        var bBody = document.createElement('div');
+        bBody.className = 'block-editor-body';
+        bBody.innerHTML = renderBlockFields(sec, b);
+
+        // Attach Structured Field Event Handlers
+        attachBlockListeners(bBody, sec, b);
+
+        // Special Container Handling for Flexible Layout V2
+        if (b.type === 'flex-layout') {
+          var canvasWrap = bBody.querySelector('.studio-flex-canvas-wrap');
+          if (canvasWrap) {
+            canvasWrap.addEventListener('dragover', function(e) {
+              e.stopPropagation(); // Isolate canvas from bubbling to flex-layout bCard
+              var rect = canvasWrap.getBoundingClientRect();
+              var edgeZone = 80;
+              var x = e.clientX;
+              if (x - rect.left < edgeZone && x - rect.left >= 0) {
+                var ratio = 1 - ((x - rect.left) / edgeZone);
+                canvasWrap.scrollLeft -= Math.ceil(18 * ratio);
+              } else if (rect.right - x < edgeZone && rect.right - x >= 0) {
+                var ratio = 1 - ((rect.right - x) / edgeZone);
+                canvasWrap.scrollLeft += Math.ceil(18 * ratio);
+              }
+            });
+            canvasWrap.addEventListener('drop', function(e) {
+              e.stopPropagation();
+            });
+          }
+
+          var curColCount = b.data.columnCount === 3 ? 3 : 2;
+          var cols = (b.data.columns || []).slice(0, curColCount);
+
+          cols.forEach(function(col, cIdx) {
+            col.id = col.id || ('col_' + (cIdx + 1));
+            var colPanel = bBody.querySelector('.studio-flex-col-panel[data-col-idx="' + cIdx + '"]');
+            var colBlocksContainer = bBody.querySelector('.studio-flex-col-blocks[data-col-idx="' + cIdx + '"]');
+            if (!colPanel || !colBlocksContainer) return;
+            colBlocksContainer.innerHTML = '';
+
+            var childBlocks = Array.isArray(col.blocks) ? col.blocks : [];
+
+            if (childBlocks.length === 0) {
+              var emptyDropzone = document.createElement('div');
+              emptyDropzone.className = 'studio-flex-empty-dropzone';
+              emptyDropzone.innerHTML =
+                '<div class="flex-empty-icon">✧</div>' +
+                '<div class="flex-empty-title">Drop Coven blocks here</div>' +
+                '<div class="flex-empty-sub">Drag from the Block Library or move an existing block</div>';
+              colBlocksContainer.appendChild(emptyDropzone);
+            } else {
+              childBlocks.forEach(function(cb, cbIndex) {
+                var childCard = createBlockCardElement(sec, cb, cbIndex, childBlocks.length, {
+                  isFlexChild: true,
+                  flexBlockId: b.id,
+                  colId: col.id,
+                  colIdx: cIdx
+                });
+                colBlocksContainer.appendChild(childCard);
+              });
+            }
+
+            // UNIFIED COLUMN-LEVEL DRAG & DROP HANDLERS
+            colPanel.addEventListener('dragover', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              bCard.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+
+              if (isDraggingFlexLayout()) {
+                colPanel.classList.add('drag-target-forbidden');
+                e.dataTransfer.dropEffect = 'none';
+                return;
+              }
+
+              colPanel.classList.add('drag-over');
+
+              var currentChildCards = Array.from(colBlocksContainer.querySelectorAll(':scope > .block-editor-card'));
+              if (currentChildCards.length === 0) {
+                var emptyDz = colBlocksContainer.querySelector('.studio-flex-empty-dropzone');
+                if (emptyDz) emptyDz.classList.add('drag-over');
+                return;
+              }
+
+              var mouseY = e.clientY;
+              var targetCard = null;
+              var insertAbove = true;
+
+              for (var i = 0; i < currentChildCards.length; i++) {
+                var r = currentChildCards[i].getBoundingClientRect();
+                var mid = r.top + r.height / 2;
+                if (mouseY < mid) {
+                  targetCard = currentChildCards[i];
+                  insertAbove = true;
+                  break;
+                }
+                if (i === currentChildCards.length - 1) {
+                  targetCard = currentChildCards[i];
+                  insertAbove = false;
+                }
+              }
+
+              currentChildCards.forEach(function(c) {
+                c.classList.remove('drag-target-above', 'drag-target-below');
+              });
+
+              if (targetCard) {
+                targetCard.classList.add(insertAbove ? 'drag-target-above' : 'drag-target-below');
+              }
+            });
+
+            colPanel.addEventListener('dragleave', function(e) {
+              if (e.relatedTarget && colPanel.contains(e.relatedTarget)) {
+                return;
+              }
+              colPanel.classList.remove('drag-over', 'drag-target-forbidden');
+              var emptyDz = colBlocksContainer.querySelector('.studio-flex-empty-dropzone');
+              if (emptyDz) emptyDz.classList.remove('drag-over', 'drag-target-forbidden');
+              colBlocksContainer.querySelectorAll(':scope > .block-editor-card').forEach(function(c) {
+                c.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+              });
+            });
+
+            colPanel.addEventListener('drop', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+
+              colPanel.classList.remove('drag-over', 'drag-target-forbidden');
+              var emptyDz = colBlocksContainer.querySelector('.studio-flex-empty-dropzone');
+              if (emptyDz) emptyDz.classList.remove('drag-over', 'drag-target-forbidden');
+
+              if (isDraggingFlexLayout()) return;
+
+              var currentChildCards = Array.from(colBlocksContainer.querySelectorAll(':scope > .block-editor-card'));
+              var insertIdx = 0;
+
+              if (currentChildCards.length > 0) {
+                var mouseY = e.clientY;
+                insertIdx = currentChildCards.length;
+
+                for (var i = 0; i < currentChildCards.length; i++) {
+                  var r = currentChildCards[i].getBoundingClientRect();
+                  var mid = r.top + r.height / 2;
+                  if (mouseY < mid) {
+                    insertIdx = i;
+                    break;
+                  }
+                }
+
+                currentChildCards.forEach(function(c) {
+                  c.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+                });
+              }
+
+              handleBlockDrop(e, {
+                type: 'flex-col',
+                secId: sec.id,
+                flexBlockId: b.id,
+                colId: col.id,
+                colIdx: cIdx,
+                insertIdx: insertIdx
+              });
+            });
+          });
+        }
+
+        // Special Container Handling for Composable Callout Advisory V2
+        if (b.type === 'callout') {
+          var calloutPanel = bBody.querySelector('.studio-callout-blocks-panel[data-callout-id="' + b.id + '"]');
+          var calloutBlocksContainer = bBody.querySelector('.studio-callout-blocks[data-callout-id="' + b.id + '"]');
+          var upgradeBtn = bBody.querySelector('[data-act="callout-upgrade-composable"]');
+          var addTextBtn = bBody.querySelector('[data-act="callout-add-text"]');
+
+          if (upgradeBtn) {
+            upgradeBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var richPara = getRichData(b.data.text !== undefined ? b.data.text : b.data.body);
+              b.data.blocks = [
+                {
+                  id: uid('blk'),
+                  type: 'solo-text',
+                  data: {
+                    paragraphs: [richPara]
+                  }
+                }
+              ];
+              b.data.text = { text: '', align: 'left' };
+              delete b.data.body;
+              renderSections();
+              triggerAutosave();
+              showToast('Upgraded Callout to composable blocks');
+            });
+          }
+
+          if (addTextBtn) {
+            addTextBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              if (!Array.isArray(b.data.blocks)) b.data.blocks = [];
+              b.data.blocks.push({
+                id: uid('blk'),
+                type: 'solo-text',
+                data: { paragraphs: [{ text: '', align: 'left' }] }
+              });
+              renderSections();
+              triggerAutosave();
+              showToast('Added Solo Text to Callout');
+            });
+          }
+
+          if (calloutBlocksContainer && calloutPanel) {
+            calloutBlocksContainer.innerHTML = '';
+            var calloutChildBlocks = Array.isArray(b.data.blocks) ? b.data.blocks : [];
+
+            if (calloutChildBlocks.length === 0) {
+              var emptyDropzone = document.createElement('div');
+              emptyDropzone.className = 'studio-callout-empty-dropzone';
+              emptyDropzone.innerHTML =
+                '<div class="callout-empty-icon">✧</div>' +
+                '<div class="callout-empty-title">Drop Coven blocks here</div>' +
+                '<div class="callout-empty-sub">Solo Text, Nested Bullets, Image, Table... Drag from Block Library or existing blocks</div>';
+              calloutBlocksContainer.appendChild(emptyDropzone);
+            } else {
+              calloutChildBlocks.forEach(function(cb, cbIndex) {
+                var childCard = createBlockCardElement(sec, cb, cbIndex, calloutChildBlocks.length, {
+                  isCalloutChild: true,
+                  calloutBlockId: b.id
+                });
+                calloutBlocksContainer.appendChild(childCard);
+              });
+            }
+
+            // UNIFIED CALLOUT DRAG & DROP HANDLERS
+            calloutPanel.addEventListener('dragover', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+              bCard.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+
+              if (isDraggingForbiddenInCallout()) {
+                calloutPanel.classList.add('drag-target-forbidden');
+                e.dataTransfer.dropEffect = 'none';
+                return;
+              }
+
+              calloutPanel.classList.add('drag-over');
+
+              var currentChildCards = Array.from(calloutBlocksContainer.querySelectorAll(':scope > .block-editor-card'));
+              if (currentChildCards.length === 0) {
+                var emptyDz = calloutBlocksContainer.querySelector('.studio-callout-empty-dropzone');
+                if (emptyDz) emptyDz.classList.add('drag-over');
+                return;
+              }
+
+              var mouseY = e.clientY;
+              var targetCard = null;
+              var insertAbove = true;
+
+              for (var i = 0; i < currentChildCards.length; i++) {
+                var r = currentChildCards[i].getBoundingClientRect();
+                var mid = r.top + r.height / 2;
+                if (mouseY < mid) {
+                  targetCard = currentChildCards[i];
+                  insertAbove = true;
+                  break;
+                }
+                if (i === currentChildCards.length - 1) {
+                  targetCard = currentChildCards[i];
+                  insertAbove = false;
+                }
+              }
+
+              currentChildCards.forEach(function(c) {
+                c.classList.remove('drag-target-above', 'drag-target-below');
+              });
+
+              if (targetCard) {
+                targetCard.classList.add(insertAbove ? 'drag-target-above' : 'drag-target-below');
+              }
+            });
+
+            calloutPanel.addEventListener('dragleave', function(e) {
+              if (e.relatedTarget && calloutPanel.contains(e.relatedTarget)) {
+                return;
+              }
+              calloutPanel.classList.remove('drag-over', 'drag-target-forbidden');
+              var emptyDz = calloutBlocksContainer.querySelector('.studio-callout-empty-dropzone');
+              if (emptyDz) emptyDz.classList.remove('drag-over', 'drag-target-forbidden');
+              calloutBlocksContainer.querySelectorAll(':scope > .block-editor-card').forEach(function(c) {
+                c.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+              });
+            });
+
+            calloutPanel.addEventListener('drop', function(e) {
+              e.preventDefault();
+              e.stopPropagation();
+
+              calloutPanel.classList.remove('drag-over', 'drag-target-forbidden');
+              var emptyDz = calloutBlocksContainer.querySelector('.studio-callout-empty-dropzone');
+              if (emptyDz) emptyDz.classList.remove('drag-over', 'drag-target-forbidden');
+
+              if (isDraggingForbiddenInCallout()) {
+                showToast('This block type cannot be nested inside Callout Advisory.', 'error');
+                return;
+              }
+
+              var currentChildCards = Array.from(calloutBlocksContainer.querySelectorAll(':scope > .block-editor-card'));
+              var insertIdx = 0;
+
+              if (currentChildCards.length > 0) {
+                var mouseY = e.clientY;
+                insertIdx = currentChildCards.length;
+
+                for (var i = 0; i < currentChildCards.length; i++) {
+                  var r = currentChildCards[i].getBoundingClientRect();
+                  var mid = r.top + r.height / 2;
+                  if (mouseY < mid) {
+                    insertIdx = i;
+                    break;
+                  }
+                }
+
+                currentChildCards.forEach(function(c) {
+                  c.classList.remove('drag-target-above', 'drag-target-below', 'drag-target-forbidden');
+                });
+              }
+
+              handleBlockDrop(e, {
+                type: 'callout',
+                secId: sec.id,
+                calloutBlockId: b.id,
+                insertIdx: insertIdx
+              });
+            });
+          }
+        }
+
+        bCard.appendChild(bHeader);
+        bCard.appendChild(bBody);
+        return bCard;
+      }
+
+      function handleBlockDrop(e, target) {
         try {
-          var payload = JSON.parse(e.dataTransfer.getData('text/plain') || '{}');
+          var payloadStr = (e.dataTransfer && e.dataTransfer.getData('text/plain')) || '{}';
+          var payload = null;
+          try { payload = JSON.parse(payloadStr); } catch (pErr) {}
+          if (!payload || !payload.source) payload = draggedBlockData;
+          if (!payload || !payload.source) return;
+
+          var targetSecId, targetFlexBlockId, targetColId, targetColIdx, targetCalloutBlockId, insertIdx, isFlexTarget, isCalloutTarget;
+          if (typeof target === 'object' && target !== null) {
+            isFlexTarget = target.type === 'flex-col';
+            isCalloutTarget = target.type === 'callout';
+            targetSecId = target.secId;
+            targetFlexBlockId = target.flexBlockId;
+            targetColId = target.colId;
+            targetColIdx = target.colIdx;
+            targetCalloutBlockId = target.calloutBlockId;
+            insertIdx = target.insertIdx;
+          } else {
+            targetSecId = arguments[1];
+            insertIdx = arguments[2];
+            isFlexTarget = false;
+            isCalloutTarget = false;
+          }
+
+          var draggedType = payload.type || payload.blockType || '';
+          if (payload.source === 'block' && !draggedType && payload.blockId) {
+            var srcB = findBlockById(payload.blockId);
+            if (srcB) draggedType = srcB.type;
+          }
+
+          // STRICT CHECK: Forbid flex-layout inside flex-col
+          if (isFlexTarget) {
+            if (!canNestInFlexLayout(draggedType)) {
+              showToast('Flexible Layout cannot be nested inside another Flexible Layout.', 'error');
+              return;
+            }
+          }
+
+          // STRICT CHECK: Centralized Callout nesting eligibility
+          if (isCalloutTarget) {
+            if (!canNestInCallout(draggedType)) {
+              showToast('This block type cannot be nested inside Callout Advisory.', 'error');
+              return;
+            }
+          }
+
+          var targetSec = currentDoc.sections.find(function(s) { return s.id === targetSecId; });
+          if (!targetSec) return;
+
+          var targetArray;
+          if (isFlexTarget) {
+            var flexBlock = targetSec.blocks.find(function(b) { return b.id === targetFlexBlockId; });
+            if (!flexBlock || flexBlock.type !== 'flex-layout') return;
+            var col = (flexBlock.data.columns || []).find(function(c) { return c.id === targetColId; });
+            if (!col && typeof targetColIdx === 'number' && flexBlock.data.columns && flexBlock.data.columns[targetColIdx]) {
+              col = flexBlock.data.columns[targetColIdx];
+            }
+            if (!col) return;
+            if (!Array.isArray(col.blocks)) col.blocks = [];
+            targetArray = col.blocks;
+          } else if (isCalloutTarget) {
+            var calloutLoc = resolveBlockLocation(targetCalloutBlockId);
+            var calloutBlock = calloutLoc ? calloutLoc.block : targetSec.blocks.find(function(b) { return b.id === targetCalloutBlockId; });
+            if (!calloutBlock || calloutBlock.type !== 'callout') return;
+            if (!Array.isArray(calloutBlock.data.blocks)) calloutBlock.data.blocks = [];
+            targetArray = calloutBlock.data.blocks;
+          } else {
+            targetArray = targetSec.blocks;
+          }
+
           if (payload.source === 'library') {
             var def = window.STUDIO_REGISTRY[payload.type];
             if (!def) return;
-            var targetSec = currentDoc.sections.find(function(s) { return s.id === targetSecId; });
-            if (!targetSec) return;
 
             var newBlock = {
               id: uid('blk'),
               type: payload.type,
               data: JSON.parse(JSON.stringify(def.defaultData))
             };
-            if (insertIdx !== undefined && insertIdx >= 0) {
-              targetSec.blocks.splice(insertIdx, 0, newBlock);
-            } else {
-              targetSec.blocks.push(newBlock);
+            if ((payload.type === 'text-image' || payload.type === 'image-text') && !newBlock.data.paragraphs) {
+              newBlock.data.paragraphs = [{ text: '', align: 'left' }];
             }
+            if (payload.type === 'flex-layout') {
+              newBlock.data.columns = [
+                { id: uid('fcol'), blocks: [] },
+                { id: uid('fcol'), blocks: [] }
+              ];
+            }
+            if (payload.type === 'callout') {
+              newBlock.data.blocks = [
+                {
+                  id: uid('blk'),
+                  type: 'solo-text',
+                  data: { paragraphs: [{ text: '', align: 'left' }] }
+                }
+              ];
+            }
+            if (insertIdx !== undefined && insertIdx >= 0 && insertIdx <= targetArray.length) {
+              targetArray.splice(insertIdx, 0, newBlock);
+            } else {
+              targetArray.push(newBlock);
+            }
+            normalizeDocument(currentDoc);
             activeSectionId = targetSec.id;
             renderSections();
             triggerAutosave();
             showToast('Inserted block: ' + def.label);
           } else if (payload.source === 'block') {
-            moveBlockToSection(payload.secId, payload.blockId, targetSecId, insertIdx);
+            var srcSec = currentDoc.sections.find(function(s) { return s.id === payload.secId; });
+            if (!srcSec) return;
+
+            var movedBlock = null;
+            if (payload.calloutBlockId) {
+              var srcCalloutLoc = resolveBlockLocation(payload.calloutBlockId);
+              var srcCallout = srcCalloutLoc ? srcCalloutLoc.block : srcSec.blocks.find(function(b) { return b.id === payload.calloutBlockId; });
+              if (srcCallout && srcCallout.type === 'callout' && srcCallout.data && Array.isArray(srcCallout.data.blocks)) {
+                var cbIdx = srcCallout.data.blocks.findIndex(function(b) { return b.id === payload.blockId; });
+                if (cbIdx !== -1) {
+                  movedBlock = srcCallout.data.blocks.splice(cbIdx, 1)[0];
+                  if (targetArray === srcCallout.data.blocks && cbIdx < insertIdx) {
+                    insertIdx--;
+                  }
+                }
+              }
+            } else if (payload.flexBlockId) {
+              var srcFlex = srcSec.blocks.find(function(b) { return b.id === payload.flexBlockId; });
+              if (srcFlex && srcFlex.type === 'flex-layout') {
+                var srcCol = (srcFlex.data.columns || []).find(function(c) { return c.id === payload.colId; });
+                if (!srcCol && typeof payload.colIdx === 'number' && srcFlex.data.columns && srcFlex.data.columns[payload.colIdx]) {
+                  srcCol = srcFlex.data.columns[payload.colIdx];
+                }
+                if (srcCol && Array.isArray(srcCol.blocks)) {
+                  var bIdx = srcCol.blocks.findIndex(function(b) { return b.id === payload.blockId; });
+                  if (bIdx !== -1) {
+                    movedBlock = srcCol.blocks.splice(bIdx, 1)[0];
+                    if (targetArray === srcCol.blocks && bIdx < insertIdx) {
+                      insertIdx--;
+                    }
+                  }
+                }
+              }
+            } else {
+              var bIdx = srcSec.blocks.findIndex(function(b) { return b.id === payload.blockId; });
+              if (bIdx !== -1) {
+                movedBlock = srcSec.blocks.splice(bIdx, 1)[0];
+                if (targetArray === srcSec.blocks && bIdx < insertIdx) {
+                  insertIdx--;
+                }
+              }
+            }
+
+            // Resilient fallback using resolveBlockLocation if not found in primary path
+            if (!movedBlock) {
+              var loc = resolveBlockLocation(payload.blockId);
+              if (loc) {
+                if (loc.parentType === 'callout') {
+                  var pCalloutLoc = resolveBlockLocation(loc.parentBlockId);
+                  var pCallout = pCalloutLoc ? pCalloutLoc.block : null;
+                  if (pCallout && pCallout.data && Array.isArray(pCallout.data.blocks)) {
+                    var idx = pCallout.data.blocks.findIndex(function(b) { return b.id === payload.blockId; });
+                    if (idx !== -1) {
+                      movedBlock = pCallout.data.blocks.splice(idx, 1)[0];
+                      if (targetArray === pCallout.data.blocks && idx < insertIdx) insertIdx--;
+                    }
+                  }
+                } else if (loc.parentType === 'flex-col') {
+                  var sFlex = loc.section.blocks.find(function(b) { return b.id === loc.parentBlockId; });
+                  if (sFlex && sFlex.data && Array.isArray(sFlex.data.columns)) {
+                    var sCol = sFlex.data.columns.find(function(c) { return c.id === loc.columnId; });
+                    if (sCol && Array.isArray(sCol.blocks)) {
+                      var idx = sCol.blocks.findIndex(function(b) { return b.id === payload.blockId; });
+                      if (idx !== -1) {
+                        movedBlock = sCol.blocks.splice(idx, 1)[0];
+                        if (targetArray === sCol.blocks && idx < insertIdx) insertIdx--;
+                      }
+                    }
+                  }
+                } else if (loc.parentType === 'section') {
+                  var idx = loc.section.blocks.findIndex(function(b) { return b.id === payload.blockId; });
+                  if (idx !== -1) {
+                    movedBlock = loc.section.blocks.splice(idx, 1)[0];
+                    if (targetArray === loc.section.blocks && idx < insertIdx) insertIdx--;
+                  }
+                }
+              }
+            }
+
+            if (!movedBlock) return;
+
+            if (insertIdx !== undefined && insertIdx >= 0 && insertIdx <= targetArray.length) {
+              targetArray.splice(insertIdx, 0, movedBlock);
+            } else {
+              targetArray.push(movedBlock);
+            }
+
+            activeSectionId = targetSec.id;
+            renderSections();
+            triggerAutosave();
+            showToast('Block moved');
           }
-        } catch (err) {}
+        } catch (err) {
+          console.error('handleBlockDrop error:', err);
+        } finally {
+          draggedBlockData = null;
+          stopDragAutoScroll();
+        }
       }
 
       // Trailing Add Section Event
@@ -6696,9 +8201,9 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
             drafts.forEach(function(d) {
               var card = document.createElement('div');
               card.style.cssText = 'background:rgba(21,18,28,0.8);border:1px solid var(--studio-border);border-radius:6px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:12px';
-              
+
               var dateStr = new Date(d.updatedAt).toLocaleString();
-              card.innerHTML = 
+              card.innerHTML =
                 '<div>' +
                   '<div style="font-family:var(--font-display);font-size:13px;color:var(--studio-gold-bright);margin-bottom:3px">' + escapeHtml(d.title || 'Untitled Scroll') + '</div>' +
                   '<div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-purple)">' + escapeHtml(d.category) + ' · ' + escapeHtml(d.status).toUpperCase() + ' · ' + dateStr + '</div>' +
@@ -6844,17 +8349,31 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
         // Validate image alt texts and table minimums
         var errors = [];
-        currentDoc.sections.forEach(function(sec, sIdx) {
-          (sec.blocks || []).forEach(function(blk, bIdx) {
-            var d = blk.data || {};
-            if ((d.src || d.imageSrc) && !d.alt) {
-              errors.push('Section ' + (sIdx + 1) + ' (' + blk.type + '): Alt text is required for image.');
+        function validateBlockRecursive(blk, sIdx) {
+          if (!blk || !blk.data) return;
+          var d = blk.data;
+          if ((d.src || d.imageSrc) && !d.alt) {
+            errors.push('Section ' + (sIdx + 1) + ' (' + blk.type + '): Alt text is required for image.');
+          }
+          if (blk.type === 'technical-table') {
+            if (!d.columns || d.columns.length === 0) {
+              errors.push('Section ' + (sIdx + 1) + ' (technical-table): At least 1 column is required.');
             }
-            if (blk.type === 'technical-table') {
-              if (!d.columns || d.columns.length === 0) {
-                errors.push('Section ' + (sIdx + 1) + ' (technical-table): At least 1 column is required.');
+          }
+          if (Array.isArray(d.blocks)) {
+            d.blocks.forEach(function(cb) { validateBlockRecursive(cb, sIdx); });
+          }
+          if (Array.isArray(d.columns)) {
+            d.columns.forEach(function(col) {
+              if (Array.isArray(col.blocks)) {
+                col.blocks.forEach(function(cb) { validateBlockRecursive(cb, sIdx); });
               }
-            }
+            });
+          }
+        }
+        currentDoc.sections.forEach(function(sec, sIdx) {
+          (sec.blocks || []).forEach(function(blk) {
+            validateBlockRecursive(blk, sIdx);
           });
         });
 
@@ -6935,6 +8454,7 @@ const totalBlockCount = Object.values(blockRegistry).filter(b => b.type !== 'bul
 
       // Expose state globally for browser QA automation
       window.currentDoc = currentDoc;
+      window.resolveBlockLocation = resolveBlockLocation;
       window.renderSections = renderSections;
       window.renderMetadata = syncMetaInputsFromState;
       window.calculateReadingTime = calculateReadingTime;
