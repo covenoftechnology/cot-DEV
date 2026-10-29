@@ -1,0 +1,949 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+/**
+ * PUBLIC ABOUT ME — editorial biography of the person behind Coven of Technology.
+ * Intentionally separate from /profile (future member system).
+ *
+ * Imagery configuration:
+ * Populate `imageSrc` (path under /public, e.g. '/images/about/leviathan.webp')
+ * and `imageAlt` on any item below to render real photography or certification badges.
+ * When `imageSrc` is empty, each slot renders an intentional Coven-styled fallback.
+ */
+interface ImageSlotConfig {
+  id?: string;
+  label?: string;
+  caption?: string;
+  imageSrc: string;
+  imageAlt: string;
+  fallbackGlyph?: string;
+}
+
+interface CertificationItem {
+  issuer: string;
+  title: string;
+  imageSrc: string;
+  imageAlt: string;
+}
+
+const HERO_PORTRAIT: ImageSlotConfig = {
+  id: 'hero-portrait',
+  imageSrc: '',
+  imageAlt: 'Portrait of the author behind Coven of Technology',
+};
+
+const PERSONAL_PHOTOS: ImageSlotConfig[] = [
+  {
+    id: 'personal-photo-1',
+    label: 'Wanderlust · I',
+    caption: 'Solo journeys & meeting locals',
+    imageSrc: '/assets/about/personal/Mich1.webp',
+    imageAlt: 'Personal travel photo exploring a new culture',
+    fallbackGlyph: '☽',
+  },
+  {
+    id: 'personal-photo-2',
+    label: 'Wanderlust · II',
+    caption: 'Expanding the world map across 9+ countries',
+    imageSrc: '/assets/about/personal/Mich2.webp',
+    imageAlt: 'Personal travel photo from a journey abroad',
+    fallbackGlyph: '✦',
+  },
+];
+
+const LEVIATHAN_PHOTO: ImageSlotConfig = {
+  id: 'leviathan-photo',
+  label: 'Leviathan · /levi/',
+  imageSrc: '/assets/about/leviathan/leviatan.webp',
+  imageAlt: 'Leviathan (/levi/), rescued dog and member of the fluffy family',
+  fallbackGlyph: '🐾',
+};
+
+const escAttr = (v: string) => String(v || '').replace(/&/g, '&amp;').replace(/"/g, '&quot;');
+
+function renderImageSlot(slot: { imageSrc: string; imageAlt: string }, className: string, fallbackHtml: string): string {
+  if (slot && slot.imageSrc) {
+    return `<img class="${className}" src="${escAttr(slot.imageSrc)}" alt="${escAttr(slot.imageAlt)}" loading="lazy" />`;
+  }
+  return fallbackHtml;
+}
+
+const WRITING_SUBJECTS = [
+  { glyph: '✦', name: 'Mentoring', note: 'Boosting a team’s performance' },
+  { glyph: '⟡', name: 'Activity management', note: 'Properly managing your activities' },
+  { glyph: '☽', name: 'Requirements elicitation', note: 'For new projects' },
+  { glyph: '✶', name: 'Salesforce Clouds', note: 'From the CRM at its core' },
+  { glyph: '✧', name: 'SFMCE', note: 'Previously known as Exact Target' },
+  { glyph: '◈', name: 'Data Cloud', note: 'Previously known as CDP' },
+];
+
+const CERTIFICATIONS: CertificationItem[] = [
+  { issuer: 'Salesforce', title: 'Data Cloud Consultant', imageSrc: '/assets/about/certifications/Data Cloud.webp', imageAlt: 'Salesforce Certified Data Cloud Consultant badge' },
+  { issuer: 'Salesforce', title: 'Marketing Associate', imageSrc: '/assets/about/certifications/Marketing Associate.webp', imageAlt: 'Salesforce Certified Marketing Associate badge' },
+  { issuer: 'Salesforce', title: 'Marketing Cloud Administrator', imageSrc: '/assets/about/certifications/Marketing Cloud Administrator.webp', imageAlt: 'Salesforce Certified Marketing Cloud Administrator badge' },
+  { issuer: 'Salesforce', title: 'AI Associate', imageSrc: '/assets/about/certifications/IA associate.webp', imageAlt: 'Salesforce Certified AI Associate badge' },
+  { issuer: 'Salesforce', title: 'Marketing Cloud Email Specialist', imageSrc: '/assets/about/certifications/Marketing Cloud Email Specialist.webp', imageAlt: 'Salesforce Certified Marketing Cloud Email Specialist badge' },
+  { issuer: 'Salesforce', title: 'Associate', imageSrc: '/assets/about/certifications/Associate.webp', imageAlt: 'Salesforce Certified Associate badge' },
+  { issuer: 'Salesforce', title: 'Administrator', imageSrc: '/assets/about/certifications/Administrator.webp', imageAlt: 'Salesforce Certified Administrator badge' },
+  { issuer: 'SFPC', title: 'Scrum Foundation', imageSrc: '/assets/about/certifications/Scrum Fundations.webp', imageAlt: 'Scrum Foundation Professional Certificate badge' },
+];
+
+const LANGUAGE_GROUPS = [
+  { label: 'Proficient', items: [
+    { name: 'Spanish', note: 'Mother tongue' },
+    { name: 'English', note: '' },
+    { name: 'French', note: '' },
+    { name: 'Portuguese', note: '' },
+  ] },
+  { label: 'Extra credit', items: [
+    { name: 'Italian', note: 'Understood through its Latin roots' },
+  ] },
+  { label: 'Currently learning', items: [
+    { name: 'Japanese', note: 'Self-taught on Duolingo' },
+    { name: 'German', note: 'Self-taught on Duolingo' },
+  ] },
+];
+
+const writingSubjectsHtml = WRITING_SUBJECTS.map((s) => `
+          <li class="cov-about-subject">
+            <span class="cov-about-subject-glyph" aria-hidden="true">${s.glyph}</span>
+            <span class="cov-about-subject-text">
+              <span class="cov-about-subject-name">${s.name}</span>
+              <span class="cov-about-subject-note">${s.note}</span>
+            </span>
+          </li>`).join('');
+
+const certificationsHtml = CERTIFICATIONS.map((c) => {
+  const hasImage = Boolean(c.imageSrc && c.imageSrc.trim());
+  const altText = c.imageAlt || `${c.issuer} ${c.title} certification`;
+  const mediaInnerHtml = hasImage
+    ? `<img class="cov-about-cert-img" src="${escAttr(c.imageSrc)}" alt="${escAttr(altText)}" loading="lazy" />`
+    : `<span class="cov-about-cert-sigil" aria-hidden="true"><span>✦</span></span>`;
+
+  return `
+          <li class="cov-about-cert" data-has-image="${hasImage ? 'true' : 'false'}">
+            <div class="cov-about-cert-media ${hasImage ? 'cov-about-cert-media-filled' : 'cov-about-cert-media-placeholder'}" ${hasImage ? '' : 'aria-hidden="true"'}>
+              ${mediaInnerHtml}
+            </div>
+            <span class="cov-about-cert-text">
+              <span class="cov-about-cert-issuer">${c.issuer}</span>
+              <span class="cov-about-cert-title">${c.title}</span>
+            </span>
+          </li>`;
+}).join('');
+
+const languagesHtml = LANGUAGE_GROUPS.map((g) => `
+            <div class="cov-about-lang-group">
+              <div class="cov-about-lang-label">${g.label}</div>
+              <ul class="cov-about-lang-list">
+                ${g.items.map((l) => `<li class="cov-about-lang"><span class="cov-about-lang-name">${l.name}</span>${l.note ? `<span class="cov-about-lang-note">${l.note}</span>` : ''}</li>`).join('')}
+              </ul>
+            </div>`).join('');
+
+const HERO_LUNA_SRC = '/assets/about/luna/Luna.html';
+
+const heroLunaHtml = `
+          <div class="cov-about-luna-stage" data-about-hero-visual="luna">
+            <iframe
+              class="cov-about-luna-iframe"
+              src="${HERO_LUNA_SRC}"
+              title="Interactive Coven Moon Ritual"
+              scrolling="no"
+              loading="eager"
+            ></iframe>
+          </div>`;
+
+const personalPhotosHtml = PERSONAL_PHOTOS.map((photo, idx) => {
+  const hasImage = Boolean(photo.imageSrc && photo.imageSrc.trim());
+  const altText = photo.imageAlt || photo.caption || `Personal travel photo ${idx + 1}`;
+  const fallbackHtml = `
+              <div class="cov-about-personal-photo-placeholder" aria-hidden="true">
+                <span class="cov-about-personal-photo-ring"></span>
+                <span class="cov-about-personal-photo-glyph">${photo.fallbackGlyph || '✦'}</span>
+                <span class="cov-about-personal-photo-tag">${photo.label || `Portrait ${idx + 1}`}</span>
+              </div>`;
+
+  return `
+          <figure class="cov-about-personal-photo-item" data-slot-id="${escAttr(photo.id || `personal-${idx + 1}`)}" data-has-image="${hasImage ? 'true' : 'false'}">
+            <div class="cov-about-personal-photo-frame">
+              ${renderImageSlot({ imageSrc: photo.imageSrc, imageAlt: altText }, 'cov-about-personal-photo-img', fallbackHtml)}
+            </div>
+            ${photo.caption ? `<figcaption class="cov-about-personal-photo-caption">${photo.caption}</figcaption>` : ''}
+          </figure>`;
+}).join('');
+
+const leviathanFallbackHtml = `
+            <div class="cov-about-levi-sigil" aria-hidden="true"><span>${LEVIATHAN_PHOTO.fallbackGlyph || '🐾'}</span></div>`;
+
+const leviathanVisualHtml = `
+          <div class="cov-about-levi-frame" data-slot-id="${escAttr(LEVIATHAN_PHOTO.id || 'leviathan-photo')}" data-has-image="${LEVIATHAN_PHOTO.imageSrc ? 'true' : 'false'}">
+            ${renderImageSlot(LEVIATHAN_PHOTO, 'cov-about-levi-img', leviathanFallbackHtml)}
+          </div>`;
+
+const aboutHtml = `<!-- ═══════════════════════════════════════════════════════════════
+  ABOUT ME (PUBLIC)
+  Editorial biography. Not the member /profile experience.
+════════════════════════════════════════════════════════════════ -->
+<sc-if value="{{ isAbout }}" hint-placeholder-val="{{ true }}">
+<div class="cov-about-page" style="position:relative;overflow:hidden;background:radial-gradient(1100px 680px at 50% -12%,rgba(124,77,196,.40),transparent 58%),radial-gradient(720px 520px at 14% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 88% 10%,rgba(170,128,224,.22),transparent 62%),#08060e">
+  <div aria-hidden="true" style="position:absolute;top:64px;left:0;right:0;height:320px;z-index:0;pointer-events:none">
+    <div style="position:absolute;top:36px;left:24%;width:3px;height:3px;border-radius:50%;background:#c9b8ff;box-shadow:0 0 10px 2px rgba(201,184,255,.7);animation:covTwinkle 4s infinite"></div>
+    <div style="position:absolute;top:118px;left:9%;width:2px;height:2px;border-radius:50%;background:#e8cf95;box-shadow:0 0 8px 2px rgba(232,207,149,.5);animation:covTwinkle 3.4s .6s infinite"></div>
+    <div style="position:absolute;top:210px;right:28%;width:3px;height:3px;border-radius:50%;background:#d6d0ec;box-shadow:0 0 9px 2px rgba(214,208,236,.6);animation:covTwinkle 5s .3s infinite"></div>
+  </div>
+
+  <header class="cov-header" style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:10">
+    <div onclick="{{ toLanding }}" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+      <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
+      <div class="cov-brand-text" style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
+    </div>
+    <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
+      <span onclick="{{ toLibrary }}" style="cursor:pointer">Spell Book</span>
+      <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
+      <span onclick="{{ toAbout }}" aria-current="page" style="color:#e8cf95;cursor:pointer">About Me</span>
+      <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
+    </nav>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div onclick="{{ toSignup }}" class="cov-header-desktop-cta cov-cta-coming-soon" data-coven-coming-soon="true" role="button" tabIndex="0" aria-disabled="true" style="padding:10px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:11px;letter-spacing:1.5px;cursor:not-allowed">ENTER THE COVEN</div>
+      <button class="cov-mobile-toggle" aria-label="Toggle navigation menu" type="button">☰</button>
+    </div>
+    <div class="cov-mobile-drawer">
+      <span onclick="{{ toLanding }}">The Sanctuary (Home)</span>
+      <span onclick="{{ toLibrary }}">Spell Book</span>
+      <span onclick="{{ toMemes }}">Grimoire of Memes</span>
+      <span onclick="{{ toAbout }}" aria-current="page" style="color:#e8cf95">About Me</span>
+      <span onclick="{{ toTerms }}">Mystic Terms &amp; Privacy</span>
+      <div onclick="{{ toSignup }}" class="cov-mobile-cta cov-cta-coming-soon" data-coven-coming-soon="true" role="button" tabIndex="0" aria-disabled="true" style="cursor:not-allowed">ENTER THE COVEN</div>
+    </div>
+  </header>
+
+  <main class="cov-about-main">
+
+    <!-- HERO / INTRODUCTION -->
+    <section class="cov-section-pad cov-about-hero" aria-labelledby="cov-about-title">
+      <div class="cov-about-hero-text">
+        <div class="cov-about-eyebrow">☽ Behind the Coven</div>
+        <h1 id="cov-about-title" class="cov-about-h1">About Me</h1>
+        <div class="cov-about-rule" aria-hidden="true"><span></span><i>✦</i><span></span></div>
+        <p class="cov-about-lead">
+          <span class="cov-about-quote-mark" aria-hidden="true">“</span>I’m a self-proclaimed <em>Author</em>, <em>Language Enthusiast</em> (former Language Professor), <em>Dedicated Mentor</em> and <em>Expert Salesforce Sorcerer</em>.<span class="cov-about-quote-mark cov-about-quote-mark-end" aria-hidden="true">”</span>
+        </p>
+      </div>
+      <div class="cov-about-hero-visual">
+        ${heroLunaHtml}
+      </div>
+    </section>
+
+    <!-- WHAT I WRITE ABOUT -->
+    <section class="cov-section-pad cov-about-section" aria-labelledby="cov-about-writing">
+      <div class="cov-about-section-head">
+        <div class="cov-about-numeral" aria-hidden="true">I</div>
+        <div>
+          <div class="cov-about-eyebrow">The scrolls I inscribe</div>
+          <h2 id="cov-about-writing" class="cov-about-h2">What I write about</h2>
+        </div>
+      </div>
+      <div class="cov-about-split">
+        <p class="cov-about-body cov-about-body-large">I write about how to: successfully mentor a team to boost their performance, properly manage your activities, favorably elicit requirements for new projects, and share useful tips and tricks on Salesforce Clouds—from the CRM at its core to the specifics on SFMCE (previously known as Exact Target) and Data Cloud (previously known as CDP).</p>
+        <ul class="cov-about-subjects" aria-label="Writing subjects">${writingSubjectsHtml}
+        </ul>
+      </div>
+    </section>
+
+    <!-- PROFESSIONAL PATH -->
+    <section class="cov-section-pad cov-about-section" aria-labelledby="cov-about-path">
+      <div class="cov-about-section-head">
+        <div class="cov-about-numeral" aria-hidden="true">II</div>
+        <div>
+          <div class="cov-about-eyebrow">The path of the craft</div>
+          <h2 id="cov-about-path" class="cov-about-h2 cov-about-h2-long">As a seasoned Salesforce Certified Pluricultural Consultant,</h2>
+        </div>
+      </div>
+      <div class="cov-about-path">
+        <p class="cov-about-body cov-about-dropcap">I am dedicated to surpassing my prior achievements by consistently embracing challenges. Characterized by my proactive and autonomous approach, I derive immense satisfaction from imparting knowledge to my colleagues.</p>
+        <p class="cov-about-body">My proficiency in communication extends across the languages in which I am fluent, where I excel in cultivating professional relationships and consistently achieving outstanding results in every assigned project.</p>
+        <p class="cov-about-body">Furthermore, my vast experience with the Agile methodology equips me with a comprehensive understanding of business requirements and the clarity to deliver real value.</p>
+      </div>
+    </section>
+
+    <!-- CERTIFICATIONS -->
+    <section class="cov-section-pad cov-about-section" aria-labelledby="cov-about-certs">
+      <div class="cov-about-section-head">
+        <div class="cov-about-numeral" aria-hidden="true">III</div>
+        <div>
+          <div class="cov-about-eyebrow">Sigils earned</div>
+          <h2 id="cov-about-certs" class="cov-about-h2">Certifications</h2>
+        </div>
+      </div>
+      <ul class="cov-about-certs">${certificationsHtml}
+      </ul>
+    </section>
+
+    <!-- A MORE PERSONAL VIEW -->
+    <section class="cov-section-pad cov-about-section" aria-labelledby="cov-about-personal">
+      <div class="cov-about-section-head">
+        <div class="cov-about-numeral" aria-hidden="true">IV</div>
+        <div>
+          <div class="cov-about-eyebrow">Beyond the craft</div>
+          <h2 id="cov-about-personal" class="cov-about-h2">A More Personal View</h2>
+        </div>
+      </div>
+
+      <div class="cov-about-personal">
+        <div class="cov-about-personal-text">
+          <p class="cov-about-body cov-about-body-large">I am fascinated by traveling and meeting new cultures, learning from one another and make new friends around the world. I prefer doing trips on my own and talking to the locals myself.</p>
+          <p class="cov-about-body">Fortunately this is not such a complicated task as I am proficient in Spanish (my mother tongue, evidently), English, French, and Portuguese —throw Italian in there as an extra credit since speaking mostly Latin-derived languages is helpful to understand it; learning Japanese and German on my own in Duolingo as well (not sponsored).</p>
+          <p class="cov-about-body">I can present myself and ask for the bill and directions —which everybody should learn how to before traveling to another country!</p>
+        </div>
+        <aside class="cov-about-langs" aria-labelledby="cov-about-langs-title">
+          <h3 id="cov-about-langs-title" class="cov-about-h3">Tongues I speak</h3>
+          ${languagesHtml}
+        </aside>
+      </div>
+
+      <div class="cov-about-travel">
+        <div class="cov-about-travel-mark">
+          <div class="cov-about-travel-count"><span>9</span><sup aria-hidden="true">+</sup></div>
+          <div class="cov-about-travel-label">Over 9 countries visited</div>
+        </div>
+        <div class="cov-about-travel-text">
+          <h3 class="cov-about-h3">Expanding the world map</h3>
+          <p class="cov-about-body">I’ve currently visited over 9 countries and am inspired by each single trip as I get to expand my world map (otaku gamer here) a bit more in each destination.</p>
+          <p class="cov-about-body">I embrace the friendships and relationships I am able to build over my stay at other cities and treasure the memories/souvenirs.</p>
+          <ul class="cov-about-motifs" aria-label="What travel means to me">
+            <li>New cultures</li>
+            <li>Talking to the locals</li>
+            <li>Friendships</li>
+            <li>Memories &amp; souvenirs</li>
+          </ul>
+        </div>
+        <div class="cov-about-personal-photos" aria-label="Personal and travel photographs">
+          ${personalPhotosHtml}
+        </div>
+      </div>
+
+      <!-- LEVIATHAN / PERSONAL CLOSING -->
+      <article class="cov-about-levi" aria-labelledby="cov-about-levi-title">
+        <div class="cov-about-levi-visual">
+          ${leviathanVisualHtml}
+        </div>
+        <div class="cov-about-levi-text">
+          <div class="cov-about-eyebrow">The fluffy family</div>
+          <h3 id="cov-about-levi-title" class="cov-about-h3 cov-about-levi-name">Leviathan <span>/levi/ for the pals</span></h3>
+          <p class="cov-about-body cov-about-body-large">My life flipped completely the moment I adopted a rescued dog —Leviathan (/levi/ for the pals)— and I’ll keep on rescuing stray dogs and increasing the members of my fluffy family because they only deserve what they give, and it is unconditional love 🐾 🥰</p>
+        </div>
+      </article>
+    </section>
+
+    <div class="cov-about-coda" aria-hidden="true">✦ &nbsp; ✦ &nbsp; ✦</div>
+  </main>
+</div>
+</sc-if>`;
+---
+
+<BaseLayout title="Coven of Technology — About Me" description="Behind the Coven: author, language enthusiast, dedicated mentor and expert Salesforce sorcerer.">
+  <Fragment set:html={aboutHtml} />
+</BaseLayout>
+
+<style is:global>
+  .cov-about-main { position: relative; z-index: 1; }
+
+  .cov-about-eyebrow {
+    font-family: 'EB Garamond', serif;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: #b98fd8;
+    margin-bottom: 10px;
+  }
+  .cov-about-h1 {
+    font-family: Cinzel, serif;
+    font-weight: 700;
+    font-size: clamp(38px, 8vw, 72px);
+    line-height: 1.02;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #f3ecdf;
+    margin: 0;
+    text-shadow: 0 0 44px rgba(139, 92, 196, 0.32);
+  }
+  .cov-about-h2 {
+    font-family: Cinzel, serif;
+    font-weight: 600;
+    font-size: clamp(24px, 4.4vw, 36px);
+    line-height: 1.18;
+    color: #ece6dd;
+    margin: 0;
+  }
+  .cov-about-h2-long { max-width: 760px; }
+  .cov-about-h3 {
+    font-family: Cinzel, serif;
+    font-weight: 600;
+    font-size: clamp(18px, 3vw, 22px);
+    line-height: 1.25;
+    color: #f3ecdf;
+    margin: 0 0 14px;
+  }
+  .cov-about-body {
+    font-family: 'EB Garamond', serif;
+    font-size: 18px;
+    line-height: 1.72;
+    color: #b3a99d;
+    margin: 0 0 18px;
+  }
+  .cov-about-body:last-child { margin-bottom: 0; }
+  .cov-about-body-large {
+    font-size: clamp(19px, 2.2vw, 21px);
+    color: #cdc3b6;
+  }
+
+  /* Hero */
+  .cov-about-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+    gap: clamp(32px, 6vw, 80px);
+    align-items: center;
+    max-width: 1240px;
+    margin: 0 auto;
+    padding-top: clamp(48px, 8vw, 96px);
+    padding-bottom: clamp(40px, 6vw, 72px);
+    padding-left: 48px;
+    padding-right: 48px;
+  }
+  .cov-about-rule {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    max-width: 280px;
+    margin: 26px 0 30px;
+    color: #d8b56b;
+  }
+  .cov-about-rule span { flex: 1; height: 1px; background: linear-gradient(90deg, rgba(216,181,107,.5), rgba(216,181,107,.08)); }
+  .cov-about-rule span:first-child { background: linear-gradient(90deg, rgba(216,181,107,.08), rgba(216,181,107,.5)); }
+  .cov-about-rule i { font-style: normal; font-size: 13px; }
+  .cov-about-lead {
+    position: relative;
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: clamp(22px, 3vw, 30px);
+    line-height: 1.5;
+    color: #e3d9ca;
+    margin: 0;
+    max-width: 640px;
+  }
+  .cov-about-lead em {
+    font-style: normal;
+    font-family: Cinzel, serif;
+    font-size: 0.82em;
+    letter-spacing: 0.5px;
+    color: #e8cf95;
+  }
+  .cov-about-quote-mark {
+    font-family: Cinzel, serif;
+    font-style: normal;
+    color: rgba(216, 181, 107, 0.55);
+    margin-right: 4px;
+  }
+  .cov-about-quote-mark-end { margin: 0 0 0 4px; }
+
+  .cov-about-hero-visual { display: flex; justify-content: center; align-items: center; min-width: 0; }
+  .cov-about-luna-stage {
+    --luna-scale: 1;
+    position: relative;
+    width: calc(450px * var(--luna-scale));
+    height: calc(450px * var(--luna-scale));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .cov-about-luna-iframe {
+    width: 450px;
+    height: 450px;
+    border: 0;
+    outline: 0;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    display: block;
+    flex-shrink: 0;
+    overflow: hidden;
+    transform: scale(var(--luna-scale));
+    transform-origin: center center;
+    border-radius: 50%;
+    -webkit-mask-image: radial-gradient(closest-side, #000 84%, rgba(0, 0, 0, 0.72) 92%, transparent 100%);
+    mask-image: radial-gradient(closest-side, #000 84%, rgba(0, 0, 0, 0.72) 92%, transparent 100%);
+  }
+  .cov-about-portrait-img {
+    width: min(100%, 360px);
+    aspect-ratio: 1 / 1;
+    object-fit: cover;
+    border-radius: 50%;
+    border: 1px solid rgba(216, 181, 107, 0.45);
+    box-shadow: 0 0 60px rgba(124, 77, 196, 0.35), 0 0 0 10px rgba(216, 181, 107, 0.05);
+  }
+  .cov-about-sigil {
+    position: relative;
+    width: min(100%, 340px);
+    aspect-ratio: 1 / 1;
+  }
+  .cov-about-sigil-ring {
+    position: absolute;
+    border-radius: 50%;
+  }
+  .cov-about-sigil-ring-outer {
+    inset: 0;
+    border: 1px solid rgba(216, 181, 107, 0.32);
+    background: radial-gradient(circle, rgba(124, 77, 196, 0.22), transparent 66%);
+    box-shadow: 0 0 70px rgba(124, 77, 196, 0.25), inset 0 0 40px rgba(124, 77, 196, 0.18);
+  }
+  .cov-about-sigil-ring-mid {
+    inset: 14%;
+    border: 1px dashed rgba(216, 181, 107, 0.28);
+  }
+  .cov-about-sigil-ring-inner {
+    inset: 30%;
+    border: 1px solid rgba(185, 143, 216, 0.4);
+    background: radial-gradient(circle at 40% 36%, #2b1f40, #0d0a14 72%);
+  }
+  .cov-about-sigil-core {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(40px, 6vw, 58px);
+    color: #e3c47e;
+    text-shadow: 0 0 26px rgba(216, 181, 107, 0.6);
+    animation: covGlow 4s ease-in-out infinite;
+  }
+  .cov-about-sigil-star {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    font-size: 14px;
+    color: #d8b56b;
+    background: #0c0916;
+    padding: 2px 4px;
+    line-height: 1;
+  }
+
+  /* Sections */
+  .cov-about-section {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding-top: clamp(40px, 6vw, 72px);
+    padding-bottom: clamp(40px, 6vw, 72px);
+    padding-left: 48px;
+    padding-right: 48px;
+    border-top: 1px solid rgba(216, 181, 107, 0.1);
+  }
+  .cov-about-section-head {
+    display: flex;
+    align-items: flex-end;
+    gap: 22px;
+    margin-bottom: clamp(26px, 4vw, 40px);
+  }
+  .cov-about-numeral {
+    flex-shrink: 0;
+    min-width: 58px;
+    font-family: Cinzel, serif;
+    font-size: clamp(34px, 5vw, 48px);
+    line-height: 1;
+    color: transparent;
+    -webkit-text-stroke: 1px rgba(216, 181, 107, 0.55);
+    text-shadow: 0 0 24px rgba(216, 181, 107, 0.12);
+  }
+  .cov-about-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: start;
+  }
+
+  .cov-about-subjects {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid rgba(216, 181, 107, 0.16);
+  }
+  .cov-about-subject {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    padding: 14px 4px;
+    border-bottom: 1px solid rgba(216, 181, 107, 0.12);
+  }
+  .cov-about-subject-glyph { color: #d8b56b; font-size: 14px; width: 16px; text-align: center; flex-shrink: 0; }
+  .cov-about-subject-text { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; min-width: 0; }
+  .cov-about-subject-name { font-family: Cinzel, serif; font-size: 16px; letter-spacing: 0.5px; color: #ece6dd; }
+  .cov-about-subject-note { font-family: 'EB Garamond', serif; font-style: italic; font-size: 15px; color: #8f857a; }
+
+  .cov-about-path {
+    max-width: 780px;
+    margin-left: 80px;
+    padding-left: clamp(18px, 3vw, 32px);
+    border-left: 1px solid rgba(216, 181, 107, 0.28);
+  }
+  .cov-about-dropcap::first-letter {
+    float: left;
+    font-family: Cinzel, serif;
+    font-size: 64px;
+    line-height: 0.9;
+    padding: 6px 12px 0 0;
+    color: #e3c47e;
+    text-shadow: 0 0 22px rgba(216, 181, 107, 0.35);
+  }
+
+  /* Certifications */
+  .cov-about-certs {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 16px;
+  }
+  .cov-about-cert {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 8px;
+    padding: 24px 16px 22px;
+    border: 1px solid rgba(216, 181, 107, 0.16);
+    border-radius: 6px;
+    background: radial-gradient(260px 120px at 50% 0%, rgba(124, 77, 196, 0.16), transparent 70%), #100d16;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+  .cov-about-cert:hover {
+    border-color: rgba(216, 181, 107, 0.4);
+    box-shadow: 0 0 26px rgba(124, 77, 196, 0.18);
+  }
+  .cov-about-cert-media {
+    width: 68px;
+    height: 68px;
+    margin-bottom: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    flex-shrink: 0;
+  }
+  .cov-about-cert-media-placeholder {
+    border: 1px dashed rgba(216, 181, 107, 0.26);
+    background: radial-gradient(circle, rgba(124, 77, 196, 0.22), rgba(12, 9, 22, 0.65) 72%);
+  }
+  .cov-about-cert-media-filled {
+    border: 1px solid rgba(216, 181, 107, 0.38);
+    background: radial-gradient(circle, rgba(124, 77, 196, 0.28), #0c0916 74%);
+    padding: 6px;
+    overflow: hidden;
+    box-shadow: 0 0 18px rgba(216, 181, 107, 0.16);
+  }
+  .cov-about-cert-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    display: block;
+  }
+  .cov-about-cert-sigil {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transform: rotate(45deg);
+    border: 1px solid rgba(216, 181, 107, 0.5);
+    background: radial-gradient(circle, rgba(124, 77, 196, 0.4), #0c0916 72%);
+    box-shadow: 0 0 16px rgba(216, 181, 107, 0.16);
+  }
+  .cov-about-cert-sigil span { transform: rotate(-45deg); color: #e3c47e; font-size: 13px; }
+  .cov-about-cert-text { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+  .cov-about-cert-issuer {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #b98fd8;
+  }
+  .cov-about-cert-title {
+    font-family: Cinzel, serif;
+    font-size: 15px;
+    line-height: 1.35;
+    color: #ece6dd;
+  }
+
+  /* Personal view */
+  .cov-about-personal {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 64px);
+    align-items: start;
+  }
+  .cov-about-langs {
+    border: 1px solid rgba(216, 181, 107, 0.18);
+    border-radius: 8px;
+    padding: 24px 24px 20px;
+    background: radial-gradient(400px 180px at 20% 0%, rgba(139, 92, 196, 0.16), transparent 65%), #100d16;
+  }
+  .cov-about-lang-group + .cov-about-lang-group {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(216, 181, 107, 0.1);
+  }
+  .cov-about-lang-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #b98fd8;
+    margin-bottom: 10px;
+  }
+  .cov-about-lang-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+  .cov-about-lang { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+  .cov-about-lang-name { font-family: Cinzel, serif; font-size: 16px; color: #ece6dd; }
+  .cov-about-lang-note { font-family: 'EB Garamond', serif; font-style: italic; font-size: 15px; color: #8f857a; }
+
+  .cov-about-travel {
+    display: grid;
+    grid-template-columns: minmax(0, 180px) minmax(0, 1.3fr) minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 48px);
+    align-items: center;
+    margin-top: clamp(40px, 6vw, 64px);
+    padding-top: clamp(32px, 5vw, 48px);
+    border-top: 1px dashed rgba(216, 181, 107, 0.16);
+  }
+  .cov-about-travel-mark { text-align: left; align-self: start; }
+  .cov-about-travel-count {
+    display: flex;
+    align-items: flex-start;
+    font-family: Cinzel, serif;
+    font-size: clamp(64px, 10vw, 96px);
+    line-height: 0.9;
+    color: #e3c47e;
+    text-shadow: 0 0 40px rgba(216, 181, 107, 0.3);
+  }
+  .cov-about-travel-count sup { font-size: 0.42em; line-height: 1; margin-left: 4px; color: #d8b56b; }
+  .cov-about-travel-label {
+    margin-top: 10px;
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: #8f857a;
+  }
+  .cov-about-motifs {
+    list-style: none;
+    margin: 22px 0 0;
+    padding: 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .cov-about-motifs li {
+    font-family: 'EB Garamond', serif;
+    font-size: 14px;
+    color: #cdc3b6;
+    border: 1px solid rgba(185, 143, 216, 0.3);
+    border-radius: 20px;
+    padding: 6px 14px;
+  }
+
+  /* Personal / Travel 2-photo circular cluster */
+  .cov-about-personal-photos {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: clamp(16px, 2.5vw, 24px);
+    align-items: start;
+    justify-items: center;
+  }
+  .cov-about-personal-photo-item {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 10px;
+    width: 100%;
+    max-width: 176px;
+  }
+  .cov-about-personal-photo-item:nth-child(2) {
+    margin-top: 18px;
+  }
+  .cov-about-personal-photo-frame {
+    width: clamp(124px, 13vw, 160px);
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(216, 181, 107, 0.42);
+    background: radial-gradient(circle at 38% 34%, rgba(124, 77, 196, 0.38), #0c0916 74%);
+    box-shadow: 0 0 34px rgba(124, 77, 196, 0.2), 0 0 0 6px rgba(216, 181, 107, 0.04);
+  }
+  .cov-about-personal-photo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: 50%;
+  }
+  .cov-about-personal-photo-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+    padding: 14px;
+  }
+  .cov-about-personal-photo-ring {
+    position: absolute;
+    inset: 10px;
+    border-radius: 50%;
+    border: 1px dashed rgba(216, 181, 107, 0.28);
+    pointer-events: none;
+  }
+  .cov-about-personal-photo-glyph {
+    font-size: 26px;
+    color: #e3c47e;
+    text-shadow: 0 0 18px rgba(216, 181, 107, 0.45);
+    line-height: 1;
+  }
+  .cov-about-personal-photo-tag {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: #b98fd8;
+  }
+  .cov-about-personal-photo-caption {
+    font-family: 'EB Garamond', serif;
+    font-style: italic;
+    font-size: 14px;
+    line-height: 1.35;
+    color: #9b9189;
+  }
+
+  /* Leviathan closing */
+  .cov-about-levi {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 44px);
+    align-items: center;
+    margin-top: clamp(44px, 6vw, 72px);
+    padding: clamp(26px, 4vw, 44px);
+    border: 1px solid rgba(216, 181, 107, 0.26);
+    border-radius: 12px;
+    background:
+      radial-gradient(520px 220px at 0% 0%, rgba(216, 181, 107, 0.08), transparent 65%),
+      radial-gradient(620px 260px at 100% 100%, rgba(139, 92, 196, 0.2), transparent 65%),
+      #120e1a;
+    box-shadow: 0 0 40px rgba(139, 92, 196, 0.12);
+  }
+  .cov-about-levi-frame {
+    width: clamp(120px, 16vw, 168px);
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid rgba(216, 181, 107, 0.45);
+    background: radial-gradient(circle at 40% 36%, rgba(124, 77, 196, 0.45), #0c0916 72%);
+    box-shadow: 0 0 34px rgba(216, 181, 107, 0.16), inset 0 0 26px rgba(124, 77, 196, 0.35);
+    flex-shrink: 0;
+  }
+  .cov-about-levi-sigil {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: clamp(40px, 5vw, 54px);
+  }
+  .cov-about-levi-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: 50%;
+  }
+  .cov-about-levi-name {
+    font-size: clamp(24px, 4vw, 32px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+  }
+  .cov-about-levi-name span {
+    font-family: 'EB Garamond', serif;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 17px;
+    color: #b98fd8;
+  }
+
+  .cov-about-coda {
+    text-align: center;
+    color: rgba(216, 181, 107, 0.6);
+    font-size: 13px;
+    letter-spacing: 6px;
+    padding: 8px 0 64px;
+  }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .cov-about-certs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cov-about-path { margin-left: 0; }
+    .cov-about-travel {
+      grid-template-columns: minmax(0, 160px) minmax(0, 1fr);
+    }
+    .cov-about-personal-photos {
+      grid-column: 1 / -1;
+      justify-self: start;
+      max-width: 400px;
+      width: 100%;
+    }
+  }
+  @media (max-width: 1180px) {
+    .cov-about-luna-stage { --luna-scale: 0.8; }
+  }
+  @media (max-width: 900px) {
+    .cov-about-hero,
+    .cov-about-split,
+    .cov-about-personal { grid-template-columns: minmax(0, 1fr); }
+    .cov-about-hero-visual { order: -1; justify-content: flex-start; }
+    .cov-about-sigil,
+    .cov-about-portrait-img { width: min(60vw, 240px); }
+    .cov-about-luna-stage { --luna-scale: 0.72; }
+  }
+  @media (max-width: 768px) {
+    .cov-about-travel { grid-template-columns: minmax(0, 1fr); }
+    .cov-about-levi { grid-template-columns: minmax(0, 1fr); justify-items: start; }
+    .cov-about-section-head { gap: 16px; }
+    .cov-about-numeral { min-width: 0; }
+    .cov-about-body { font-size: 17px; }
+    .cov-about-personal-photo-frame { width: clamp(118px, 34vw, 150px); }
+  }
+  @media (max-width: 480px) {
+    .cov-about-luna-stage { --luna-scale: 0.62; }
+    .cov-about-certs { grid-template-columns: minmax(0, 1fr); }
+    .cov-about-cert { flex-direction: row; text-align: left; align-items: center; gap: 14px; padding: 16px; }
+    .cov-about-cert-media { margin-bottom: 0; width: 52px; height: 52px; }
+    .cov-about-cert-sigil { width: 28px; height: 28px; }
+    .cov-about-cert-text { gap: 3px; }
+    .cov-about-section-head { flex-direction: column; align-items: flex-start; gap: 8px; }
+    .cov-about-dropcap::first-letter { font-size: 52px; }
+    .cov-about-personal-photo-item:nth-child(2) { margin-top: 0; }
+  }
+  @media (max-width: 350px) {
+    .cov-about-luna-stage { --luna-scale: 0.54; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cov-about-sigil-core { animation: none; }
+  }
+</style>

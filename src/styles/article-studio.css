@@ -1714,12 +1714,49 @@
 }
 
 .coven-studio .nested-sub-items-wrap {
-  margin-left: 20px;
+  margin-left: 18px;
   border-left: 2px solid rgba(185, 143, 216, 0.25);
   padding-left: 12px;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.coven-studio .nested-sub-items-wrap[data-depth="3"] {
+  margin-left: 14px;
+  border-left-color: rgba(216, 181, 107, 0.26);
+  padding-left: 10px;
+  margin-top: 6px;
+}
+
+.coven-studio .nested-sub-items-wrap[data-depth="4"] {
+  margin-left: 12px;
+  border-left-color: rgba(185, 143, 216, 0.22);
+  padding-left: 10px;
+  margin-top: 6px;
+}
+
+.coven-studio .nested-sub-item-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coven-studio .nested-sub-item-actions {
+  margin-top: 2px;
+}
+
+.coven-studio .nested-max-depth-pill {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--studio-text-muted);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(216, 181, 107, 0.16);
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 /* Numbered Steps Card */

@@ -28,12 +28,8 @@ window.SITE_CONTENT = {
       ctaSecondary: 'BROWSE THE GRIMOIRE',
     },
 
-    // ── Hero stats bar ────────────────────────────────────────────
-    stats: [
-      { value: '128',   label: 'Scrolls'   },
-      { value: '44',    label: 'Trials'    },
-      { value: '2,340', label: 'Initiates' },
-    ],
+    // ── Hero stats bar (computed dynamically from published Studio articles via getHomeStats) ──
+    stats: [],
 
     // ── Ranks ─────────────────────────────────────────────────────
     // isTop marks the final gold rank displayed differently everywhere.

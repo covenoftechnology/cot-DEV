@@ -1,5 +1,5 @@
 ---
-import { getPublishedArticles } from '../lib/articles';
+import { getPublishedArticles, getHomeStats } from '../lib/articles';
 import Footer from '../components/Footer.astro';
 import '../styles/styles.css';
 
@@ -9,6 +9,7 @@ interface Props {
   canonical?: string;
   ogImage?: string;
   ogType?: string;
+  disableDc?: boolean;
 }
 
 const {
@@ -21,6 +22,7 @@ const {
 } = Astro.props;
 
 const publishedArticles = getPublishedArticles();
+const homeStats = getHomeStats();
 const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, {
   id: a.slug,
   slug: a.slug,
@@ -58,9 +60,10 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
   <link href="https://fonts.googleapis.com/css2?family=Metamorphous&display=swap" rel="stylesheet" />
 
-  <!-- Articles metadata index from Content Collections -->
-  <script is:inline define:vars={{ blogArticlesMeta }}>
+  <!-- Articles metadata index & dynamic Home stats -->
+  <script is:inline define:vars={{ blogArticlesMeta, homeStats }}>
     window.COVEN_ARTICLES_INDEX = blogArticlesMeta;
+    window.COVEN_HOME_STATS = homeStats;
   </script>
 
   {!disableDc && (
@@ -100,28 +103,164 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
     </script>
   )}
 
+  <style is:global>
+    [data-coven-coming-soon="true"],
+    .cov-cta-coming-soon {
+      cursor: not-allowed !important;
+      user-select: none;
+    }
+    [data-coven-coming-soon="true"]:focus-visible,
+    .cov-cta-coming-soon:focus-visible {
+      outline: 2px solid #e3c47e;
+      outline-offset: 3px;
+    }
+    #cov-coming-soon-toast {
+      position: fixed;
+      left: 50%;
+      bottom: 28px;
+      transform: translate(-50%, 16px);
+      z-index: 10000;
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      max-width: calc(100vw - 32px);
+      padding: 13px 20px;
+      border-radius: 6px;
+      background: radial-gradient(360px 120px at 50% 0%, rgba(139, 92, 196, 0.24), transparent 70%), rgba(16, 13, 22, 0.96);
+      border: 1px solid rgba(216, 181, 107, 0.45);
+      box-shadow: 0 10px 32px rgba(0, 0, 0, 0.65), 0 0 24px rgba(216, 181, 107, 0.2);
+      color: #f3ecdf;
+      font-family: "EB Garamond", serif;
+      font-size: 16px;
+      letter-spacing: 0.4px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.22s ease, transform 0.22s ease;
+      box-sizing: border-box;
+    }
+    #cov-coming-soon-toast.cov-toast-visible {
+      opacity: 1;
+      transform: translate(-50%, 0);
+      pointer-events: auto;
+    }
+    #cov-coming-soon-toast .cov-toast-glyph {
+      color: #d8b56b;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    #cov-coming-soon-toast .cov-toast-dismiss {
+      background: transparent;
+      border: none;
+      color: #9b9189;
+      font-size: 13px;
+      cursor: pointer;
+      padding: 2px 4px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+    #cov-coming-soon-toast .cov-toast-dismiss:hover {
+      color: #e8cf95;
+    }
+  </style>
+
   <script is:inline>
-    // Global mobile navigation drawer handler
-    document.addEventListener('click', function(e) {
-      var btn = e.target.closest('.cov-mobile-toggle');
-      if (btn) {
-        var header = btn.closest('.cov-header') || document.querySelector('.cov-header');
-        if (header) {
-          var drawer = header.querySelector('.cov-mobile-drawer');
-          if (drawer) {
-            drawer.classList.toggle('cov-open');
+    (function() {
+      var toastTimer = null;
+
+      function ensureComingSoonToast() {
+        var toast = document.getElementById("cov-coming-soon-toast");
+        if (!toast) {
+          toast = document.createElement("div");
+          toast.id = "cov-coming-soon-toast";
+          toast.setAttribute("role", "status");
+          toast.setAttribute("aria-live", "polite");
+          toast.setAttribute("aria-hidden", "true");
+          toast.innerHTML = '<span class="cov-toast-glyph" aria-hidden="true">✦</span><span class="cov-toast-message">This ritual is still being prepared.</span><button type="button" class="cov-toast-dismiss" aria-label="Dismiss notification">✕</button>';
+          document.body.appendChild(toast);
+          var dismissBtn = toast.querySelector(".cov-toast-dismiss");
+          if (dismissBtn) {
+            dismissBtn.addEventListener("click", function(ev) {
+              ev.stopPropagation();
+              window.hideCovenComingSoonToast();
+            });
           }
         }
-        return;
+        return toast;
       }
-      var drawerItem = e.target.closest('.cov-mobile-drawer span, .cov-mobile-drawer div');
-      if (drawerItem) {
-        var drawer = drawerItem.closest('.cov-mobile-drawer');
-        if (drawer) {
-          drawer.classList.remove('cov-open');
+
+      window.hideCovenComingSoonToast = function() {
+        var toast = document.getElementById("cov-coming-soon-toast");
+        if (toast) {
+          toast.classList.remove("cov-toast-visible");
+          toast.setAttribute("aria-hidden", "true");
         }
-      }
-    });
+        if (toastTimer) {
+          clearTimeout(toastTimer);
+          toastTimer = null;
+        }
+      };
+
+      window.showCovenComingSoonToast = function(message) {
+        var toast = ensureComingSoonToast();
+        var msgEl = toast.querySelector(".cov-toast-message");
+        if (msgEl) {
+          msgEl.textContent = message || "This ritual is still being prepared.";
+        }
+        toast.classList.add("cov-toast-visible");
+        toast.setAttribute("aria-hidden", "false");
+        if (toastTimer) clearTimeout(toastTimer);
+        toastTimer = setTimeout(function() {
+          window.hideCovenComingSoonToast();
+        }, 3200);
+      };
+
+      // Global mobile navigation drawer + reusable coming-soon CTA handler
+      document.addEventListener("click", function(e) {
+        var comingSoonTarget = e.target.closest('[data-coven-coming-soon="true"], .cov-cta-coming-soon');
+        if (comingSoonTarget) {
+          e.preventDefault();
+          e.stopPropagation();
+          var parentDrawer = comingSoonTarget.closest(".cov-mobile-drawer");
+          if (parentDrawer) parentDrawer.classList.remove("cov-open");
+          window.showCovenComingSoonToast("This ritual is still being prepared.");
+          return;
+        }
+
+        var btn = e.target.closest(".cov-mobile-toggle");
+        if (btn) {
+          var header = btn.closest(".cov-header") || document.querySelector(".cov-header");
+          if (header) {
+            var drawer = header.querySelector(".cov-mobile-drawer") || header.parentElement.querySelector(".cov-mobile-drawer");
+            if (drawer) {
+              drawer.classList.toggle("cov-open");
+            }
+          }
+          return;
+        }
+        var drawerItem = e.target.closest(".cov-mobile-drawer span, .cov-mobile-drawer div, .cov-mobile-drawer a");
+        if (drawerItem) {
+          var drawer = drawerItem.closest(".cov-mobile-drawer");
+          if (drawer) {
+            drawer.classList.remove("cov-open");
+          }
+        }
+      }, true);
+
+      document.addEventListener("keydown", function(e) {
+        if (e.key === "Escape") {
+          window.hideCovenComingSoonToast();
+          return;
+        }
+        if (e.key === "Enter" || e.key === " ") {
+          var comingSoonTarget = e.target && e.target.closest && e.target.closest('[data-coven-coming-soon="true"], .cov-cta-coming-soon');
+          if (comingSoonTarget) {
+            e.preventDefault();
+            e.stopPropagation();
+            window.showCovenComingSoonToast("This ritual is still being prepared.");
+          }
+        }
+      }, true);
+    })();
   </script>
 </body>
 </html>

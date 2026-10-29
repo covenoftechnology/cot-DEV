@@ -476,3 +476,9 @@ export function canNestInFlexLayout(block: { type: string } | string): boolean {
   const type = typeof block === 'string' ? block : block?.type;
   return type !== 'flex-layout';
 }
+
+export const MAX_NESTED_LIST_DEPTH = 4;
+
+export function canAddNestedListChild(depth: number): boolean {
+  return typeof depth === 'number' && depth >= 1 && depth < MAX_NESTED_LIST_DEPTH;
+}

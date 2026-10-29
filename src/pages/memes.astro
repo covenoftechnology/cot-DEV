@@ -22,20 +22,20 @@ const memesHtml = `<!-- ══════════════════�
     <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
       <span onclick="{{ toLibrary }}" style="cursor:pointer">Spell Book</span>
       <span onclick="{{ toMemes }}" style="color:#e8cf95;cursor:pointer">Grimoire of Memes</span>
-      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer">About Me</span></sc-if>
+      <span onclick="{{ toAbout }}" style="cursor:pointer">About Me</span>
       <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
     </nav>
     <div style="display:flex;align-items:center;gap:12px">
-      <div onclick="{{ toSignup }}" class="cov-header-desktop-cta" style="padding:10px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:11px;letter-spacing:1.5px;cursor:pointer">ENTER THE COVEN</div>
+      <div onclick="{{ toSignup }}" class="cov-header-desktop-cta cov-cta-coming-soon" data-coven-coming-soon="true" role="button" tabIndex="0" aria-disabled="true" style="padding:10px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:11px;letter-spacing:1.5px;cursor:not-allowed">ENTER THE COVEN</div>
       <button class="cov-mobile-toggle" aria-label="Toggle navigation menu" type="button">☰</button>
     </div>
     <div class="cov-mobile-drawer">
       <span onclick="{{ toLanding }}">The Sanctuary (Home)</span>
       <span onclick="{{ toLibrary }}">Spell Book</span>
       <span onclick="{{ toMemes }}" style="color:#e8cf95">Grimoire of Memes</span>
-      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}">About Me</span></sc-if>
+      <span onclick="{{ toAbout }}">About Me</span>
       <span onclick="{{ toTerms }}">Mystic Terms &amp; Privacy</span>
-      <div onclick="{{ toSignup }}" class="cov-mobile-cta">ENTER THE COVEN</div>
+      <div onclick="{{ toSignup }}" class="cov-mobile-cta cov-cta-coming-soon" data-coven-coming-soon="true" role="button" tabIndex="0" aria-disabled="true" style="cursor:not-allowed">ENTER THE COVEN</div>
     </div>
   </header>
 
@@ -98,7 +98,7 @@ const memesHtml = `<!-- ══════════════════�
     <div style="font-size:26px;margin-bottom:12px">📜✨</div>
     <h2 style="font-family:Cinzel,serif;font-weight:700;font-size:clamp(22px,5vw,30px);color:#f3ecdf;margin:0 0 12px">Brewed a cursed meme of your own?</h2>
     <p style="font-family:'EB Garamond',serif;font-size:17px;color:#b3a99d;max-width:480px;margin:0 auto 26px">Cast it into the grimoire. The funniest hexes earn Aether and a place in the coven's hall of cackles.</p>
-    <div onclick="{{ toSignup }}" style="display:inline-block;padding:14px 30px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.32);cursor:pointer;max-width:100%">SUMMON YOUR MEME 🔮</div>
+    <div onclick="{{ toSignup }}" class="cov-cta-coming-soon" data-coven-coming-soon="true" role="button" tabIndex="0" aria-disabled="true" style="display:inline-block;padding:14px 30px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 30px rgba(216,181,107,.32);cursor:not-allowed;max-width:100%">SUMMON YOUR MEME 🔮</div>
   </section>
 </div>
 </sc-if>`;

@@ -380,7 +380,7 @@
   margin-top: 4px;
   flex-shrink: 0;
 }
-/* ── Hierarchical Nested Bullets Pattern ─────────────────────── */
+/* ── Hierarchical Nested Bullets Pattern (Levels 1–4) ────────── */
 .article-template .block-nested-bullets {
   margin: 32px 0;
 }
@@ -399,6 +399,7 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
 }
 
 .article-template .nested-bullets-list > li > .bullet-text {
@@ -410,6 +411,9 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 .article-template .nested-bullets-list > li > .bullet-text::before {
@@ -427,9 +431,24 @@
   display: flex;
   flex-direction: column;
   gap: 6px;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
-.article-template .nested-bullets-list .sub-bullets-list > li {
+.article-template .nested-bullets-list .sub-bullets-list[data-depth="2"] {
+  padding-left: 28px;
+}
+
+.article-template .nested-bullets-list .sub-bullets-list[data-depth="3"] {
+  padding-left: 22px;
+}
+
+.article-template .nested-bullets-list .sub-bullets-list[data-depth="4"] {
+  padding-left: 20px;
+}
+
+/* Legacy static markup without data-depth */
+.article-template .nested-bullets-list .sub-bullets-list > li:not([data-depth]) {
   list-style: none;
   font-family: var(--font-body, 'Helvetica Neue Roman', serif);
   font-size: 15px;
@@ -441,7 +460,7 @@
   gap: 10px;
 }
 
-.article-template .nested-bullets-list .sub-bullets-list > li::before {
+.article-template .nested-bullets-list .sub-bullets-list > li:not([data-depth])::before {
   content: '◦';
   color: #b98fd8;
   font-size: 12px;
@@ -449,13 +468,74 @@
   flex-shrink: 0;
 }
 
-@media (max-width: 600px) {
-  .article-template .nested-bullets-list .sub-bullets-list {
+/* Recursive Levels 2–4 item & text row */
+.article-template .nested-bullets-list .sub-bullets-list > li[data-depth] {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.article-template .nested-bullets-list .sub-bullets-list > li > .sub-bullet-text {
+  font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: #b3a99d;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-width: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.article-template .nested-bullets-list .sub-bullets-list > li[data-depth="3"] > .sub-bullet-text {
+  font-size: 14.5px;
+  color: #aca296;
+}
+
+.article-template .nested-bullets-list .sub-bullets-list > li[data-depth="4"] > .sub-bullet-text {
+  font-size: 14px;
+  color: #a49a8e;
+}
+
+.article-template .nested-bullets-list .sub-bullets-list > li > .sub-bullet-text::before {
+  content: '◦';
+  color: #b98fd8;
+  font-size: 12px;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+@container (max-width: 540px) {
+  .article-template .nested-bullets-list .sub-bullets-list,
+  .article-template .nested-bullets-list .sub-bullets-list[data-depth="2"] {
     padding-left: 18px;
+  }
+  .article-template .nested-bullets-list .sub-bullets-list[data-depth="3"] {
+    padding-left: 14px;
+  }
+  .article-template .nested-bullets-list .sub-bullets-list[data-depth="4"] {
+    padding-left: 12px;
   }
 }
 
-/* ── Nested Bullet List Custom Marker Styles ── */
+@media (max-width: 600px) {
+  .article-template .nested-bullets-list .sub-bullets-list,
+  .article-template .nested-bullets-list .sub-bullets-list[data-depth="2"] {
+    padding-left: 18px;
+  }
+  .article-template .nested-bullets-list .sub-bullets-list[data-depth="3"] {
+    padding-left: 14px;
+  }
+  .article-template .nested-bullets-list .sub-bullets-list[data-depth="4"] {
+    padding-left: 12px;
+  }
+}
+
+/* ── Nested Bullet List Custom Marker Styles (Levels 1–4) ── */
 .article-template .block-nested-bullets[data-marker-style="decimal"] .nested-bullets-list {
   counter-reset: nbl-main;
 }
@@ -468,12 +548,38 @@
   font-weight: 600;
   min-width: 20px;
 }
-.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list {
-  counter-reset: nbl-sub;
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list:not([data-depth]),
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list[data-depth="2"] {
+  counter-reset: nbl-sub-2;
 }
-.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list > li::before {
-  counter-increment: nbl-sub;
-  content: counter(nbl-sub, decimal) ".";
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list[data-depth="3"] {
+  counter-reset: nbl-sub-3;
+}
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list[data-depth="4"] {
+  counter-reset: nbl-sub-4;
+}
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list > li:not([data-depth])::before,
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list[data-depth="2"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-2;
+  content: counter(nbl-sub-2, decimal) ".";
+  color: #b98fd8;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 16px;
+}
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list[data-depth="3"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-3;
+  content: counter(nbl-sub-3, decimal) ".";
+  color: #b98fd8;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 16px;
+}
+.article-template .block-nested-bullets[data-marker-style="decimal"] .sub-bullets-list[data-depth="4"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-4;
+  content: counter(nbl-sub-4, decimal) ".";
   color: #b98fd8;
   font-family: var(--font-mono, monospace);
   font-size: 12px;
@@ -493,12 +599,38 @@
   font-weight: 600;
   min-width: 20px;
 }
-.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list {
-  counter-reset: nbl-sub;
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list:not([data-depth]),
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list[data-depth="2"] {
+  counter-reset: nbl-sub-2;
 }
-.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list > li::before {
-  counter-increment: nbl-sub;
-  content: counter(nbl-sub, lower-alpha) ".";
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list[data-depth="3"] {
+  counter-reset: nbl-sub-3;
+}
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list[data-depth="4"] {
+  counter-reset: nbl-sub-4;
+}
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list > li:not([data-depth])::before,
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list[data-depth="2"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-2;
+  content: counter(nbl-sub-2, lower-alpha) ".";
+  color: #b98fd8;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 16px;
+}
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list[data-depth="3"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-3;
+  content: counter(nbl-sub-3, lower-alpha) ".";
+  color: #b98fd8;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 16px;
+}
+.article-template .block-nested-bullets[data-marker-style="alpha"] .sub-bullets-list[data-depth="4"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-4;
+  content: counter(nbl-sub-4, lower-alpha) ".";
   color: #b98fd8;
   font-family: var(--font-mono, monospace);
   font-size: 12px;
@@ -518,12 +650,38 @@
   font-weight: 600;
   min-width: 22px;
 }
-.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list {
-  counter-reset: nbl-sub;
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list:not([data-depth]),
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list[data-depth="2"] {
+  counter-reset: nbl-sub-2;
 }
-.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list > li::before {
-  counter-increment: nbl-sub;
-  content: counter(nbl-sub, upper-roman) ".";
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list[data-depth="3"] {
+  counter-reset: nbl-sub-3;
+}
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list[data-depth="4"] {
+  counter-reset: nbl-sub-4;
+}
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list > li:not([data-depth])::before,
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list[data-depth="2"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-2;
+  content: counter(nbl-sub-2, upper-roman) ".";
+  color: #b98fd8;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 18px;
+}
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list[data-depth="3"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-3;
+  content: counter(nbl-sub-3, upper-roman) ".";
+  color: #b98fd8;
+  font-family: var(--font-mono, monospace);
+  font-size: 12px;
+  font-weight: 600;
+  min-width: 18px;
+}
+.article-template .block-nested-bullets[data-marker-style="roman"] .sub-bullets-list[data-depth="4"] > li > .sub-bullet-text::before {
+  counter-increment: nbl-sub-4;
+  content: counter(nbl-sub-4, upper-roman) ".";
   color: #b98fd8;
   font-family: var(--font-mono, monospace);
   font-size: 12px;
@@ -538,7 +696,8 @@
   font-size: 13px;
   min-width: 16px;
 }
-.article-template .block-nested-bullets[data-marker-style="hyphen"] .sub-bullets-list > li::before {
+.article-template .block-nested-bullets[data-marker-style="hyphen"] .sub-bullets-list > li:not([data-depth])::before,
+.article-template .block-nested-bullets[data-marker-style="hyphen"] .sub-bullets-list > li > .sub-bullet-text::before {
   content: "–";
   color: #b98fd8;
   font-family: var(--font-mono, monospace);

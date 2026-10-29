@@ -12,19 +12,19 @@ const headerHtml = `<header class="cov-header" style="display:flex;align-items:c
   <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;letter-spacing:.3px;white-space:nowrap">
     <span onclick="{{ toLibrary }}" style="cursor:pointer" style-hover="color:#f3ecdf">Spell Book</span>
     <span onclick="{{ toMemes }}" style="cursor:pointer" style-hover="color:#f3ecdf">Grimoire of Memes</span>
-    <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer" style-hover="color:#f3ecdf">About Me</span></sc-if>
+    <span onclick="{{ toAbout }}" style="cursor:pointer" style-hover="color:#f3ecdf">About Me</span>
     <span onclick="{{ toTerms }}" style="cursor:pointer" style-hover="color:#f3ecdf">Mystic Terms &amp; Privacy</span>
   </nav>
   <div style="display:flex;align-items:center;gap:12px">
-    <div onclick="{{ toSignup }}" class="cov-header-desktop-cta" style="padding:9px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:12px;letter-spacing:1.5px;box-shadow:0 0 26px rgba(216,181,107,.30);cursor:pointer">ENTER THE COVEN</div>
+    <div onclick="{{ toSignup }}" class="cov-header-desktop-cta cov-cta-coming-soon" data-coven-coming-soon="true" role="button" tabIndex="0" aria-disabled="true" style="padding:9px 18px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:Cinzel,serif;font-weight:600;font-size:12px;letter-spacing:1.5px;box-shadow:0 0 26px rgba(216,181,107,.30);cursor:not-allowed">ENTER THE COVEN</div>
     <button class="cov-mobile-toggle" aria-label="Toggle navigation menu" type="button">☰</button>
   </div>
   <div class="cov-mobile-drawer">
     <span onclick="{{ toLibrary }}">Spell Book</span>
     <span onclick="{{ toMemes }}">Grimoire of Memes</span>
-    <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}">About Me</span></sc-if>
+    <span onclick="{{ toAbout }}">About Me</span>
     <span onclick="{{ toTerms }}">Mystic Terms &amp; Privacy</span>
-    <div onclick="{{ toSignup }}" class="cov-mobile-cta">ENTER THE COVEN</div>
+    <div onclick="{{ toSignup }}" class="cov-mobile-cta cov-cta-coming-soon" data-coven-coming-soon="true" role="button" tabIndex="0" aria-disabled="true" style="cursor:not-allowed">ENTER THE COVEN</div>
   </div>
 </header>`;
 ---

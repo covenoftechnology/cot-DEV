@@ -1,5 +1,5 @@
 ---
-import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES, getInsertablePaletteBlocks } from '../../lib/article-block-registry';
+import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES, getInsertablePaletteBlocks, MAX_NESTED_LIST_DEPTH } from '../../lib/article-block-registry';
 import {
   ARTICLE_CATEGORIES,
   ARTICLE_DIFFICULTIES,
@@ -29,6 +29,7 @@ const canonicalDifficulties = ARTICLE_DIFFICULTIES;
 const canonicalTags = ARTICLE_TAGS;
 const difficultyGlyphs = DIFFICULTY_GLYPHS;
 const totalBlockCount = getInsertablePaletteBlocks().length;
+const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 ---
 
 <!DOCTYPE html>
@@ -350,7 +351,8 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
     difficultyGlyphs,
     mergedCategories,
     mergedTags,
-    publishedArticles
+    publishedArticles,
+    maxNestedListDepth
   }}>
     window.STUDIO_REGISTRY = blockRegistry;
     window.STUDIO_CATEGORIES = blockCategories;
@@ -392,6 +394,32 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
       return type !== 'flex-layout';
     }
     window.canNestInFlexLayout = canNestInFlexLayout;
+
+    var MAX_NESTED_LIST_DEPTH = typeof maxNestedListDepth === 'number' ? maxNestedListDepth : 4;
+    window.MAX_NESTED_LIST_DEPTH = MAX_NESTED_LIST_DEPTH;
+
+    function canAddNestedListChild(depth) {
+      return typeof depth === 'number' && depth >= 1 && depth < MAX_NESTED_LIST_DEPTH;
+    }
+    window.canAddNestedListChild = canAddNestedListChild;
+
+    function findNestedBulletNodeById(items, targetId, depth, parentNode) {
+      if (!Array.isArray(items) || !targetId) return null;
+      var curDepth = depth || 1;
+      for (var i = 0; i < items.length; i++) {
+        var item = items[i];
+        if (!item || typeof item !== "object") continue;
+        if (item.id === targetId) {
+          return { node: item, parentArray: items, index: i, depth: curDepth, parentNode: parentNode || null };
+        }
+        if (Array.isArray(item.children) && item.children.length > 0) {
+          var found = findNestedBulletNodeById(item.children, targetId, curDepth + 1, item);
+          if (found) return found;
+        }
+      }
+      return null;
+    }
+    window.findNestedBulletNodeById = findNestedBulletNodeById;
 
     // Abstract glyphs for each block type in library and card headers
     var BLOCK_GLYPHS = {
@@ -1432,11 +1460,8 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
               return target ? getRichData(target[arrayObjProp]) : { text: '', align: 'left' };
             }
             if (isNestedSub && Array.isArray(d.items)) {
-              var main = d.items.find(function(m) { return m.id === nestedParentId; });
-              if (main && Array.isArray(main.children)) {
-                var sub = main.children.find(function(s) { return s.id === nestedSubId; });
-                return sub ? getRichData(sub.text) : { text: '', align: 'left' };
-              }
+              var foundSub = findNestedBulletNodeById(d.items, nestedSubId);
+              return (foundSub && foundSub.node) ? getRichData(foundSub.node.text) : { text: '', align: 'left' };
             }
             if (trialQId) {
               var tq = (d.questions || []).find(function(q) { return q.id === trialQId; });
@@ -1485,12 +1510,9 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
                 target[arrayObjProp] = richObj;
               }
             } else if (isNestedSub && Array.isArray(d.items)) {
-              var main = d.items.find(function(m) { return m.id === nestedParentId; });
-              if (main && Array.isArray(main.children)) {
-                var sub = main.children.find(function(s) { return s.id === nestedSubId; });
-                if (sub) {
-                  sub.text = richObj;
-                }
+              var foundSub = findNestedBulletNodeById(d.items, nestedSubId);
+              if (foundSub && foundSub.node) {
+                foundSub.node.text = richObj;
               }
             } else if (trialQId) {
               var tq = (d.questions || []).find(function(q) { return q.id === trialQId; });
@@ -3011,20 +3033,26 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
                 if (d.title !== undefined) {
                   d.title = getRichData(d.title);
                 }
-                if (Array.isArray(d.items)) {
-                  d.items = d.items.map(function(main) {
-                    if (typeof main === 'string') main = { text: main };
-                    if (!main.id) main.id = uid('main');
-                    main.text = getRichData(main.text);
-                    var rawSubs = main.children || main.subItems || [];
-                    main.children = rawSubs.map(function(sub) {
-                      if (typeof sub === 'string') sub = { id: uid('sub'), text: sub };
-                      if (!sub.id) sub.id = uid('sub');
-                      sub.text = getRichData(sub.text);
-                      return sub;
-                    });
-                    return main;
+                function normalizeNestedNodes(nodes, depth) {
+                  var curDepth = depth || 1;
+                  if (!Array.isArray(nodes)) return [];
+                  return nodes.map(function(node) {
+                    if (typeof node === 'string') node = { text: node };
+                    if (!node || typeof node !== 'object') node = { text: '' };
+                    if (!node.id) node.id = uid(curDepth === 1 ? 'main' : ('sub_l' + curDepth));
+                    node.text = getRichData(node.text);
+                    var rawChildren = Array.isArray(node.children) ? node.children : (Array.isArray(node.subItems) ? node.subItems : []);
+                    delete node.subItems;
+                    if (canAddNestedListChild(curDepth)) {
+                      node.children = normalizeNestedNodes(rawChildren, curDepth + 1);
+                    } else {
+                      node.children = [];
+                    }
+                    return node;
                   });
+                }
+                if (Array.isArray(d.items) && d.items.length > 0) {
+                  d.items = normalizeNestedNodes(d.items, 1);
                 } else {
                   d.items = [{ id: uid('main'), text: getRichData(''), children: [] }];
                 }
@@ -3431,8 +3459,18 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
                   addWords(it.question);
                   addWords(it.answer);
                   addWords(it.title);
+                  function addNestedChildrenWords(childrenArr) {
+                    if (!Array.isArray(childrenArr)) return;
+                    childrenArr.forEach(function(c) {
+                      if (typeof c === 'string') addWords(c);
+                      else if (c && typeof c === "object") {
+                        addWords(c.text);
+                        if (Array.isArray(c.children)) addNestedChildrenWords(c.children);
+                      }
+                    });
+                  }
                   if (Array.isArray(it.children)) {
-                    it.children.forEach(function(c) { addWords(typeof c === 'object' ? c.text : c); });
+                    addNestedChildrenWords(it.children);
                   }
                 }
               });
@@ -4291,17 +4329,17 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
         if (!block || !block.data) return;
         var d = block.data;
         if (block.type === 'nested-bullets' && Array.isArray(d.items)) {
-          d.items.forEach(function(l1) {
-            l1.id = uid('main');
-            if (Array.isArray(l1.children)) {
-              l1.children.forEach(function(l2) {
-                l2.id = uid('sub');
-                if (Array.isArray(l2.children)) {
-                  l2.children.forEach(function(l3) { l3.id = uid('fl3'); });
-                }
-              });
-            }
-          });
+          function regenNestedNodes(nodes, depth) {
+            var curDepth = depth || 1;
+            if (!Array.isArray(nodes)) return;
+            nodes.forEach(function(n) {
+              n.id = uid(curDepth === 1 ? 'main' : ('sub_l' + curDepth));
+              if (Array.isArray(n.children) && canAddNestedListChild(curDepth)) {
+                regenNestedNodes(n.children, curDepth + 1);
+              }
+            });
+          }
+          regenNestedNodes(d.items, 1);
         } else if (block.type === 'numbered-steps' && Array.isArray(d.steps)) {
           d.steps.forEach(function(s) { s.id = uid('step'); });
         } else if (block.type === 'bullet-list' && Array.isArray(d.items)) {
@@ -4798,25 +4836,40 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
                 '</div>' +
               '</div>' +
               '<div class="studio-form-group"><label class="studio-label">Hierarchical Items</label><div style="display:flex;flex-direction:column;gap:12px">';
+            function renderNestedSubItemsRecursive(children, parentId, depth) {
+              if (!Array.isArray(children) || depth > MAX_NESTED_LIST_DEPTH) return '';
+              var subHtml = '';
+              var canAddDeeper = canAddNestedListChild(depth);
+              var badgeColor = depth === 2 ? 'var(--studio-purple)' : (depth === 3 ? 'var(--studio-gold-dim)' : 'var(--studio-purple)');
+              children.forEach(function(sub) {
+                var maxDepthBadge = !canAddDeeper ? '<span class="nested-max-depth-pill" title="Maximum nesting depth (' + MAX_NESTED_LIST_DEPTH + ' levels)">Max depth</span>' : '';
+                var subLabel = '<span style="font-family:var(--font-mono);font-size:10px;color:' + badgeColor + '">↳ LEVEL ' + depth + ' · SUB-ITEM</span>' + maxDepthBadge;
+                var subRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-sub" data-parent-id="' + parentId + '" data-sub-id="' + sub.id + '" data-depth="' + depth + '" title="Delete sub-item">✕</button>';
+                var grandChildren = Array.isArray(sub.children) ? sub.children : [];
+                subHtml +=
+                  '<div class="nested-sub-item-card" data-depth="' + depth + '" data-sub-id="' + sub.id + '" style="margin-bottom:6px">' +
+                    renderRichTextFieldHtml(subLabel, 'data-rich-nested-sub="true" data-rich-parent-id="' + parentId + '" data-rich-sub-id="' + sub.id + '" data-nested-depth="' + depth + '"', sub.text, 'Level ' + depth + ' sub-item detail...', subRemove) +
+                    (canAddDeeper ? (
+                      '<div class="nested-sub-items-wrap" data-depth="' + (depth + 1) + '">' +
+                        renderNestedSubItemsRecursive(grandChildren, sub.id, depth + 1) +
+                        '<div class="nested-sub-item-actions"><button type="button" class="studio-btn studio-btn--sm" data-act="add-nested-sub" data-parent-id="' + sub.id + '" data-depth="' + depth + '">+ Add Sub-item</button></div>' +
+                      '</div>'
+                    ) : '') +
+                  '</div>';
+              });
+              return subHtml;
+            }
             (d.items || []).forEach(function(main, mIdx) {
               var mainLabel = '<div style="display:flex;align-items:center;gap:8px"><span class="studio-repeatable-handle">⋮⋮</span><span style="font-family:var(--font-mono);font-size:11px;color:var(--studio-gold);font-weight:600">MAIN ITEM ' + String(mIdx + 1).padStart(2, '0') + '</span></div>';
               var mainRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-main" data-item-id="' + main.id + '" ' + (d.items.length <= 1 ? 'disabled' : '') + ' title="Delete parent item">✕</button>';
               html +=
-                '<div class="nested-parent-card">' +
+                '<div class="nested-parent-card" data-depth="1" data-item-id="' + main.id + '">' +
                   renderRichTextFieldHtml(mainLabel, 'data-rich-array-obj="items" data-rich-item-id="' + main.id + '" data-rich-prop="text"', main.text, 'Main invocation / parent item...', mainRemove) +
-                  '<div class="nested-sub-items-wrap">';
-              (main.children || []).forEach(function(sub, sIdx) {
-                var subLabel = '<span style="font-family:var(--font-mono);font-size:10px;color:var(--studio-purple)">↳ SUB-ITEM</span>';
-                var subRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-nested-sub" data-parent-id="' + main.id + '" data-sub-id="' + sub.id + '" title="Delete sub-item">✕</button>';
-                html +=
-                  '<div class="nested-sub-item-card" style="margin-bottom:6px">' +
-                    renderRichTextFieldHtml(subLabel, 'data-rich-nested-sub="true" data-rich-parent-id="' + main.id + '" data-rich-sub-id="' + sub.id + '"', sub.text, 'Sub-item detail...', subRemove) +
-                  '</div>';
-              });
-              html +=
-                  '<div><button type="button" class="studio-btn studio-btn--sm" data-act="add-nested-sub" data-parent-id="' + main.id + '">+ Add Sub-item</button></div>' +
-                '</div>' +
-              '</div>';
+                  '<div class="nested-sub-items-wrap" data-depth="2">' +
+                    renderNestedSubItemsRecursive(main.children || [], main.id, 2) +
+                    '<div class="nested-sub-item-actions"><button type="button" class="studio-btn studio-btn--sm" data-act="add-nested-sub" data-parent-id="' + main.id + '" data-depth="1">+ Add Sub-item</button></div>' +
+                  '</div>' +
+                '</div>';
             });
             html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-nested-main">+ Add Main Item</button></div></div>';
             break;
@@ -5482,17 +5535,13 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
 
         // 4. Nested sub-items
         bBody.querySelectorAll('[data-nested-sub="true"]').forEach(function(input) {
-          var parentId = input.getAttribute('data-parent-id');
           var subId = input.getAttribute('data-sub-id');
           input.addEventListener('input', function(e) {
-            var main = (d.items || []).find(function(m) { return m.id === parentId; });
-            if (main && Array.isArray(main.children)) {
-              var sub = main.children.find(function(s) { return s.id === subId; });
-              if (sub) {
-                sub.text = e.target.value;
-                calculateReadingTime();
-                triggerAutosave();
-              }
+            var foundSub = findNestedBulletNodeById(d.items || [], subId);
+            if (foundSub && foundSub.node) {
+              foundSub.node.text = e.target.value;
+              calculateReadingTime();
+              triggerAutosave();
             }
           });
         });
@@ -5790,21 +5839,25 @@ const totalBlockCount = getInsertablePaletteBlocks().length;
 
             case 'add-nested-sub':
               var pId = actBtn.getAttribute('data-parent-id');
-              var parent = (d.items || []).find(function(m) { return m.id === pId; });
-              if (parent) {
-                parent.children = parent.children || [];
-                parent.children.push({ id: uid('sub'), text: { text: '', align: 'left' } });
+              var foundParent = findNestedBulletNodeById(d.items || [], pId);
+              if (foundParent && foundParent.node && canAddNestedListChild(foundParent.depth)) {
+                var nextDepth = foundParent.depth + 1;
+                foundParent.node.children = Array.isArray(foundParent.node.children) ? foundParent.node.children : [];
+                foundParent.node.children.push({
+                  id: uid('sub_l' + nextDepth),
+                  text: { text: '', align: 'left' },
+                  children: []
+                });
                 renderSections();
                 triggerAutosave();
               }
               break;
 
             case 'del-nested-sub':
-              var parentId = actBtn.getAttribute('data-parent-id');
               var subId = actBtn.getAttribute('data-sub-id');
-              var pMain = (d.items || []).find(function(m) { return m.id === parentId; });
-              if (pMain && pMain.children) {
-                pMain.children = pMain.children.filter(function(s) { return s.id !== subId; });
+              var foundTarget = findNestedBulletNodeById(d.items || [], subId);
+              if (foundTarget && foundTarget.parentArray && foundTarget.index !== -1) {
+                foundTarget.parentArray.splice(foundTarget.index, 1);
                 renderSections();
                 triggerAutosave();
               }

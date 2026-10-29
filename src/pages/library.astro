@@ -4,6 +4,7 @@ import { ARTICLE_CATEGORIES } from '../lib/article-taxonomy';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
 const publishedArticles = getPublishedStudioArticles();
+const SHOW_HEADER_RANK_UI = false;
 
 // Dynamic category discovery strictly from visible published Studio articles
 const representedCatsMap = new Map<string, string>(); // lowercase -> display name
@@ -32,9 +33,17 @@ const customRepresented = Array.from(representedCatsMap.values())
 
 const allFilterCategories = ['All scrolls', ...canonicalRepresented, ...customRepresented];
 
+const headerRankUiHtml = `
+      <div class="cov-header-desktop-cta" style="text-align:right">
+        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;letter-spacing:1px">{{ navRankLabel }}</div>
+        <div style="width:120px;height:4px;border-radius:3px;background:rgba(216,181,107,.14);margin-top:5px">
+          <div style="{{ navAetherBarStyle }}"></div>
+        </div>
+      </div>`;
+
 const filterButtonsHtml = allFilterCategories.map((label, idx) => {
   const isAll = idx === 0;
-  const filterKey = isAll ? 'all' : label.toLowerCase().trim();
+  const filterKey = (isAll ? 'all' : label.toLowerCase().trim()).replace(/"/g, '&quot;');
   const activeStyle = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
   const inactiveStyle = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
   return `<div class="cov-filter-chip" data-filter="${filterKey}" style="${isAll ? activeStyle : inactiveStyle}">${label}</div>`;
@@ -49,9 +58,13 @@ const collectionLibraryCardsHtml = publishedArticles.length > 0
       const headerVisualHtml = meta.cover
         ? `<img src="${meta.cover}" alt="${(meta.title || '').replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;" />`
         : `[ scroll · 560×280 ]`;
+      const safeCategory = (meta.category || '').trim().toLowerCase().replace(/"/g, '&quot;');
+      const safeTags = (Array.isArray(meta.tags) ? meta.tags : []).map(t => String(t || '').trim()).filter(Boolean).join(',').toLowerCase().replace(/"/g, '&quot;');
+      const safeTitle = (meta.title || '').trim().replace(/"/g, '&quot;');
+      const safeDesc = (meta.description || '').trim().replace(/"/g, '&quot;');
 
       return `
-        <div class="cov-library-card" data-category="${(meta.category || '').toLowerCase()}" data-tags="${(meta.tags || []).join(',').toLowerCase()}" data-title="${(meta.title || '').replace(/"/g, '&quot;')}" data-desc="${(meta.description || '').replace(/"/g, '&quot;')}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
+        <div class="cov-library-card" data-category="${safeCategory}" data-tags="${safeTags}" data-title="${safeTitle}" data-desc="${safeDesc}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
           <a href="/article/${slug}" style="text-decoration:none;color:inherit;display:block">
             <div style="height:120px;background:${thumbBg};border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70;overflow:hidden;">
               ${headerVisualHtml}
@@ -103,16 +116,11 @@ const libraryHtml = `<!-- ══════════════════
     <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
       <span onclick="{{ toLibrary }}" style="color:#e8cf95;cursor:pointer">Spell Book</span>
       <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
-      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer">About Me</span></sc-if>
+      <span onclick="{{ toAbout }}" style="cursor:pointer">About Me</span>
       <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
     </nav>
     <div style="display:flex;align-items:center;gap:14px">
-      <div class="cov-header-desktop-cta" style="text-align:right">
-        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;letter-spacing:1px">{{ navRankLabel }}</div>
-        <div style="width:120px;height:4px;border-radius:3px;background:rgba(216,181,107,.14);margin-top:5px">
-          <div style="{{ navAetherBarStyle }}"></div>
-        </div>
-      </div>
+      ${SHOW_HEADER_RANK_UI ? headerRankUiHtml : ''}
       <div onclick="{{ toProfile }}" style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px;cursor:pointer">{{ profileInitial }}</div>
       <button class="cov-mobile-toggle" aria-label="Toggle navigation menu" type="button">☰</button>
     </div>
@@ -120,7 +128,7 @@ const libraryHtml = `<!-- ══════════════════
       <span onclick="{{ toLanding }}">The Sanctuary (Home)</span>
       <span onclick="{{ toLibrary }}" style="color:#e8cf95">Spell Book</span>
       <span onclick="{{ toMemes }}">Grimoire of Memes</span>
-      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}">About Me</span></sc-if>
+      <span onclick="{{ toAbout }}">About Me</span>
       <span onclick="{{ toTerms }}">Mystic Terms &amp; Privacy</span>
     </div>
   </header>
@@ -160,74 +168,97 @@ const libraryHtml = `<!-- ══════════════════
 
 <script is:inline>
   (function() {
-    function setupLibrary() {
-      var chips = document.querySelectorAll('.cov-filter-chip');
-      var searchInput = document.getElementById('cov-library-search');
-      var cards = document.querySelectorAll('.cov-library-card');
-      var noResults = document.getElementById('cov-library-no-results');
+    var currentCategory = 'all';
+    var currentSearch = '';
 
-      var currentFilter = 'all';
-      var currentSearch = '';
+    var BTN_ACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+    var BTN_INACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
 
-      var BTN_ACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
-      var BTN_INACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+    function getLiveScope() {
+      return document.getElementById('dc-root') || document;
+    }
 
-      function apply() {
-        var visibleCount = 0;
-        cards.forEach(function(card) {
-          var cat = (card.getAttribute('data-category') || '').toLowerCase().trim();
-          var tags = (card.getAttribute('data-tags') || '').toLowerCase();
-          var title = (card.getAttribute('data-title') || '').toLowerCase();
-          var desc = (card.getAttribute('data-desc') || '').toLowerCase();
+    function applyLibraryFilter() {
+      var scope = getLiveScope();
+      var chips = scope.querySelectorAll('.cov-filter-chip');
+      var cards = scope.querySelectorAll('.cov-library-card');
+      var noResults = scope.querySelector('#cov-library-no-results');
+      var searchInput = scope.querySelector('#cov-library-search');
 
-          var catMatch = (currentFilter === 'all') || (cat === currentFilter);
-
-          var searchMatch = true;
-          if (currentSearch) {
-            var q = currentSearch.toLowerCase();
-            searchMatch = title.includes(q) || desc.includes(q) || cat.includes(q) || tags.includes(q);
-          }
-
-          if (catMatch && searchMatch) {
-            card.style.display = '';
-            visibleCount++;
-          } else {
-            card.style.display = 'none';
-          }
-        });
-
-        if (noResults) {
-          if (cards.length > 0 && visibleCount === 0) {
-            noResults.style.display = 'block';
-          } else {
-            noResults.style.display = 'none';
-          }
-        }
+      if (searchInput && document.activeElement !== searchInput && searchInput.value !== currentSearch) {
+        searchInput.value = currentSearch;
       }
 
       chips.forEach(function(chip) {
-        chip.addEventListener('click', function() {
-          currentFilter = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
-          chips.forEach(function(c) {
-            c.setAttribute('style', BTN_INACTIVE);
-          });
-          chip.setAttribute('style', BTN_ACTIVE);
-          apply();
-        });
+        var chipKey = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
+        var isActive = chipKey === currentCategory;
+        chip.setAttribute('style', isActive ? BTN_ACTIVE : BTN_INACTIVE);
+        chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
       });
 
-      if (searchInput) {
-        searchInput.addEventListener('input', function(e) {
-          currentSearch = (e.target.value || '').trim();
-          apply();
+      var query = currentSearch.trim().toLowerCase();
+      var visibleCount = 0;
+
+      cards.forEach(function(card) {
+        var cat = (card.getAttribute('data-category') || '').toLowerCase().trim();
+        var tags = (card.getAttribute('data-tags') || '').toLowerCase().trim();
+        var title = (card.getAttribute('data-title') || '').toLowerCase().trim();
+        var desc = (card.getAttribute('data-desc') || '').toLowerCase().trim();
+
+        var matchesCategory = (currentCategory === 'all') || (cat === currentCategory);
+        var matchesSearch = !query ||
+          title.includes(query) ||
+          desc.includes(query) ||
+          cat.includes(query) ||
+          tags.includes(query);
+
+        var visible = matchesCategory && matchesSearch;
+        if (visible) {
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      if (noResults) {
+        noResults.style.display = (cards.length > 0 && visibleCount === 0) ? 'block' : 'none';
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      var target = e.target;
+      if (!target || typeof target.closest !== 'function') return;
+      var chip = target.closest('.cov-filter-chip');
+      if (!chip) return;
+      currentCategory = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
+      applyLibraryFilter();
+    });
+
+    function handleSearchEvent(e) {
+      var target = e.target;
+      if (!target || target.id !== 'cov-library-search') return;
+      currentSearch = target.value || '';
+      applyLibraryFilter();
+    }
+
+    document.addEventListener('input', handleSearchEvent);
+    document.addEventListener('search', handleSearchEvent);
+
+    function startObserver() {
+      applyLibraryFilter();
+      if (typeof MutationObserver !== 'undefined' && document.body) {
+        var observer = new MutationObserver(function() {
+          applyLibraryFilter();
         });
+        observer.observe(document.body, { childList: true, subtree: true });
       }
     }
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', setupLibrary);
+      document.addEventListener('DOMContentLoaded', startObserver);
     } else {
-      setTimeout(setupLibrary, 50);
+      startObserver();
     }
   })();
 </script>

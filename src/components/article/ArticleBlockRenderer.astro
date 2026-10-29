@@ -2,7 +2,7 @@
 import Callout from './Callout.astro';
 import CodeBlock from './CodeBlock.astro';
 import ArticleTrial from './ArticleTrial.astro';
-import { canNestInCallout } from '../../lib/article-block-registry';
+import { canNestInCallout, MAX_NESTED_LIST_DEPTH, canAddNestedListChild } from '../../lib/article-block-registry';
 import type { ArticleDocument, ArticleBlock } from '../../types/article-document';
 
 interface Props {
@@ -318,6 +318,53 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               const titleData = typeof d.title === 'object' && d.title !== null
                 ? { text: d.title.text || d.title.content || '', align: d.title.align || 'left' }
                 : { text: typeof d.title === 'string' ? d.title : '', align: 'left' };
+
+              const extractNodeText = (node: any) => {
+                const raw = typeof node === 'object' && node !== null ? (node.text !== undefined ? node.text : node) : node;
+                if (typeof raw === 'object' && raw !== null) {
+                  return { text: raw.text || raw.content || '', align: raw.align || 'left' };
+                }
+                return { text: typeof raw === 'string' ? raw : '', align: 'left' };
+              };
+
+              const getNodeChildren = (node: any) => {
+                if (!node || typeof node !== 'object') return [];
+                if (Array.isArray(node.children)) return node.children;
+                if (Array.isArray(node.subItems)) return node.subItems;
+                return [];
+              };
+
+              const renderNestedItems = (nodes: any[], depth: number): any => {
+                if (!Array.isArray(nodes) || nodes.length === 0 || depth > MAX_NESTED_LIST_DEPTH) return null;
+                const isRoot = depth === 1;
+                return (
+                  <ul class={isRoot ? 'nested-bullets-list' : 'sub-bullets-list'} data-depth={depth}>
+                    {nodes.map((node: any) => {
+                      const itemData = extractNodeText(node);
+                      const childNodes = canAddNestedListChild(depth) ? getNodeChildren(node) : [];
+                      const alignClass = itemData.align && itemData.align !== 'left' ? ` rich-align-${itemData.align}` : '';
+                      const alignStyle = itemData.align && itemData.align !== 'left' ? `text-align: ${itemData.align}; width: 100%;` : undefined;
+                      return (
+                        <li
+                          class={isRoot ? 'nested-bullet-main' : `sub-bullet-item sub-bullet-level-${depth}${alignClass}`}
+                          data-depth={depth}
+                        >
+                          <span class={`bullet-text${isRoot ? '' : ' sub-bullet-text'}${alignClass}`}>
+                            <span
+                              class={isRoot ? 'bullet-inner-text' : 'sub-bullet-inner-text'}
+                              style={alignStyle}
+                            >
+                              <Fragment set:html={cleanHtml(itemData.text || '')} />
+                            </span>
+                          </span>
+                          {childNodes.length > 0 && renderNestedItems(childNodes, depth + 1)}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                );
+              };
+
               return (
                 <div
                   class={`block-nested-bullets${layoutMode === 'horizontal' ? ` is-layout-horizontal items-count-${items.length}` : ''}`}
@@ -329,40 +376,7 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                       <Fragment set:html={cleanHtml(titleData.text)} />
                     </h3>
                   )}
-                  <ul class="nested-bullets-list">
-                    {items.map((mainItem: any) => {
-                      const mainData = typeof mainItem.text === 'object' && mainItem.text !== null
-                        ? { text: mainItem.text.text || mainItem.text.content || '', align: mainItem.text.align || 'left' }
-                        : { text: typeof mainItem.text === 'string' ? mainItem.text : '', align: 'left' };
-                      const subItems = mainItem.children || mainItem.subItems || [];
-                      return (
-                        <li class="nested-bullet-main">
-                          <span class={`bullet-text${mainData.align && mainData.align !== 'left' ? ` rich-align-${mainData.align}` : ''}`}>
-                            <span class="bullet-inner-text" style={mainData.align && mainData.align !== 'left' ? `text-align: ${mainData.align}; width: 100%;` : undefined}>
-                              <Fragment set:html={cleanHtml(mainData.text || '')} />
-                            </span>
-                          </span>
-                          {Array.isArray(subItems) && subItems.length > 0 && (
-                            <ul class="sub-bullets-list">
-                              {subItems.map((sub: any) => {
-                                const subRaw = typeof sub === 'object' && sub !== null ? (sub.text !== undefined ? sub.text : sub) : sub;
-                                const subData = typeof subRaw === 'object' && subRaw !== null
-                                  ? { text: subRaw.text || subRaw.content || '', align: subRaw.align || 'left' }
-                                  : { text: typeof subRaw === 'string' ? subRaw : '', align: 'left' };
-                                return (
-                                  <li class={`sub-bullet-item${subData.align && subData.align !== 'left' ? ` rich-align-${subData.align}` : ''}`}>
-                                    <span class="sub-bullet-inner-text" style={subData.align && subData.align !== 'left' ? `text-align: ${subData.align}; width: 100%;` : undefined}>
-                                      <Fragment set:html={cleanHtml(subData.text)} />
-                                    </span>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  {renderNestedItems(items, 1)}
                 </div>
               );
             }

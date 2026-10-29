@@ -21,7 +21,7 @@ const leaderboardHtml = `<!-- ════════════════�
     <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
       <span onclick="{{ toLibrary }}" style="cursor:pointer">Spell Book</span>
       <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
-      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer">About Me</span></sc-if>
+      <span onclick="{{ toAbout }}" style="cursor:pointer">About Me</span>
       <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
     </nav>
     <div style="display:flex;align-items:center;gap:12px">
@@ -32,7 +32,7 @@ const leaderboardHtml = `<!-- ════════════════�
       <span onclick="{{ toLanding }}">The Sanctuary (Home)</span>
       <span onclick="{{ toLibrary }}">Spell Book</span>
       <span onclick="{{ toMemes }}">Grimoire of Memes</span>
-      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}">About Me</span></sc-if>
+      <span onclick="{{ toAbout }}">About Me</span>
       <span onclick="{{ toTerms }}">Mystic Terms &amp; Privacy</span>
     </div>
   </header>

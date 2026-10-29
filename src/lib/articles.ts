@@ -1,4 +1,5 @@
 import type { Article, ArticleMeta, ArticleNavigation } from '../types/article';
+import type { ArticleDocument, ArticleBlock } from '../types/article-document';
 
 // Automatically discover all article metadata files using Vite's import.meta.glob
 const metaModules = import.meta.glob<{ default?: ArticleMeta; meta?: ArticleMeta }>(
@@ -90,13 +91,18 @@ for (const [path, moduleExports] of Object.entries(componentModules)) {
 }
 
 /**
- * Track slugs that have a structured Studio content.json file.
+ * Track slugs and structured documents from Studio content.json files.
  */
 const studioSlugs = new Set<string>();
-for (const path of Object.keys(contentModules)) {
+const contentBySlug: Record<string, ArticleDocument> = {};
+for (const [path, moduleExports] of Object.entries(contentModules)) {
   const slug = extractSlug(path);
   if (slug && !slug.startsWith('_')) {
     studioSlugs.add(slug);
+    const rawDoc = (moduleExports as any)?.default || moduleExports;
+    if (rawDoc && typeof rawDoc === 'object') {
+      contentBySlug[slug] = rawDoc as ArticleDocument;
+    }
   }
 }
 
@@ -169,11 +175,30 @@ export function getPublishedStudioArticles(): Article[] {
   return getPublishedArticles().filter((article) => article.isStudioArticle === true);
 }
 
+export const FEATURED_TOME_TAG = 'Featured Tome';
+
 /**
- * Returns published articles marked as featured (featured === true).
+ * Returns up to `limit` featured Studio articles for Home.
+ * Priority:
+ * 1. Published Studio articles tagged "Featured Tome" (in canonical order)
+ * 2. Fallback: first `limit` published Studio articles in canonical order
  */
-export function getFeaturedArticles(): Article[] {
-  return getPublishedArticles().filter((article) => article.meta.featured === true);
+export function getFeaturedStudioArticles(limit = 3): Article[] {
+  const publishedStudio = getPublishedStudioArticles();
+  const targetTag = FEATURED_TOME_TAG.toLowerCase();
+  const featuredTomes = publishedStudio.filter((article) =>
+    Array.isArray(article.meta.tags) &&
+    article.meta.tags.some((tag) => typeof tag === 'string' && tag.trim().toLowerCase() === targetTag)
+  );
+  const source = featuredTomes.length > 0 ? featuredTomes : publishedStudio;
+  return source.slice(0, Math.max(0, limit));
+}
+
+/**
+ * Returns featured published Studio articles (alias of getFeaturedStudioArticles).
+ */
+export function getFeaturedArticles(limit = 3): Article[] {
+  return getFeaturedStudioArticles(limit);
 }
 
 /**
@@ -260,4 +285,75 @@ export function getArticleTags(): string[] {
     }
   }
   return Array.from(tags).sort();
+}
+
+/**
+ * Recursively traverses all ArticleBlocks within a list of blocks,
+ * including approved nested containers (flex-layout columns, callout blocks).
+ */
+export function traverseArticleBlocks(
+  blocks: ArticleBlock[] | undefined,
+  visitor: (block: ArticleBlock) => void
+): void {
+  if (!Array.isArray(blocks)) return;
+  for (const block of blocks) {
+    if (!block || typeof block !== 'object') continue;
+    visitor(block);
+    if (block.type === 'flex-layout' && Array.isArray(block.data?.columns)) {
+      for (const col of block.data.columns) {
+        if (Array.isArray(col?.blocks)) {
+          traverseArticleBlocks(col.blocks, visitor);
+        }
+      }
+    }
+    if (Array.isArray(block.data?.blocks)) {
+      traverseArticleBlocks(block.data.blocks, visitor);
+    }
+  }
+}
+
+/**
+ * Counts `article-trial` blocks inside a single ArticleDocument.
+ */
+export function countDocumentTrials(doc: ArticleDocument | undefined | null): number {
+  if (!doc || !Array.isArray(doc.sections)) return 0;
+  let count = 0;
+  for (const section of doc.sections) {
+    traverseArticleBlocks(section?.blocks, (block) => {
+      if (block.type === 'article-trial') {
+        count += 1;
+      }
+    });
+  }
+  return count;
+}
+
+/**
+ * Counts actual `article-trial` blocks across all currently published Studio articles.
+ */
+export function getPublishedStudioTrialsCount(): number {
+  const publishedStudio = getPublishedStudioArticles();
+  let total = 0;
+  for (const article of publishedStudio) {
+    total += countDocumentTrials(contentBySlug[article.slug]);
+  }
+  return total;
+}
+
+export interface HomeStatItem {
+  value: string;
+  label: string;
+}
+
+/**
+ * Computes real Home hero statistics from centralized published Studio sources.
+ * Note: No persisted member/user source exists yet, so INITIATES is omitted rather than fabricated.
+ */
+export function getHomeStats(): HomeStatItem[] {
+  const publishedScrollsCount = getPublishedStudioArticles().length;
+  const publishedTrialsCount = getPublishedStudioTrialsCount();
+  return [
+    { value: String(publishedScrollsCount), label: 'Scrolls' },
+    { value: String(publishedTrialsCount), label: 'Trials' },
+  ];
 }
