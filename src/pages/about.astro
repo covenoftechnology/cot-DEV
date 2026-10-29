@@ -148,9 +148,11 @@ const heroLunaHtml = `
               class="cov-about-luna-iframe"
               src="${HERO_LUNA_SRC}"
               title="Interactive Coven Moon Ritual"
+              allow="autoplay"
               scrolling="no"
               loading="eager"
             ></iframe>
+            <div class="cov-about-luna-hint" data-luna-hint="true" aria-hidden="true">✦ Click to awaken the moon</div>
           </div>`;
 
 const personalPhotosHtml = PERSONAL_PHOTOS.map((photo, idx) => {
@@ -473,6 +475,27 @@ const aboutHtml = `<!-- ══════════════════�
     border-radius: 50%;
     -webkit-mask-image: radial-gradient(closest-side, #000 84%, rgba(0, 0, 0, 0.72) 92%, transparent 100%);
     mask-image: radial-gradient(closest-side, #000 84%, rgba(0, 0, 0, 0.72) 92%, transparent 100%);
+  }
+  .cov-about-luna-hint {
+    position: absolute;
+    bottom: 2px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(216, 181, 107, 0.62);
+    text-shadow: 0 0 12px rgba(124, 77, 196, 0.45);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    transition: opacity 0.35s ease, visibility 0.35s ease;
+    z-index: 2;
+  }
+  .cov-about-luna-stage[data-audio-unlocked="true"] .cov-about-luna-hint {
+    opacity: 0;
+    visibility: hidden;
   }
   .cov-about-portrait-img {
     width: min(100%, 360px);
