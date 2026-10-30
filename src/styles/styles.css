@@ -494,7 +494,7 @@ html, body {
   padding: 0;
   width: 100%;
   max-width: 100%;
-  background: #08060e;
+  background: #040208;
   -webkit-text-size-adjust: 100%;
 }
 
@@ -785,5 +785,88 @@ h1, h2, h3, h4, h5, h6 {
 .article-markdown-body pre code {
   white-space: pre;
   word-break: normal;
+}
+
+/* ============================================================
+   EXPLICIT 3-LAYER STACKING ARCHITECTURE
+   ============================================================ */
+
+body.coven-app {
+  position: relative;
+  isolation: isolate;
+  margin: 0;
+  padding: 0;
+  background: #040208 !important;
+}
+
+/* LAYER 0 — AMBIENT SKY */
+.coven-sky-layer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* LAYER 1 — GLOBAL MOON STAGE */
+.coven-moon-layer,
+.coven-moon-stage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* LAYER 2 — APPLICATION CONTENT */
+.coven-app-layer {
+  position: relative;
+  z-index: 2;
+  min-height: 100vh;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Ensure #dc-root and internal host containers are transparent and fill height */
+#dc-root,
+#dc-root > .sc-host {
+  background: transparent !important;
+}
+
+/* Page-level root shells transparent so the ambient sky and moon show through */
+.cov-page-shell,
+.cov-page-slot,
+.cov-home-page,
+.cov-library-page,
+.cov-memes-page,
+.cov-terms-page,
+.cov-about-page,
+.cov-article-page {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Hide legacy redundant 2D pseudo-moons and static twinkle dots from public page headers */
+[style*="covFloat"],
+[style*="covTwinkle"] {
+  display: none !important;
+}
+
+/* Global Moon exclusion on /about page */
+body[data-coven-page="about"] .coven-moon-layer,
+body[data-coven-page="about"] #coven-moon-stage,
+body[data-coven-page="about"] .moon-sanctuary,
+.cov-about-page ~ .coven-moon-layer,
+.cov-about-page ~ #coven-moon-stage,
+body:has(.cov-about-page) .coven-moon-layer,
+body:has(.cov-about-page) #coven-moon-stage {
+  display: none !important;
 }
 

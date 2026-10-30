@@ -1,6 +1,7 @@
 ---
 import { getPublishedArticles, getHomeStats } from '../lib/articles';
 import Footer from '../components/Footer.astro';
+import CovenAmbientBackground from '../components/CovenAmbientBackground.astro';
 import '../styles/styles.css';
 
 interface Props {
@@ -36,6 +37,9 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
   thumbBg: a.meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)',
   url: `/article/${a.slug}`
 }]));
+
+const currentPath = Astro.url.pathname || '';
+const isAboutPage = currentPath === '/about' || currentPath === '/about/' || currentPath.startsWith('/about');
 ---
 
 <!DOCTYPE html>
@@ -66,6 +70,9 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
     window.COVEN_HOME_STATS = homeStats;
   </script>
 
+  <!-- Three.js (r128) for Coven Ambient Lunar Engine -->
+  <script is:inline src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
   {!disableDc && (
     <>
       <!-- Design Component runtime (framework) -->
@@ -77,24 +84,29 @@ const blogArticlesMeta = Object.fromEntries(publishedArticles.map(a => [a.slug, 
     </>
   )}
 </head>
-<body>
-  {disableDc ? (
-    <div style="min-height:100vh;background:#08060e;font-family:var(--font-body, 'Helvetica Neue Roman', serif);display:flex;flex-direction:column">
-      <div style="flex:1">
-        <slot />
-      </div>
-      <Footer />
-    </div>
-  ) : (
-    <x-dc>
-      <div style="min-height:100vh;background:#08060e;font-family:var(--font-body, 'Helvetica Neue Roman', serif);display:flex;flex-direction:column">
-        <div style="flex:1">
+<body class="coven-app" data-coven-page={isAboutPage ? "about" : "default"}>
+  <CovenAmbientBackground hideGlobalMoon={isAboutPage} />
+
+  <!-- LAYER 2 — APPLICATION CONTENT -->
+  <div class="coven-app-layer" id="coven-app-layer">
+    {disableDc ? (
+      <div class="cov-page-shell" style="min-height:100vh;background:transparent;font-family:var(--font-body, 'Helvetica Neue Roman', serif);display:flex;flex-direction:column">
+        <div class="cov-page-slot" style="flex:1;background:transparent">
           <slot />
         </div>
         <Footer />
       </div>
-    </x-dc>
-  )}
+    ) : (
+      <x-dc>
+        <div class="cov-page-shell" style="min-height:100vh;background:transparent;font-family:var(--font-body, 'Helvetica Neue Roman', serif);display:flex;flex-direction:column">
+          <div class="cov-page-slot" style="flex:1;background:transparent">
+            <slot />
+          </div>
+          <Footer />
+        </div>
+      </x-dc>
+    )}
+  </div>
 
   {!disableDc && (
     <script is:inline type="text/x-dc" data-dc-script="">
