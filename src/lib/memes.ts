@@ -384,7 +384,7 @@ function resolveMemesDir(): string {
 /**
  * Canonical deterministic sorting for memes:
  * 1. publishedAt / publishDate descending
- * 2. updatedAt descending
+ * 2. createdAt descending
  * 3. slug alphabetical
  */
 export function compareMemes(a: MemeDocument, b: MemeDocument): number {
@@ -406,10 +406,10 @@ export function compareMemes(a: MemeDocument, b: MemeDocument): number {
     return pubB - pubA;
   }
 
-  const updA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-  const updB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-  if (updA !== updB) {
-    return updB - updA;
+  const creA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+  const creB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+  if (creA !== creB) {
+    return creB - creA;
   }
 
   return a.slug.localeCompare(b.slug);

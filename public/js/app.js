@@ -299,7 +299,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     });
 
     // ── Memes ────────────────────────────────────────────────────
-    var memes = C.memes.map(function(m) {
+    var memes = (C.memes || []).map(function(m) {
       return Object.assign({}, m, {
         thumbStyle: 'height:170px;background:' + m.thumbBg + ';display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#8a7f70;border-bottom:1px solid rgba(185,143,216,.14)',
       });

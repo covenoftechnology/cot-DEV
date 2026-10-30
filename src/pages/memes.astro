@@ -1,10 +1,260 @@
 ---
+import {
+  getPublishedMemes,
+  getAllMemeCategoryObjects,
+  resolveMemeCategory,
+  getMemeCategoryGlyphs,
+  compareMemes,
+  type MemeDocument,
+} from '../lib/memes';
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const publishedMemes = [...getPublishedMemes()].sort(compareMemes);
+const allCategories = getAllMemeCategoryObjects();
+const categoryGlyphs = getMemeCategoryGlyphs();
+
+// Temporarily hide reaction counters until real persisted reactions are implemented in a future phase
+const SHOW_MEME_REACTIONS = false;
+
+function escapeHtml(str: string): string {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(/\{/g, '&#123;')
+    .replace(/\}/g, '&#125;');
+}
+
+function escapeAttr(str: string): string {
+  return escapeHtml(str);
+}
+
+function formatMemePublicDate(val?: string): string {
+  if (!val) return '';
+  try {
+    const normalized = val.includes('T') ? val : `${val}T00:00:00.000Z`;
+    const d = new Date(normalized);
+    if (Number.isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      timeZone: 'UTC',
+    });
+  } catch {
+    return '';
+  }
+}
+
+function resolveCategoryInfo(meme: MemeDocument): {
+  id: string;
+  name: string;
+  glyph: string;
+  pillLabel: string;
+  badgeLabel: string;
+} {
+  const rawIdentifier = (meme.categoryId || meme.category || '').trim();
+  const matched = resolveMemeCategory(rawIdentifier, allCategories);
+  if (matched) {
+    const glyph = matched.glyph || categoryGlyphs[matched.id] || categoryGlyphs[matched.name] || '✦';
+    return {
+      id: matched.id.toLowerCase(),
+      name: matched.name,
+      glyph,
+      pillLabel: `${glyph} ${matched.name}`,
+      badgeLabel: `${glyph} ${matched.name.toUpperCase()}`,
+    };
+  }
+  const fallbackId = (meme.categoryId || meme.category || 'unknown-category').trim().toLowerCase();
+  const fallbackName = (meme.category || meme.categoryId || 'Unknown Category').trim();
+  const glyph = categoryGlyphs[fallbackId] || categoryGlyphs[fallbackName] || '✦';
+  return {
+    id: fallbackId,
+    name: fallbackName,
+    glyph,
+    pillLabel: `${glyph} ${fallbackName}`,
+    badgeLabel: `${glyph} ${fallbackName.toUpperCase()}`,
+  };
+}
+
+// Cackle of the Day Selection Rule:
+// 1. Published memes where featured === true
+// 2. If one or more exist: choose the MOST RECENT by publishedAt DESC
+// 3. If none are featured: fallback to the most recently published meme
+const featuredPublished = publishedMemes.filter((m) => Boolean(m.featured));
+const cackleMeme: MemeDocument | null =
+  featuredPublished.length > 0 ? featuredPublished[0] : (publishedMemes[0] || null);
+
+// Do NOT duplicate the selected Cackle of the Day meme in the normal grid
+const gridMemes: MemeDocument[] = cackleMeme
+  ? publishedMemes.filter((m) => m.id !== cackleMeme.id)
+  : [];
+
+// Dynamic category discovery strictly from currently published memes
+const representedCatMap = new Map<string, { id: string; name: string; glyph: string; pillLabel: string }>();
+for (const meme of publishedMemes) {
+  const info = resolveCategoryInfo(meme);
+  if (info.id && !representedCatMap.has(info.id)) {
+    representedCatMap.set(info.id, {
+      id: info.id,
+      name: info.name,
+      glyph: info.glyph,
+      pillLabel: info.pillLabel,
+    });
+  }
+}
+
+const orderedFilterCategories: Array<{ id: string; label: string }> = [
+  { id: 'all', label: 'All hexes' },
+];
+
+for (const cat of allCategories) {
+  const lowerId = cat.id.toLowerCase();
+  if (representedCatMap.has(lowerId)) {
+    const item = representedCatMap.get(lowerId)!;
+    orderedFilterCategories.push({
+      id: item.id,
+      label: item.pillLabel,
+    });
+    representedCatMap.delete(lowerId);
+  }
+}
+
+const remainingCustomCats = Array.from(representedCatMap.values()).sort((a, b) =>
+  a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })
+);
+for (const item of remainingCustomCats) {
+  orderedFilterCategories.push({
+    id: item.id,
+    label: item.pillLabel,
+  });
+}
+
+const ACTIVE_CHIP_STYLE =
+  "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;user-select:none;";
+const INACTIVE_CHIP_STYLE =
+  "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;user-select:none;";
+
+const filterButtonsHtml = orderedFilterCategories
+  .map((cat, idx) => {
+    const isAll = idx === 0;
+    return `<div class="cov-meme-filter-chip" data-filter="${escapeAttr(cat.id)}" role="button" tabindex="0" aria-pressed="${isAll ? 'true' : 'false'}" style="${isAll ? ACTIVE_CHIP_STYLE : INACTIVE_CHIP_STYLE}">${escapeHtml(cat.label)}</div>`;
+  })
+  .join('\n');
+
+function renderCackleSection(meme: MemeDocument): string {
+  const catInfo = resolveCategoryInfo(meme);
+  const desc = (meme.description || '').trim();
+  const dateLabel = formatMemePublicDate(meme.publishedAt || meme.publishDate);
+  const altText = (meme.imageAlt || '').trim() || meme.caption;
+  const hasImage = Boolean(meme.imageSrc && meme.imageSrc.trim());
+
+  const imageContentHtml = hasImage
+    ? `<img class="cov-meme-img" src="${escapeAttr(meme.imageSrc)}" alt="${escapeAttr(altText)}" style="width:100%;max-height:420px;height:auto;object-fit:contain;display:block" /><div class="cov-meme-img-fallback" style="display:none;align-items:center;justify-content:center;padding:32px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7f70">[ meme scroll ]</div>`
+    : `<div class="cov-meme-img-fallback" style="display:flex;align-items:center;justify-content:center;padding:32px;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7f70">[ meme scroll ]</div>`;
+
+  const reactionsHtml = SHOW_MEME_REACTIONS
+    ? `<div class="cov-meme-reactions-group" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"></div>`
+    : '';
+
+  return `
+  <!-- Featured meme — Cackle of the Day -->
+  <div class="cov-section-pad" id="cov-memes-cackle-section" style="padding:18px 48px 8px;position:relative;z-index:1">
+    <div id="cov-memes-cackle-card" data-slug="${escapeAttr(meme.slug)}" data-category-id="${escapeAttr(catInfo.id)}" class="cov-flex-stack" style="position:relative;border:1px solid rgba(216,181,107,.3);border-radius:12px;overflow:hidden;display:flex;background:radial-gradient(600px 260px at 80% 0%,rgba(139,92,196,.22),transparent 65%),#15121c;box-shadow:0 0 40px rgba(139,92,196,.14)">
+      <div class="cov-meme-feature-img" style="width:46%;background:repeating-linear-gradient(135deg,rgba(185,143,216,.14) 0 12px,rgba(185,143,216,.04) 12px 24px),#0e0c13;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7f70;border-right:1px solid rgba(216,181,107,.14);min-height:240px;min-width:0;overflow:hidden">
+        ${imageContentHtml}
+      </div>
+      <div style="flex:1;padding:clamp(20px,4vw,34px) clamp(18px,4vw,36px);display:flex;flex-direction:column;justify-content:center;min-width:0">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="display:inline-flex;align-items:center;gap:7px;font-family:Cinzel,serif;font-size:12px;letter-spacing:1.5px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);padding:6px 14px;border-radius:20px">🔮 CACKLE OF THE DAY</div>
+          <div class="cov-meme-cackle-cat" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px">${escapeHtml(catInfo.badgeLabel)}</div>
+        </div>
+        <h2 id="cov-memes-cackle-title" style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(20px,5vw,26px);line-height:1.3;color:#f3ecdf;margin:0 0 ${desc ? '14px' : '22px'};word-break:break-word">${escapeHtml(meme.caption)}</h2>
+        ${desc ? `<p id="cov-memes-cackle-desc" style="font-family:'EB Garamond',serif;font-size:16px;color:#b3a99d;margin:0 0 22px;line-height:1.5;word-break:break-word">${escapeHtml(desc)}</p>` : ''}
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+          ${reactionsHtml}
+          ${dateLabel ? `<span style="font-family:'EB Garamond',serif;font-size:14px;color:#8f857a">${escapeHtml(dateLabel)}</span>` : ''}
+          <span style="margin-left:auto;font-family:'EB Garamond',serif;font-size:14px;color:#b98fd8;cursor:pointer">Share the curse →</span>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+const gridCardsHtml = gridMemes
+  .map((meme, idx) => {
+    const catInfo = resolveCategoryInfo(meme);
+    const desc = (meme.description || '').trim();
+    const dateLabel = formatMemePublicDate(meme.publishedAt || meme.publishDate);
+    const altText = (meme.imageAlt || '').trim() || meme.caption;
+    const hasImage = Boolean(meme.imageSrc && meme.imageSrc.trim());
+    const thumbBg =
+      idx % 2 === 0
+        ? 'repeating-linear-gradient(135deg,rgba(185,143,216,.12) 0 10px,rgba(185,143,216,.03) 10px 20px)'
+        : 'repeating-linear-gradient(135deg,rgba(216,181,107,.10) 0 10px,rgba(216,181,107,.03) 10px 20px)';
+
+    const cardImageHtml = hasImage
+      ? `<img class="cov-meme-img" src="${escapeAttr(meme.imageSrc)}" alt="${escapeAttr(altText)}" loading="lazy" style="width:100%;max-height:360px;height:auto;object-fit:contain;display:block" /><div class="cov-meme-img-fallback" style="display:none;align-items:center;justify-content:center;padding:28px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7f70">[ meme scroll ]</div>`
+      : `<div class="cov-meme-img-fallback" style="display:flex;align-items:center;justify-content:center;padding:28px;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7f70">[ meme scroll ]</div>`;
+
+    const reactionsHtml = SHOW_MEME_REACTIONS
+      ? `<div class="cov-meme-reactions-group" style="display:flex;gap:7px"></div>`
+      : '';
+
+    return `
+      <div class="cov-meme-card" data-slug="${escapeAttr(meme.slug)}" data-category-id="${escapeAttr(catInfo.id)}" data-caption="${escapeAttr(meme.caption)}" data-desc="${escapeAttr(desc)}" style="background:#15121c;border:1px solid rgba(185,143,216,.18);border-radius:10px;overflow:hidden;min-width:0" style-hover="border:1px solid rgba(185,143,216,.45)">
+        <div class="cov-meme-card-media" style="min-height:200px;background:${thumbBg},#0e0c13;display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:11px;color:#8a7f70;border-bottom:1px solid rgba(185,143,216,.14);overflow:hidden">
+          ${cardImageHtml}
+        </div>
+        <div class="cov-meme-card-body" style="padding:20px">
+          <div class="cov-meme-card-tag" style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px;margin-bottom:12px">${escapeHtml(catInfo.badgeLabel)}</div>
+          <h3 class="cov-meme-card-title" style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.3;color:#ece6dd;margin:0 0 ${desc ? '10px' : '16px'};word-break:break-word">${escapeHtml(meme.caption)}</h3>
+          ${desc ? `<p class="cov-meme-card-desc" style="font-family:'EB Garamond',serif;font-size:15px;color:#9b9189;margin:0 0 16px;line-height:1.45;word-break:break-word">${escapeHtml(desc)}</p>` : ''}
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:auto">
+            ${reactionsHtml}
+            ${dateLabel ? `<span style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">${escapeHtml(dateLabel)}</span>` : '<span></span>'}
+            <span style="font-family:'EB Garamond',serif;font-size:13px;color:#b98fd8;cursor:pointer">Share →</span>
+          </div>
+        </div>
+      </div>`;
+  })
+  .join('\n');
+
+const mainMemesContentHtml =
+  publishedMemes.length > 0 && cackleMeme
+    ? `
+  ${renderCackleSection(cackleMeme)}
+
+  <div class="cov-section-pad cov-flex-stack" style="display:flex;align-items:center;justify-content:space-between;padding:26px 48px 24px;gap:20px;position:relative;z-index:1">
+    <div id="cov-memes-filter-chips" style="display:flex;gap:10px;flex-wrap:wrap">
+      ${filterButtonsHtml}
+    </div>
+    <div id="cov-memes-sort-indicator" style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;border:1px solid rgba(216,181,107,.18);padding:8px 16px;border-radius:20px;white-space:nowrap">Sort: Newest</div>
+  </div>
+
+  <!-- Meme grid -->
+  <div class="cov-section-pad cov-grid-3" id="cov-memes-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:0 48px 44px;position:relative;z-index:1">
+    ${gridCardsHtml}
+    <div id="cov-memes-no-results" style="display:${gridMemes.length === 0 ? 'block' : 'none'};grid-column:1 / -1;text-align:center;padding:48px 24px;border:1px dashed rgba(216,181,107,.14);border-radius:10px;background:rgba(21,18,28,.3);">
+      <div style="font-size:20px;color:#d8b56b;margin-bottom:8px;opacity:0.8;">✦</div>
+      <p style="font-family:Cinzel,serif;font-size:16px;color:#ece6dd;margin:0 0 6px;">No hexes match this category</p>
+      <p style="font-family:'EB Garamond',serif;font-size:14px;color:#8f857a;margin:0;">Try selecting another category or return to All hexes.</p>
+    </div>
+  </div>`
+    : `
+  <div class="cov-section-pad" style="padding:24px 48px 48px;position:relative;z-index:1">
+    <div id="cov-memes-empty" style="text-align:center;padding:72px 24px;border:1px dashed rgba(216,181,107,.18);border-radius:10px;background:rgba(21,18,28,.4);margin:12px 0;">
+      <div style="font-size:28px;color:#d8b56b;margin-bottom:14px;opacity:0.85;">🔮</div>
+      <h2 style="font-family:Cinzel,serif;font-size:20px;font-weight:600;color:#ece6dd;letter-spacing:2px;margin:0 0 10px;text-transform:uppercase;">No Hexes Have Been Cast Yet</h2>
+      <p style="font-family:'EB Garamond',serif;font-size:16px;color:#9b9189;max-width:440px;margin:0 auto;line-height:1.5;">Published memes conjured through Meme Studio will appear in this grimoire.</p>
+    </div>
+  </div>`;
 
 const memesHtml = `<!-- ═══════════════════════════════════════════════════════════════
   GRIMOIRE OF MEMES
-  Featured meme: edit in CONTENT.featuredMeme
-  Meme grid: edit in CONTENT.memes
+  Dynamic Coven Meme Studio published catalog.
 ════════════════════════════════════════════════════════════════ -->
 <sc-if value="{{ isMemes }}" hint-placeholder-val="{{ true }}">
 <div style="position:relative;overflow:hidden;background:radial-gradient(1100px 640px at 50% -14%,rgba(124,77,196,.44),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.34),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.28),transparent 62%),#08060e">
@@ -45,54 +295,7 @@ const memesHtml = `<!-- ══════════════════�
     <p style="font-family:'EB Garamond',serif;font-size:clamp(16px,4vw,18px);color:#9b9189;margin:0;max-width:600px">The coven's cursed scrolls of Salesforce humor — deploy disasters, stakeholder hexes, and Apex pain. Cackle responsibly. 💀</p>
   </div>
 
-  <!-- Featured meme — edit in CONTENT.featuredMeme -->
-  <div class="cov-section-pad" style="padding:18px 48px 8px;position:relative;z-index:1">
-    <div class="cov-flex-stack" style="position:relative;border:1px solid rgba(216,181,107,.3);border-radius:12px;overflow:hidden;display:flex;background:radial-gradient(600px 260px at 80% 0%,rgba(139,92,196,.22),transparent 65%),#15121c;box-shadow:0 0 40px rgba(139,92,196,.14)">
-      <div class="cov-meme-feature-img" style="width:46%;background:repeating-linear-gradient(135deg,rgba(185,143,216,.14) 0 12px,rgba(185,143,216,.04) 12px 24px);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:12px;color:#8a7f70;border-right:1px solid rgba(216,181,107,.14);min-height:240px;min-width:0">[ meme · 600×400 ]</div>
-      <div style="flex:1;padding:clamp(20px,4vw,34px) clamp(18px,4vw,36px);display:flex;flex-direction:column;justify-content:center;min-width:0">
-        <div style="display:inline-flex;align-self:flex-start;align-items:center;gap:7px;font-family:Cinzel,serif;font-size:12px;letter-spacing:1.5px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);padding:6px 14px;border-radius:20px;margin-bottom:16px">{{ featuredMeme.label }}</div>
-        <h2 style="font-family:Cinzel,serif;font-weight:600;font-size:clamp(20px,5vw,26px);line-height:1.3;color:#f3ecdf;margin:0 0 14px;word-break:break-word">{{ featuredMeme.title }}</h2>
-        <p style="font-family:'EB Garamond',serif;font-size:16px;color:#b3a99d;margin:0 0 22px">{{ featuredMeme.attribution }}</p>
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
-          <span style="font-family:'EB Garamond',serif;font-size:14px;color:#f3ecdf;border:1px solid rgba(216,181,107,.3);border-radius:16px;padding:6px 14px">{{ featuredMeme.r1 }}</span>
-          <span style="font-family:'EB Garamond',serif;font-size:14px;color:#f3ecdf;border:1px solid rgba(216,181,107,.3);border-radius:16px;padding:6px 14px">{{ featuredMeme.r2 }}</span>
-          <span style="font-family:'EB Garamond',serif;font-size:14px;color:#f3ecdf;border:1px solid rgba(216,181,107,.3);border-radius:16px;padding:6px 14px">{{ featuredMeme.r3 }}</span>
-          <span style="margin-left:auto;font-family:'EB Garamond',serif;font-size:14px;color:#b98fd8;cursor:pointer">Share the curse →</span>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="cov-section-pad cov-flex-stack" style="display:flex;align-items:center;justify-content:space-between;padding:26px 48px 24px;gap:20px;position:relative;z-index:1">
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <div style="font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);padding:8px 16px;border-radius:20px;cursor:pointer">All hexes</div>
-      <div style="font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);padding:8px 16px;border-radius:20px;cursor:pointer">🧙 Admin life</div>
-      <div style="font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);padding:8px 16px;border-radius:20px;cursor:pointer">⚡ Apex pain</div>
-      <div style="font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);padding:8px 16px;border-radius:20px;cursor:pointer">💥 Deploy disasters</div>
-      <div style="font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);padding:8px 16px;border-radius:20px;cursor:pointer">🔮 Stakeholder spells</div>
-    </div>
-    <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;border:1px solid rgba(216,181,107,.18);padding:8px 16px;border-radius:20px;white-space:nowrap">Sort: 🔥 Most cackled</div>
-  </div>
-
-  <!-- Meme grid — edit in CONTENT.memes -->
-  <div class="cov-section-pad cov-grid-3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:0 48px 44px;position:relative;z-index:1">
-    <sc-for list="{{ memes }}" as="meme" hint-placeholder-count="6">
-      <div style="background:#15121c;border:1px solid rgba(185,143,216,.18);border-radius:10px;overflow:hidden;min-width:0" style-hover="border:1px solid rgba(185,143,216,.45)">
-        <div style="{{ meme.thumbStyle }}">[ meme · 560×320 ]</div>
-        <div style="padding:20px">
-          <div style="display:inline-block;font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1.5px;color:#b98fd8;border:1px solid rgba(185,143,216,.32);border-radius:2px;padding:4px 8px;margin-bottom:12px">{{ meme.tag }}</div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.3;color:#ece6dd;margin:0 0 16px;word-break:break-word">{{ meme.title }}</h3>
-          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">
-            <div style="display:flex;gap:7px">
-              <span style="font-family:'EB Garamond',serif;font-size:13px;color:#cdc3b6;border:1px solid rgba(216,181,107,.18);border-radius:14px;padding:4px 10px">{{ meme.r1 }}</span>
-              <span style="font-family:'EB Garamond',serif;font-size:13px;color:#cdc3b6;border:1px solid rgba(216,181,107,.18);border-radius:14px;padding:4px 10px">{{ meme.r2 }}</span>
-            </div>
-            <span style="font-family:'EB Garamond',serif;font-size:13px;color:#b98fd8;cursor:pointer">Share →</span>
-          </div>
-        </div>
-      </div>
-    </sc-for>
-  </div>
+  ${mainMemesContentHtml}
 
   <section class="cov-banner" style="margin:0 48px 56px;border:1px dashed rgba(216,181,107,.3);border-radius:12px;padding:40px;text-align:center;background:radial-gradient(600px 240px at 50% 0%,rgba(139,92,196,.16),transparent 65%),#100d16;position:relative;z-index:1">
     <div style="font-size:26px;margin-bottom:12px">📜✨</div>
@@ -107,3 +310,130 @@ const memesHtml = `<!-- ══════════════════�
 <BaseLayout title="Coven of Technology — Grimoire of Memes">
   <Fragment set:html={memesHtml} />
 </BaseLayout>
+
+<style is:global>
+  .cov-meme-card {
+    display: flex;
+    flex-direction: column;
+  }
+  .cov-meme-card-body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    if (window.__covenMemesFilterBound) return;
+    window.__covenMemesFilterBound = true;
+
+    var currentCategory = 'all';
+    var currentSearch = '';
+
+    var BTN_ACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;user-select:none;";
+    var BTN_INACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;user-select:none;";
+
+    function getLiveScope() {
+      return document.getElementById('dc-root') || document;
+    }
+
+    function applyMemesFilter() {
+      var scope = getLiveScope();
+      var chips = scope.querySelectorAll('.cov-meme-filter-chip');
+      var cards = scope.querySelectorAll('.cov-meme-card');
+      var noResults = scope.querySelector('#cov-memes-no-results');
+
+      chips.forEach(function(chip) {
+        var chipKey = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
+        var isActive = chipKey === currentCategory;
+        var targetStyle = isActive ? BTN_ACTIVE : BTN_INACTIVE;
+        var targetPressed = isActive ? 'true' : 'false';
+        if (chip.getAttribute('style') !== targetStyle) {
+          chip.setAttribute('style', targetStyle);
+        }
+        if (chip.getAttribute('aria-pressed') !== targetPressed) {
+          chip.setAttribute('aria-pressed', targetPressed);
+        }
+      });
+
+      var query = currentSearch.trim().toLowerCase();
+      var visibleCount = 0;
+
+      cards.forEach(function(card) {
+        var catId = (card.getAttribute('data-category-id') || '').toLowerCase().trim();
+        var caption = (card.getAttribute('data-caption') || '').toLowerCase().trim();
+        var desc = (card.getAttribute('data-desc') || '').toLowerCase().trim();
+
+        var matchesCategory = (currentCategory === 'all') || (catId === currentCategory);
+        var matchesSearch = !query ||
+          caption.includes(query) ||
+          desc.includes(query) ||
+          catId.includes(query);
+
+        var visible = matchesCategory && matchesSearch;
+        var targetDisplay = visible ? '' : 'none';
+        if (card.style.display !== targetDisplay) {
+          card.style.display = targetDisplay;
+        }
+        if (visible) {
+          visibleCount++;
+        }
+      });
+
+      if (noResults) {
+        var shouldShowNoResults = visibleCount === 0 && (currentCategory !== 'all' || cards.length === 0);
+        var targetNoResultsDisplay = shouldShowNoResults ? 'block' : 'none';
+        if (noResults.style.display !== targetNoResultsDisplay) {
+          noResults.style.display = targetNoResultsDisplay;
+        }
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      var target = e.target;
+      if (!target || typeof target.closest !== 'function') return;
+      var chip = target.closest('.cov-meme-filter-chip');
+      if (!chip) return;
+      currentCategory = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
+      applyMemesFilter();
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      var target = e.target;
+      if (!target || typeof target.closest !== 'function') return;
+      var chip = target.closest('.cov-meme-filter-chip');
+      if (!chip) return;
+      e.preventDefault();
+      currentCategory = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
+      applyMemesFilter();
+    });
+
+    document.addEventListener('error', function(e) {
+      var target = e.target;
+      if (!target || target.tagName !== 'IMG' || !target.classList.contains('cov-meme-img')) return;
+      target.style.display = 'none';
+      var fallback = target.nextElementSibling;
+      if (fallback && fallback.classList.contains('cov-meme-img-fallback')) {
+        fallback.style.display = 'flex';
+      }
+    }, true);
+
+    function startObserver() {
+      applyMemesFilter();
+      if (typeof MutationObserver !== 'undefined' && document.body) {
+        var observer = new MutationObserver(function() {
+          applyMemesFilter();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startObserver);
+    } else {
+      startObserver();
+    }
+  })();
+</script>
