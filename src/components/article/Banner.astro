@@ -1,0 +1,98 @@
+---
+interface Props {
+  kicker?: string;
+  title?: string;
+  actionText?: string;
+  actionUrl?: string;
+}
+
+const { kicker, title, actionText, actionUrl } = Astro.props;
+---
+
+<div class="cov-article-banner">
+  {kicker && <div class="cov-banner-kicker">{kicker}</div>}
+  {title && <h3 class="cov-banner-title">{title}</h3>}
+  <div class="cov-banner-body">
+    <slot />
+  </div>
+  {actionText && (
+    <div class="cov-banner-action-wrap">
+      {actionUrl ? (
+        <a href={actionUrl} class="cov-banner-btn">{actionText}</a>
+      ) : (
+        <span class="cov-banner-btn">{actionText}</span>
+      )}
+    </div>
+  )}
+</div>
+
+<style>
+  .cov-article-banner {
+    margin: 36px 0;
+    border: 1px solid rgba(216, 181, 107, 0.22);
+    border-radius: 8px;
+    padding: clamp(24px, 5vw, 36px);
+    background: radial-gradient(600px 240px at 50% 0%, rgba(139, 92, 196, 0.18), transparent 70%), #120e18;
+    text-align: center;
+    position: relative;
+    box-sizing: border-box;
+  }
+
+  .cov-banner-kicker {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #b98fd8;
+    margin-bottom: 8px;
+  }
+
+  .cov-banner-title {
+    font-family: Cinzel, serif;
+    font-weight: 600;
+    font-size: clamp(20px, 4.5vw, 26px);
+    color: #f3ecdf;
+    margin: 0 0 12px;
+  }
+
+  .cov-banner-body {
+    font-family: 'EB Garamond', serif;
+    font-size: 16px;
+    color: #b3a99d;
+    max-width: 620px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  .cov-banner-body :global(p) {
+    margin: 0 0 12px !important;
+  }
+  .cov-banner-body :global(p:last-child) {
+    margin-bottom: 0 !important;
+  }
+
+  .cov-banner-action-wrap {
+    margin-top: 20px;
+  }
+
+  .cov-banner-btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 3px;
+    background: linear-gradient(180deg, #e3c47e, #c49a4e);
+    color: #221809;
+    font-family: Cinzel, serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-decoration: none;
+    box-shadow: 0 0 24px rgba(216, 181, 107, 0.28);
+    cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .cov-banner-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 0 32px rgba(216, 181, 107, 0.42);
+  }
+</style>

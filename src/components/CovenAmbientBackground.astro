@@ -1,0 +1,977 @@
+---
+interface Props {
+  hideGlobalMoon?: boolean;
+}
+
+const { hideGlobalMoon = false } = Astro.props;
+---
+
+<!-- 1. ESCENARIO DE FONDO CÓSMICO FIJO (Nebulosa, campo estelar y viñeta) -->
+<div class="coven-sky-layer coven-background" id="coven-ambient-bg" aria-hidden="true">
+  <!-- Capa de nebulosa violeta/dorada -->
+  <div class="nebula-layer"></div>
+  <div class="top-horizon-glow"></div>
+
+  <!-- Estrellitas titilantes y luceros difuminados -->
+  <canvas id="starfield-canvas"></canvas>
+
+  <!-- Viñeta abisal -->
+  <div class="abyss-vignette"></div>
+</div>
+
+<!-- 2. ESCENARIO LUNAR ABSOLUTO AL TOPE DEL DOCUMENTO (Se desplaza naturalmente con el scroll) -->
+{!hideGlobalMoon && (
+  <div class="coven-moon-layer coven-moon-stage" id="coven-moon-stage" aria-hidden="true">
+    <div class="moon-sanctuary" id="moon-sanctuary" role="button" tabindex="0" aria-label="Awaken the Moon" title="Awaken the Moon">
+      <div class="moon-ambient-halo" id="moon-ambient-halo"></div>
+      <div class="moon-mystic-corona" id="moon-mystic-corona"></div>
+      <div class="moon-arcane-ring"></div>
+      <div id="moon-webgl-wrapper"></div>
+
+      <!-- Escenario de la Bruja cruzando en Luna Llena -->
+      <div class="witch-flight-stage" id="witch-flight-stage">
+        <div class="witch-caster" id="witch-caster">
+          <svg class="witch-svg" viewBox="0 0 120 90" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Estela de energía mágica sutil en la escoba -->
+            <path d="M4 60 Q 22 57 38 54" stroke="rgba(255, 229, 92, 0.45)" stroke-width="1.4" stroke-linecap="round" stroke-dasharray="2 3" />
+            <!-- Palo de la escoba antigua retorcida -->
+            <path d="M12 58 Q 48 53 72 48 L 106 42" stroke="#06030a" stroke-width="2.6" stroke-linecap="round" />
+            <!-- Ramaje de la escoba (Atrás) -->
+            <path d="M36 55 C 24 50, 14 51, 5 55 C 12 57, 10 61, 3 63 C 14 64, 25 61, 37 56 Z" fill="#06030a" />
+            <path d="M34 54 L 38 57" stroke="#dcb358" stroke-width="1.3" stroke-linecap="round" />
+            <!-- Capa ondeando al viento -->
+            <path class="witch-cape" d="M58 38 C 44 41, 33 47, 23 53 C 33 53, 40 56, 35 61 C 46 58, 54 53, 62 47 Z" fill="#050209" />
+            <!-- Silueta del cuerpo y falda de la bruja -->
+            <path d="M60 35 C 65 36, 68 41, 66 47 L 54 53 C 51 48, 54 40, 60 35 Z" fill="#050209" />
+            <!-- Botas puntiagudas -->
+            <path d="M61 50 L 66 58 L 71 57 L 65 49 Z" fill="#050209" />
+            <path d="M55 51 L 57 59 L 62 59 L 58 50 Z" fill="#050209" />
+            <!-- Brazos sujetando la escoba -->
+            <path d="M64 37 L 75 44 L 82 46 L 73 46 L 63 40 Z" fill="#050209" />
+            <!-- Cabeza y perfil -->
+            <circle cx="66" cy="31" r="4.8" fill="#050209" />
+            <!-- Mechones de cabello al viento -->
+            <path d="M62 30 Q 53 29 47 33 Q 54 33 61 33 Z" fill="#050209" />
+            <!-- Sombrero puntiagudo de bruja con ala curva -->
+            <g class="witch-hat-tip">
+              <path d="M52 29 Q 67 27 81 30 Q 68 25 52 29 Z" fill="#050209" />
+              <path d="M58 28 C 59 19, 55 12, 46 9 C 52 14, 53 20, 52 26 L 73 29 C 69 23, 66 19, 58 28 Z" fill="#050209" />
+            </g>
+            <!-- Gato familiar / cuervo pequeño en la punta delantera de la escoba -->
+            <path d="M92 44 C 93 39, 96 38, 98 40 L 99 37 L 100 40 C 102 41, 101 43, 98 44 Z" fill="#050209" />
+            <path d="M92 44 Q 87 40 89 36" stroke="#050209" stroke-width="1.6" stroke-linecap="round" fill="none" />
+            <!-- Pequeño destello dorado en la hebilla/farol delantero -->
+            <circle cx="104" cy="42.5" r="1.5" fill="#ffe55c" />
+          </svg>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+<style is:global>
+  :root {
+    --void-bottom: #040208;
+    --void-mid: #090514;
+    --void-top: #160b29;
+    --plum-glow: rgba(48, 22, 82, 0.55);
+    --gold-mist: rgba(212, 175, 55, 0.08);
+    --moon-halo-silver: rgba(215, 220, 235, 0.16);
+    --moon-halo-gold: rgba(229, 193, 104, 0.14);
+  }
+
+  /* ==========================================================================
+     CONTENEDOR MAESTRO DEL FONDO AMBIENTAL
+     ========================================================================== */
+  .coven-background {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+    background: 
+      radial-gradient(ellipse 85% 55% at 50% 0%, #23113d 0%, rgba(20, 9, 36, 0.65) 55%, transparent 100%),
+      radial-gradient(circle at 88% 18%, rgba(56, 28, 94, 0.48) 0%, rgba(25, 11, 45, 0.2) 40%, transparent 70%),
+      radial-gradient(circle at 48% 68%, rgba(180, 135, 45, 0.045) 0%, transparent 55%),
+      linear-gradient(180deg, #120924 0%, #090412 48%, #040208 100%);
+  }
+
+  /* Nebulosa sutil que respira lentamente */
+  .nebula-layer {
+    position: absolute;
+    inset: -15%;
+    width: 130%;
+    height: 130%;
+    pointer-events: none;
+    z-index: 1;
+    background: 
+      radial-gradient(circle at 20% 25%, rgba(115, 65, 180, 0.07) 0%, transparent 45%),
+      radial-gradient(circle at 82% 20%, rgba(220, 179, 88, 0.06) 0%, transparent 38%),
+      radial-gradient(circle at 60% 80%, rgba(80, 32, 135, 0.06) 0%, transparent 50%);
+    filter: blur(40px);
+    animation: driftNebula 28s ease-in-out infinite alternate;
+  }
+
+  @keyframes driftNebula {
+    0% { transform: translate3d(0%, 0%, 0) scale(1); }
+    50% { transform: translate3d(-1.5%, 1%, 0) scale(1.04); }
+    100% { transform: translate3d(1%, -1%, 0) scale(0.98); }
+  }
+
+  /* Línea de horizonte superior ultra sutil */
+  .top-horizon-glow {
+    position: absolute;
+    top: 72px;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, 
+      transparent 0%, 
+      rgba(154, 133, 200, 0.08) 20%, 
+      rgba(220, 179, 88, 0.14) 50%, 
+      rgba(154, 133, 200, 0.08) 80%, 
+      transparent 100%
+    );
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* Lienzo de estrellitas titilantes y luceros difuminados */
+  #starfield-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ==========================================================================
+     ESCENARIO LUNAR ABSOLUTO AL TOPE DEL DOCUMENTO (Se desplaza con el scroll)
+     ========================================================================== */
+  .coven-moon-layer,
+  .coven-moon-stage {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: 0;
+    overflow: visible;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Luna 3D en la esquina superior derecha */
+  .moon-sanctuary {
+    position: absolute;
+    top: clamp(78px, 11vh, 135px);
+    right: clamp(32px, 8.5vw, 150px);
+    width: clamp(90px, 9vw, 135px);
+    height: clamp(90px, 9vw, 135px);
+    z-index: 4;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    border-radius: 50%;
+    transition: transform 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+    pointer-events: auto;
+  }
+
+  /* Halo atmosférico suave detrás de la Luna */
+  .moon-ambient-halo {
+    position: absolute;
+    inset: -45%;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+      rgba(225, 222, 240, 0.22) 0%, 
+      rgba(175, 155, 215, 0.10) 36%, 
+      rgba(120, 80, 180, 0.04) 62%, 
+      transparent 78%
+    );
+    pointer-events: none;
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    animation: breatheHalo 7s ease-in-out infinite alternate;
+  }
+
+  /* Segundo halo dorado/místico que reacciona según la estación lunar */
+  .moon-mystic-corona {
+    position: absolute;
+    inset: -25%;
+    border-radius: 50%;
+    background: radial-gradient(circle, 
+      rgba(235, 200, 115, 0.14) 0%, 
+      rgba(142, 45, 226, 0.08) 48%, 
+      transparent 72%
+    );
+    pointer-events: none;
+    opacity: 0.65;
+    transition: all 0.9s ease;
+  }
+
+  /* Anillo astrolábico sutil */
+  .moon-arcane-ring {
+    position: absolute;
+    inset: -14%;
+    border-radius: 50%;
+    border: 1px solid rgba(220, 179, 88, 0.0);
+    box-shadow: 0 0 30px rgba(220, 179, 88, 0);
+    pointer-events: none;
+    transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: spinSlow 36s linear infinite;
+  }
+
+  .moon-arcane-ring::before {
+    content: '';
+    position: absolute;
+    inset: 6px;
+    border-radius: 50%;
+    border: 1px dashed rgba(184, 156, 232, 0.0);
+    transition: all 0.8s ease;
+  }
+
+  .moon-sanctuary:hover .moon-arcane-ring,
+  .moon-sanctuary.pulse-active .moon-arcane-ring,
+  .moon-sanctuary.moon-hovered .moon-arcane-ring {
+    inset: -22%;
+    border-color: rgba(220, 179, 88, 0.28);
+    box-shadow: 0 0 40px rgba(220, 179, 88, 0.18), inset 0 0 20px rgba(142, 45, 226, 0.18);
+  }
+
+  .moon-sanctuary:hover .moon-arcane-ring::before,
+  .moon-sanctuary.pulse-active .moon-arcane-ring::before,
+  .moon-sanctuary.moon-hovered .moon-arcane-ring::before {
+    border-color: rgba(220, 179, 88, 0.22);
+  }
+
+  .moon-sanctuary:hover .moon-mystic-corona,
+  .moon-sanctuary.pulse-active .moon-mystic-corona,
+  .moon-sanctuary.moon-hovered .moon-mystic-corona {
+    opacity: 1;
+    transform: scale(1.18);
+  }
+
+  /* Canvas WebGL de la Luna 3D */
+  #moon-webgl-wrapper {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    z-index: 3;
+    pointer-events: none;
+  }
+
+  #moon-webgl-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+    display: block;
+  }
+
+  /* Silueta de la bruja en plenilunio + estela de polvo estelar */
+  .witch-flight-stage {
+    position: absolute;
+    inset: -35%;
+    z-index: 6;
+    pointer-events: none;
+    overflow: visible;
+  }
+
+  .witch-caster {
+    position: absolute;
+    top: 52%;
+    left: -28%;
+    width: 28%;
+    height: 28%;
+    opacity: 0;
+    transform: translate3d(0, 0, 0) rotate(-11deg) scale(0.82);
+    filter: drop-shadow(0 0 6px rgba(255, 229, 130, 0.55)) drop-shadow(0 0 14px rgba(142, 45, 226, 0.45));
+    will-change: transform, opacity;
+  }
+
+  .witch-caster.flying {
+    animation: witchMoonCross 6.2s cubic-bezier(0.25, 0.1, 0.25, 1) forwards;
+  }
+
+  .witch-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    animation: witchBobbing 1.15s ease-in-out infinite alternate;
+  }
+
+  .witch-cape {
+    transform-origin: 48px 46px;
+    animation: capeFlutter 0.45s ease-in-out infinite alternate;
+  }
+
+  .witch-hat-tip {
+    transform-origin: 50px 26px;
+    animation: hatSway 0.8s ease-in-out infinite alternate;
+  }
+
+  .witch-spark {
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+    background: radial-gradient(circle, #fffbe6 0%, #ffe55c 45%, rgba(142, 45, 226, 0) 100%);
+    box-shadow: 0 0 8px #ffe55c, 0 0 14px #8e2de2;
+    opacity: 0;
+    animation: sparkFade 1.25s ease-out forwards;
+  }
+
+  @keyframes witchMoonCross {
+    0% {
+      left: -26%;
+      top: 66%;
+      opacity: 0;
+      transform: rotate(-14deg) scale(0.72);
+    }
+    12% {
+      opacity: 0.98;
+    }
+    50% {
+      left: 34%;
+      top: 36%;
+      opacity: 1;
+      transform: rotate(-8deg) scale(0.96);
+    }
+    88% {
+      opacity: 0.96;
+    }
+    100% {
+      left: 96%;
+      top: 14%;
+      opacity: 0;
+      transform: rotate(-4deg) scale(0.76);
+    }
+  }
+
+  @keyframes witchBobbing {
+    0% { transform: translateY(-2.5px) rotate(-1.5deg); }
+    100% { transform: translateY(2.5px) rotate(1.5deg); }
+  }
+
+  @keyframes capeFlutter {
+    0% { transform: skewY(-3deg) scaleX(0.97); }
+    100% { transform: skewY(4deg) scaleX(1.04); }
+  }
+
+  @keyframes hatSway {
+    0% { transform: rotate(-3deg); }
+    100% { transform: rotate(3deg); }
+  }
+
+  @keyframes sparkFade {
+    0% {
+      opacity: 0.95;
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: translate3d(-18px, 10px, 0) scale(0.15);
+    }
+  }
+
+  /* Viñeta oscura perimetral */
+  .abyss-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 5;
+    background: radial-gradient(circle at 50% 45%, transparent 55%, rgba(2, 1, 5, 0.65) 100%);
+  }
+
+  @keyframes breatheHalo {
+    0% { transform: scale(0.96); }
+    100% { transform: scale(1.06); }
+  }
+
+  @keyframes spinSlow {
+    100% { transform: rotate(360deg); }
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    if (window.__covenAmbientBackgroundInitialized) {
+      return;
+    }
+    window.__covenAmbientBackgroundInitialized = true;
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // PARTE 1: ESTRELLITAS TITILANTES Y LUCEROS DIFUMINADOS (CANVAS 2D)
+    // ──────────────────────────────────────────────────────────────────────────
+    var starCanvas = document.getElementById('starfield-canvas');
+    if (!starCanvas) return;
+    var sCtx = starCanvas.getContext('2d');
+
+    var width = window.innerWidth;
+    var height = window.innerHeight;
+
+    var mouse = { x: 0, y: 0, targetX: 0, targetY: 0 };
+
+    window.addEventListener('mousemove', function(e) {
+      mouse.targetX = (e.clientX / width - 0.5) * 2;
+      mouse.targetY = (e.clientY / height - 0.5) * 2;
+
+      // Hit test check for Moon hover state when foreground contains transparent containers
+      var sanctuary = document.getElementById('moon-sanctuary');
+      if (sanctuary) {
+        var rect = sanctuary.getBoundingClientRect();
+        if (rect.width > 0 && rect.bottom > 0 && rect.top < window.innerHeight) {
+          var cx = rect.left + rect.width / 2;
+          var cy = rect.top + rect.height / 2;
+          var r = rect.width / 2;
+          var dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+          var isOverInteractive = Boolean(e.target && e.target.closest && e.target.closest('a, button, input, select, textarea, [role="button"], [onclick], .cov-nav-desktop, .cov-header, .cov-mobile-drawer, .cov-modal, .cov-library-card, .cov-card, .cov-memes-card, .hero-cover, .cov-about-luna-stage, #coven-article-container'));
+
+          if (dist <= r && !isOverInteractive) {
+            sanctuary.classList.add('moon-hovered');
+            document.body.style.cursor = 'pointer';
+          } else {
+            sanctuary.classList.remove('moon-hovered');
+            if (document.body.style.cursor === 'pointer' && (!e.target || !e.target.closest || !e.target.closest('a, button, [role="button"], [onclick], [style*="cursor:pointer"]'))) {
+              document.body.style.cursor = '';
+            }
+          }
+        } else {
+          sanctuary.classList.remove('moon-hovered');
+        }
+      }
+    });
+
+    // Delegated click support so the Moon remains responsive if a transparent container is above it
+    window.addEventListener('click', function(e) {
+      if (e.target && (e.target.closest('#moon-sanctuary') || e.target.id === 'moon-sanctuary')) {
+        return; // Handled directly by native listener
+      }
+      if (e.target && e.target.closest && e.target.closest('a, button, input, select, textarea, [role="button"], [onclick], .cov-nav-desktop, .cov-header, .cov-mobile-drawer, .cov-modal, .cov-library-card, .cov-card, .cov-memes-card, .hero-cover, .cov-about-luna-stage, #coven-article-container')) {
+        return; // Click was intentionally aimed at a foreground element
+      }
+      var sanctuary = document.getElementById('moon-sanctuary');
+      if (!sanctuary) return;
+      var rect = sanctuary.getBoundingClientRect();
+      if (rect.width === 0 || rect.bottom <= 0 || rect.top >= window.innerHeight) return;
+      var cx = rect.left + rect.width / 2;
+      var cy = rect.top + rect.height / 2;
+      var r = rect.width / 2;
+      var dist = Math.hypot(e.clientX - cx, e.clientY - cy);
+      if (dist <= r) {
+        speedBoost = 3.5;
+        triggerWitchFlight();
+      }
+    });
+
+    var STAR_PALETTE = [
+      { r: 235, g: 200, b: 120 }, // Dorado cálido místico
+      { r: 195, g: 170, b: 245 }, // Lavanda / Violeta suave
+      { r: 245, g: 242, b: 255 }, // Blanco estelar puro
+      { r: 215, g: 165, b: 110 }  // Ámbar antiguo
+    ];
+
+    var beaconStars = [];
+    var ambientStars = [];
+    var shootingStar = null;
+
+    function initStarfield() {
+      width = starCanvas.width = window.innerWidth;
+      height = starCanvas.height = window.innerHeight;
+
+      beaconStars.length = 0;
+      ambientStars.length = 0;
+
+      var presetBeacons = [
+        { x: 0.11, y: 0.15, size: 2.3, colorIdx: 0 },
+        { x: 0.19, y: 0.35, size: 2.5, colorIdx: 0 },
+        { x: 0.13, y: 0.45, size: 1.8, colorIdx: 3 },
+        { x: 0.33, y: 0.21, size: 1.9, colorIdx: 1 },
+        { x: 0.76, y: 0.24, size: 2.6, colorIdx: 1 },
+        { x: 0.87, y: 0.41, size: 2.4, colorIdx: 1 },
+        { x: 0.64, y: 0.14, size: 1.8, colorIdx: 2 },
+        { x: 0.26, y: 0.68, size: 1.9, colorIdx: 0 },
+        { x: 0.79, y: 0.66, size: 2.0, colorIdx: 0 },
+        { x: 0.44, y: 0.12, size: 1.7, colorIdx: 2 },
+        { x: 0.06, y: 0.28, size: 1.8, colorIdx: 1 },
+        { x: 0.93, y: 0.27, size: 1.7, colorIdx: 0 }
+      ];
+
+      presetBeacons.forEach(function(b, idx) {
+        beaconStars.push({
+          baseX: b.x,
+          baseY: b.y,
+          radius: b.size,
+          haloRadius: b.size * 8.5,
+          color: STAR_PALETTE[b.colorIdx],
+          phase: idx * 1.3 + Math.random() * Math.PI * 2,
+          speed: 0.8 + Math.random() * 1.1,
+          parallaxDepth: 12 + Math.random() * 18,
+          hasCrossFlare: b.size >= 2.3
+        });
+      });
+
+      var ambientCount = Math.min(95, Math.floor((width * height) / 16000));
+      for (var i = 0; i < ambientCount; i++) {
+        var col = STAR_PALETTE[Math.floor(Math.random() * STAR_PALETTE.length)];
+        ambientStars.push({
+          x: Math.random() * width,
+          y: Math.random() * height * 0.92,
+          radius: 0.5 + Math.random() * 1.1,
+          color: col,
+          baseAlpha: 0.12 + Math.random() * 0.45,
+          phase: Math.random() * Math.PI * 2,
+          speed: 0.5 + Math.random() * 1.6,
+          depth: 3 + Math.random() * 8
+        });
+      }
+    }
+
+    function spawnShootingStar() {
+      if (shootingStar || Math.random() > 0.003) return;
+      var startX = (0.15 + Math.random() * 0.65) * width;
+      var startY = (0.05 + Math.random() * 0.30) * height;
+      var angle = Math.PI * (0.15 + Math.random() * 0.12);
+      shootingStar = {
+        x: startX,
+        y: startY,
+        vx: Math.cos(angle) * 9,
+        vy: Math.sin(angle) * 9,
+        life: 0,
+        maxLife: 48
+      };
+    }
+
+    function renderStarfield(timeSec) {
+      sCtx.clearRect(0, 0, width, height);
+
+      mouse.x += (mouse.targetX - mouse.x) * 0.05;
+      mouse.y += (mouse.targetY - mouse.y) * 0.05;
+
+      for (var i = 0; i < ambientStars.length; i++) {
+        var st = ambientStars[i];
+        var twinkle = 0.55 + 0.45 * Math.sin(timeSec * st.speed + st.phase);
+        var alpha = st.baseAlpha * twinkle;
+
+        var px = st.x - mouse.x * st.depth;
+        var py = st.y - mouse.y * st.depth;
+
+        sCtx.fillStyle = 'rgba(' + st.color.r + ',' + st.color.g + ',' + st.color.b + ',' + alpha + ')';
+        sCtx.beginPath();
+        sCtx.arc(px, py, st.radius, 0, Math.PI * 2);
+        sCtx.fill();
+      }
+
+      for (var j = 0; j < beaconStars.length; j++) {
+        var b = beaconStars[j];
+        var pulse = 0.65 + 0.35 * Math.sin(timeSec * b.speed + b.phase);
+
+        var cx = b.baseX * width - mouse.x * b.parallaxDepth;
+        var cy = b.baseY * height - mouse.y * b.parallaxDepth;
+        var currentHalo = b.haloRadius * (0.85 + 0.25 * pulse);
+
+        var grad = sCtx.createRadialGradient(cx, cy, 0, cx, cy, currentHalo);
+        grad.addColorStop(0, 'rgba(255, 255, 255,' + (0.85 * pulse) + ')');
+        grad.addColorStop(0.18, 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',' + (0.48 * pulse) + ')');
+        grad.addColorStop(0.5, 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',' + (0.14 * pulse) + ')');
+        grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+        sCtx.fillStyle = grad;
+        sCtx.beginPath();
+        sCtx.arc(cx, cy, currentHalo, 0, Math.PI * 2);
+        sCtx.fill();
+
+        if (b.hasCrossFlare) {
+          var flareLen = b.radius * (3.2 + pulse * 2.2);
+          sCtx.strokeStyle = 'rgba(' + b.color.r + ',' + b.color.g + ',' + b.color.b + ',' + (0.28 * pulse) + ')';
+          sCtx.lineWidth = 0.8;
+          sCtx.beginPath();
+          sCtx.moveTo(cx - flareLen, cy);
+          sCtx.lineTo(cx + flareLen, cy);
+          sCtx.moveTo(cx, cy - flareLen);
+          sCtx.lineTo(cx, cy + flareLen);
+          sCtx.stroke();
+        }
+
+        sCtx.fillStyle = 'rgba(255, 253, 245,' + (0.9 * pulse) + ')';
+        sCtx.beginPath();
+        sCtx.arc(cx, cy, b.radius * 0.65, 0, Math.PI * 2);
+        sCtx.fill();
+      }
+
+      spawnShootingStar();
+      if (shootingStar) {
+        shootingStar.x += shootingStar.vx;
+        shootingStar.y += shootingStar.vy;
+        shootingStar.life++;
+
+        var progress = shootingStar.life / shootingStar.maxLife;
+        var opacity = Math.sin(progress * Math.PI) * 0.55;
+
+        var tailX = shootingStar.x - shootingStar.vx * 5.5;
+        var tailY = shootingStar.y - shootingStar.vy * 5.5;
+
+        var shootGrad = sCtx.createLinearGradient(shootingStar.x, shootingStar.y, tailX, tailY);
+        shootGrad.addColorStop(0, 'rgba(255, 235, 175,' + opacity + ')');
+        shootGrad.addColorStop(1, 'rgba(255, 235, 175, 0)');
+
+        sCtx.strokeStyle = shootGrad;
+        sCtx.lineWidth = 1.3;
+        sCtx.beginPath();
+        sCtx.moveTo(shootingStar.x, shootingStar.y);
+        sCtx.lineTo(tailX, tailY);
+        sCtx.stroke();
+
+        if (shootingStar.life >= shootingStar.maxLife) {
+          shootingStar = null;
+        }
+      }
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // PARTE 2: LUNA 3D REALISTA CON ESTACIONES LUNARES (THREE.JS)
+    // ──────────────────────────────────────────────────────────────────────────
+    var moonScene, moonCamera, moonRenderer, moonMesh;
+    var sunDirectionalLight, earthshineAmbientLight, mysticRimLight;
+    var lunarCycleAngle = 152;
+    var speedBoost = 1.0;
+
+    var isWitchFlying = false;
+    var fullMoonWitchTriggeredInCycle = false;
+    var sparkTimer = 0;
+
+    function triggerWitchFlight() {
+      if (isWitchFlying) return;
+      var witchCaster = document.getElementById('witch-caster');
+      var sanctuary = document.getElementById('moon-sanctuary');
+      if (!witchCaster) return;
+
+      isWitchFlying = true;
+      witchCaster.classList.remove('flying');
+      void witchCaster.offsetWidth;
+      witchCaster.classList.add('flying');
+
+      if (sanctuary) {
+        sanctuary.classList.add('pulse-active');
+        setTimeout(function() {
+          sanctuary.classList.remove('pulse-active');
+        }, 4200);
+      }
+
+      setTimeout(function() {
+        witchCaster.classList.remove('flying');
+        isWitchFlying = false;
+      }, 6300);
+    }
+
+    function spawnWitchStardust() {
+      if (!isWitchFlying) return;
+      var stage = document.getElementById('witch-flight-stage');
+      var caster = document.getElementById('witch-caster');
+      if (!stage || !caster) return;
+
+      var stageRect = stage.getBoundingClientRect();
+      var casterRect = caster.getBoundingClientRect();
+      if (stageRect.width === 0) return;
+
+      var spark = document.createElement('div');
+      spark.className = 'witch-spark';
+
+      var size = 2 + Math.random() * 3.5;
+      spark.style.width = size + 'px';
+      spark.style.height = size + 'px';
+
+      var relX = casterRect.left - stageRect.left + casterRect.width * (0.12 + Math.random() * 0.25);
+      var relY = casterRect.top - stageRect.top + casterRect.height * (0.48 + Math.random() * 0.22);
+
+      spark.style.left = relX + 'px';
+      spark.style.top = relY + 'px';
+
+      stage.appendChild(spark);
+      setTimeout(function() {
+        if (spark.parentNode) spark.parentNode.removeChild(spark);
+      }, 1250);
+    }
+
+    function createProceduralLunarTextures() {
+      var w = 1024;
+      var h = 512;
+
+      var albedoCanvas = document.createElement('canvas');
+      albedoCanvas.width = w;
+      albedoCanvas.height = h;
+      var aCtx = albedoCanvas.getContext('2d');
+
+      var bumpCanvas = document.createElement('canvas');
+      bumpCanvas.width = w;
+      bumpCanvas.height = h;
+      var bCtx = bumpCanvas.getContext('2d');
+
+      aCtx.fillStyle = '#c4bfca';
+      aCtx.fillRect(0, 0, w, h);
+
+      bCtx.fillStyle = '#808080';
+      bCtx.fillRect(0, 0, w, h);
+
+      var seed = 90210;
+      function rand() {
+        seed = (seed * 1664525 + 1013904223) % 4294967296;
+        return seed / 4294967296;
+      }
+
+      for (var i = 0; i < 320; i++) {
+        var x = rand() * w;
+        var y = rand() * h;
+        var r = 18 + rand() * 75;
+        var shade = Math.floor(175 + rand() * 45);
+        var grad = aCtx.createRadialGradient(x, y, 0, x, y, r);
+        grad.addColorStop(0, 'rgba(' + shade + ',' + (shade - 3) + ',' + (shade + 4) + ', 0.14)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        aCtx.fillStyle = grad;
+        aCtx.beginPath();
+        aCtx.arc(x, y, r, 0, Math.PI * 2);
+        aCtx.fill();
+      }
+
+      var mariaList = [
+        { x: 0.34, y: 0.36, r: 95, dark: 96 },
+        { x: 0.48, y: 0.40, r: 80, dark: 102 },
+        { x: 0.60, y: 0.48, r: 85, dark: 94 },
+        { x: 0.24, y: 0.54, r: 105, dark: 105 },
+        { x: 0.75, y: 0.42, r: 65, dark: 100 },
+        { x: 0.12, y: 0.38, r: 60, dark: 108 },
+        { x: 0.86, y: 0.54, r: 72, dark: 102 }
+      ];
+
+      mariaList.forEach(function(m) {
+        var cx = m.x * w;
+        var cy = m.y * h;
+        for (var j = 0; j < 15; j++) {
+          var ox = cx + (rand() - 0.5) * m.r * 0.85;
+          var oy = cy + (rand() - 0.5) * m.r * 0.85;
+          var rad = m.r * (0.4 + rand() * 0.55);
+
+          var g = aCtx.createRadialGradient(ox, oy, rad * 0.1, ox, oy, rad);
+          g.addColorStop(0, 'rgba(' + m.dark + ',' + (m.dark - 4) + ',' + (m.dark + 6) + ', 0.28)');
+          g.addColorStop(0.7, 'rgba(' + (m.dark + 10) + ',' + (m.dark + 8) + ',' + (m.dark + 15) + ', 0.12)');
+          g.addColorStop(1, 'rgba(0,0,0,0)');
+          aCtx.fillStyle = g;
+          aCtx.beginPath();
+          aCtx.arc(ox, oy, rad, 0, Math.PI * 2);
+          aCtx.fill();
+        }
+      });
+
+      for (var k = 0; k < 850; k++) {
+        var kx = rand() * w;
+        var ky = (0.07 + rand() * 0.86) * h;
+        var kr = 1.4 + Math.pow(rand(), 3.2) * 32;
+
+        var bg = bCtx.createRadialGradient(kx, ky, kr * 0.1, kx, ky, kr * 1.2);
+        bg.addColorStop(0, 'rgba(35, 35, 35, 0.75)');
+        bg.addColorStop(0.7, 'rgba(60, 60, 60, 0.6)');
+        bg.addColorStop(0.86, 'rgba(235, 235, 235, 0.72)');
+        bg.addColorStop(1, 'rgba(128, 128, 128, 0)');
+        bCtx.fillStyle = bg;
+        bCtx.beginPath();
+        bCtx.arc(kx, ky, kr * 1.2, 0, Math.PI * 2);
+        bCtx.fill();
+
+        var ag = aCtx.createRadialGradient(kx, ky, kr * 0.2, kx, ky, kr * 1.1);
+        ag.addColorStop(0, 'rgba(130, 126, 138, 0.32)');
+        ag.addColorStop(0.8, 'rgba(225, 222, 232, 0.36)');
+        ag.addColorStop(1, 'rgba(0,0,0,0)');
+        aCtx.fillStyle = ag;
+        aCtx.beginPath();
+        aCtx.arc(kx, ky, kr * 1.1, 0, Math.PI * 2);
+        aCtx.fill();
+      }
+
+      var colorTex = new THREE.CanvasTexture(albedoCanvas);
+      colorTex.wrapS = THREE.RepeatWrapping;
+      colorTex.wrapT = THREE.ClampToEdgeWrapping;
+
+      var bumpTex = new THREE.CanvasTexture(bumpCanvas);
+      bumpTex.wrapS = THREE.RepeatWrapping;
+      bumpTex.wrapT = THREE.ClampToEdgeWrapping;
+
+      return { colorTex: colorTex, bumpTex: bumpTex };
+    }
+
+    function initMoon3D() {
+      var wrapper = document.getElementById('moon-webgl-wrapper');
+      if (!wrapper || wrapper.querySelector('canvas')) return;
+      var rect = wrapper.getBoundingClientRect();
+
+      moonScene = new THREE.Scene();
+      moonCamera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+      moonCamera.position.set(0, 0, 5.8);
+
+      moonRenderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
+      moonRenderer.setSize(rect.width || 170, rect.height || 170);
+      moonRenderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+      moonRenderer.toneMapping = THREE.ACESFilmicToneMapping;
+      moonRenderer.toneMappingExposure = 1.08;
+      wrapper.appendChild(moonRenderer.domElement);
+
+      var textures = createProceduralLunarTextures();
+
+      var geometry = new THREE.SphereGeometry(1.52, 64, 64);
+      var material = new THREE.MeshStandardMaterial({
+        map: textures.colorTex,
+        bumpMap: textures.bumpTex,
+        bumpScale: 0.048,
+        roughness: 0.86,
+        metalness: 0.05
+      });
+
+      moonMesh = new THREE.Mesh(geometry, material);
+      moonMesh.rotation.z = THREE.MathUtils.degToRad(11);
+      moonMesh.rotation.x = THREE.MathUtils.degToRad(6);
+      moonScene.add(moonMesh);
+
+      sunDirectionalLight = new THREE.DirectionalLight(0xf7eedc, 2.55);
+      moonScene.add(sunDirectionalLight);
+
+      earthshineAmbientLight = new THREE.AmbientLight(0x281e3a, 0.42);
+      moonScene.add(earthshineAmbientLight);
+
+      mysticRimLight = new THREE.DirectionalLight(0x9a75f0, 0.28);
+      mysticRimLight.position.set(-4, 3, -6);
+      moonScene.add(mysticRimLight);
+
+      var sanctuary = document.getElementById('moon-sanctuary');
+      if (sanctuary) {
+        sanctuary.addEventListener('click', function() {
+          speedBoost = 3.5;
+          triggerWitchFlight();
+        });
+      }
+    }
+
+    function updateMoonSeasonAndRotation(dt) {
+      if (!moonMesh || !moonRenderer || !moonScene || !moonCamera) return;
+
+      speedBoost += (1.0 - speedBoost) * 0.04;
+
+      moonMesh.rotation.y += dt * 0.085 * speedBoost;
+
+      var prevAngle = lunarCycleAngle;
+      lunarCycleAngle = (lunarCycleAngle + dt * 9.5 * speedBoost) % 360;
+
+      if (lunarCycleAngle < prevAngle) {
+        fullMoonWitchTriggeredInCycle = false;
+      }
+
+      if (!fullMoonWitchTriggeredInCycle && lunarCycleAngle >= 173 && lunarCycleAngle <= 192) {
+        fullMoonWitchTriggeredInCycle = true;
+        triggerWitchFlight();
+      }
+
+      if (isWitchFlying) {
+        sparkTimer += dt;
+        if (sparkTimer > 0.075) {
+          sparkTimer = 0;
+          spawnWitchStardust();
+        }
+      }
+
+      var rad = THREE.MathUtils.degToRad(lunarCycleAngle);
+
+      var sunRadius = 15;
+      var sunX = Math.sin(rad) * sunRadius;
+      var sunZ = -Math.cos(rad) * sunRadius;
+      var sunY = Math.cos(rad * 0.8) * 3.2;
+
+      sunDirectionalLight.position.set(sunX, sunY, sunZ);
+
+      var illuminationFactor = (1 - Math.cos(rad)) * 0.5;
+      var ambientHalo = document.getElementById('moon-ambient-halo');
+      var mysticCorona = document.getElementById('moon-mystic-corona');
+
+      if (ambientHalo && mysticCorona) {
+        ambientHalo.style.opacity = (0.35 + illuminationFactor * 0.65).toFixed(2);
+        mysticCorona.style.opacity = (0.3 + (1 - illuminationFactor) * 0.55).toFixed(2);
+      }
+
+      var sanctuary = document.getElementById('moon-sanctuary');
+      if (sanctuary) {
+        var moveX = -mouse.x * 8;
+        var moveY = -mouse.y * 8;
+        sanctuary.style.transform = 'translate3d(' + moveX + 'px, ' + moveY + 'px, 0)';
+      }
+
+      moonRenderer.render(moonScene, moonCamera);
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // BUCLE PRINCIPAL E INICIALIZACIÓN RESPONSIVA
+    // ──────────────────────────────────────────────────────────────────────────
+    var lastFrameTime = performance.now();
+
+    function animateLoop(now) {
+      if (window.__covenAnimFrame) {
+        cancelAnimationFrame(window.__covenAnimFrame);
+      }
+      window.__covenAnimFrame = requestAnimationFrame(animateLoop);
+
+      var dt = Math.min((now - lastFrameTime) / 1000, 0.1);
+      lastFrameTime = now;
+
+      renderStarfield(now * 0.001);
+      updateMoonSeasonAndRotation(dt);
+    }
+
+    window.addEventListener('resize', function() {
+      initStarfield();
+      if (moonRenderer) {
+        var wrapper = document.getElementById('moon-webgl-wrapper');
+        if (wrapper) {
+          var rect = wrapper.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) {
+            moonRenderer.setSize(rect.width, rect.height);
+          }
+        }
+      }
+    });
+
+    function startBackground() {
+      initStarfield();
+      var sanctuary = document.getElementById('moon-sanctuary');
+      if (sanctuary) {
+        initMoon3D();
+      }
+      lastFrameTime = performance.now();
+      animateLoop(lastFrameTime);
+    }
+
+    function checkThreeReady() {
+      if (typeof THREE !== 'undefined') {
+        startBackground();
+      } else {
+        var threeScript = document.querySelector('script[src*="three"]');
+        if (threeScript) {
+          threeScript.addEventListener('load', startBackground, { once: true });
+        } else {
+          var attempts = 0;
+          var poll = setInterval(function() {
+            attempts++;
+            if (typeof THREE !== 'undefined') {
+              clearInterval(poll);
+              startBackground();
+            } else if (attempts > 80) {
+              clearInterval(poll);
+            }
+          }, 50);
+        }
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkThreeReady, { once: true });
+    } else {
+      checkThreeReady();
+    }
+  })();
+</script>
+

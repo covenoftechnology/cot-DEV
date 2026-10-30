@@ -1,0 +1,51 @@
+---
+interface Props {
+  columns?: 2 | 3 | number;
+  gap?: string;
+}
+
+const { columns = 2, gap = '18px' } = Astro.props;
+---
+
+<div class={`cov-article-image-grid cols-${columns}`} style={`--grid-cols: ${columns}; --grid-gap: ${gap};`}>
+  <slot />
+</div>
+
+<style>
+  .cov-article-image-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--grid-cols, 2), 1fr);
+    gap: var(--grid-gap, 18px);
+    margin: 28px 0;
+    align-items: start;
+  }
+
+  @media (max-width: 640px) {
+    .cov-article-image-grid {
+      grid-template-columns: 1fr !important;
+      gap: 14px !important;
+    }
+  }
+
+  .cov-article-image-grid :global(img) {
+    width: 100%;
+    height: auto;
+    border-radius: 6px;
+    border: 1px solid rgba(216, 181, 107, 0.16);
+    display: block;
+    box-sizing: border-box;
+  }
+
+  .cov-article-image-grid :global(figure) {
+    margin: 0;
+  }
+
+  .cov-article-image-grid :global(figcaption) {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    color: #8f857a;
+    text-align: center;
+    margin-top: 6px;
+    font-style: italic;
+  }
+</style>

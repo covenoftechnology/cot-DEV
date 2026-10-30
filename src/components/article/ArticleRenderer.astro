@@ -1,0 +1,82 @@
+---
+import '../../articles/_template/article.css';
+import ArticleBlockRenderer from './ArticleBlockRenderer.astro';
+import type { ArticleDocument, ArticleSection, ArticleBlock } from '../../types/article-document';
+
+interface Props {
+  document: ArticleDocument;
+}
+
+const { document: doc } = Astro.props;
+
+if (!doc || !doc.sections) {
+  throw new Error('[ArticleRenderer Error] Invalid ArticleDocument provided.');
+}
+
+function slugify(text: string): string {
+  return (text || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+---
+
+<div class="article-template">
+  {doc.sections.map((section: ArticleSection, sIndex: number) => {
+    const sectionId = slugify(section.title) || `section-${sIndex + 1}`;
+    const sectionTitle = (typeof section.title === 'string' ? section.title.trim() : '') ||
+                         (typeof section.heading === 'string' ? section.heading.trim() : '');
+    return (
+      <section id={sectionId} class="article-section" data-toc-title={section.title}>
+        {section.kicker && <div class="section-kicker">{section.kicker}</div>}
+        {sectionTitle && <h2 class="article-section-title">{sectionTitle}</h2>}
+
+        {section.blocks.map((block: ArticleBlock, bIndex: number) => (
+          <ArticleBlockRenderer block={block} sIndex={sIndex} bIndex={bIndex} doc={doc} />
+        ))}
+      </section>
+    );
+  })}
+</div>
+
+<style is:global>
+  .article-template .article-rich-link {
+    color: #e8cf95;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .article-template .article-rich-link:hover {
+    color: #f3ecdf;
+  }
+  .article-template .article-rich-link--gold {
+    color: #e8cf95;
+  }
+  .article-template .article-rich-link--gold:hover {
+    color: #f3ecdf;
+  }
+  .article-template .article-rich-link--purple {
+    color: #b98fd8;
+  }
+  .article-template .article-rich-link--purple:hover {
+    color: #d5b2ee;
+  }
+  .article-template .article-rich-link--parchment {
+    color: #ece6dd;
+  }
+  .article-template .article-rich-link--parchment:hover {
+    color: #ffffff;
+  }
+  .article-template .article-rich-link--muted {
+    color: #8f857a;
+  }
+  .article-template .article-rich-link--muted:hover {
+    color: #cdc3b6;
+  }
+  .article-template .article-rich-link u {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+</style>

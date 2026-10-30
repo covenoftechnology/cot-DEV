@@ -1,18 +1,25 @@
 ---
-// Temporal compatibility: redirect /article to the migrated article
+import { getPublishedArticles } from '../lib/articles';
+
+const articles = getPublishedArticles();
+const firstArticle = articles.length > 0 ? articles[0] : null;
+
+const targetUrl = firstArticle ? `/article/${firstArticle.slug}` : '/library';
+const targetTitle = firstArticle ? firstArticle.meta.title : 'The Grimoire';
 ---
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta http-equiv="refresh" content="0;url=/article/apex-triggers-without-tears" />
-  <link rel="canonical" href="/article/apex-triggers-without-tears" />
-  <title>Redirecting to Article...</title>
-  <script is:inline>
-    window.location.replace('/article/apex-triggers-without-tears');
+  <meta http-equiv="refresh" content={`0;url=${targetUrl}`} />
+  <link rel="canonical" href={targetUrl} />
+  <title>Redirecting...</title>
+  <script is:inline define:vars={{ targetUrl }}>
+    window.location.replace(targetUrl);
   </script>
 </head>
-<body style="background:#08060e;color:#ece6dd;font-family:'EB Garamond',serif;display:flex;align-items:center;justify-content:center;min-height:100vh;">
-  <p>Redirecting to <a href="/article/apex-triggers-without-tears" style="color:#d8b56b;">The Apex Incantation: Triggers Without Tears</a>...</p>
+<body style="background:#08060e;color:#ece6dd;font-family:var(--font-body, 'Helvetica Neue Roman', serif);display:flex;align-items:center;justify-content:center;min-height:100vh;">
+  <p>Redirecting to <a href={targetUrl} style="color:#d8b56b;">{targetTitle}</a>...</p>
 </body>
 </html>
+

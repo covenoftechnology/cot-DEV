@@ -1,0 +1,384 @@
+---
+interface Answer {
+  id: string;
+  text: string;
+  correct: boolean;
+}
+
+interface Question {
+  id: string;
+  question: string;
+  answers: Answer[];
+  explanation?: string;
+}
+
+interface Props {
+  aetherReward?: number | string;
+  rank?: string;
+  title?: string;
+  description?: string;
+  intro?: string;
+  buttonText?: string;
+  quizUrl?: string;
+  questions?: Question[];
+  slug?: string;
+}
+
+const {
+  aetherReward = 120,
+  rank = 'Mechanic',
+  title = "You've reached the trial",
+  description,
+  intro,
+  buttonText = 'BEGIN THE TRIAL',
+  quizUrl = '/quiz',
+  questions = [],
+  slug = 'scroll-trial',
+} = Astro.props;
+
+function cleanHtml(input: any): string {
+  const str = (typeof input === 'object' && input !== null) ? (input.text || input.content || '') : (typeof input === 'string' ? input : '');
+  if (!str) return '';
+  return str
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/\sstyle="[^"]*"/gi, '')
+    .replace(/javascript:/gi, '')
+    .replace(/vbscript:/gi, '')
+    .replace(/data:/gi, '');
+}
+
+const defaultDesc = `Prove your mastery to claim ✦ ${aetherReward} Aether and advance toward ${rank}.`;
+const displayDesc = description || intro || defaultDesc;
+const rawQuestions = Array.isArray(questions) ? questions : [];
+const trialId = `trial-${Math.random().toString(36).substring(2, 8)}`;
+---
+
+<div class="cov-banner cov-article-trial" id={trialId} style="margin:40px auto 48px;width:100%;border:1px solid rgba(216,181,107,.18);border-radius:8px;padding:36px clamp(16px, 4vw, 36px);text-align:center;background:radial-gradient(500px 220px at 50% 0%,rgba(139,92,196,.18),transparent 70%),#100d16;position:relative;z-index:1;overflow:hidden;box-shadow:0 8px 32px rgba(0,0,0,0.45)">
+
+  <!-- 1. Initial State: Canonical Banner -->
+  <div class="trial-initial-view">
+    <div style="font-size:24px;color:#d8b56b;margin-bottom:12px;filter:drop-shadow(0 0 10px rgba(216,181,107,.35))">✦</div>
+    <h3 style="font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:clamp(22px, 4vw, 28px);color:#f3ecdf;margin:0 0 10px;letter-spacing:1.2px"><Fragment set:html={cleanHtml(title)} /></h3>
+    <p style="font-family:var(--font-body, 'EB Garamond', serif);font-size:17px;line-height:1.6;color:#b3a99d;margin:0 auto 28px;max-width:560px"><Fragment set:html={cleanHtml(displayDesc)} /></p>
+    <button type="button" class="trial-start-btn" style="display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:14px 34px;border-radius:4px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, 'Metamorphous', serif);font-weight:600;font-size:14px;letter-spacing:1.5px;box-shadow:0 0 28px rgba(216,181,107,.32);cursor:border:none;transition:all 0.2s ease">
+      <span>{buttonText}</span>
+      <span>✦</span>
+    </button>
+  </div>
+
+  <!-- 2. Interactive In-place Trial Engine (Only active when questions exist) -->
+  {rawQuestions.length > 0 && (
+    <div class="trial-interactive-view" style="display:none;text-align:left">
+      <!-- Progress Bar & Top Meta -->
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;font-family:var(--font-mono, 'IBM Plex Mono', monospace);font-size:12px">
+        <span class="trial-step-badge" style="color:#b98fd8;letter-spacing:1px">QUESTION 1 OF {rawQuestions.length}</span>
+        <span style="color:#e8cf95">✦ {aetherReward} Aether at stake</span>
+      </div>
+      <div class="trial-progress-segments" style="display:flex;gap:6px;margin-bottom:28px">
+        {rawQuestions.map((_, idx) => (
+          <div class={`trial-progress-seg seg-${idx}`} style="flex:1;height:3px;background:rgba(216,181,107,0.18);border-radius:2px;transition:background 0.25s ease"></div>
+        ))}
+      </div>
+
+      <!-- Question Card Container -->
+      <div class="trial-question-container">
+        {rawQuestions.map((q, qIdx) => (
+          <div class={`trial-q-slide q-slide-${qIdx}`} style={qIdx === 0 ? 'display:block' : 'display:none'} data-q-index={qIdx}>
+            <div style="text-align:center;margin-bottom:24px">
+              <div style="font-size:22px;color:#b98fd8;margin-bottom:10px">✷</div>
+              <h4 style="font-family:var(--font-display, 'Cinzel', serif);font-weight:600;font-size:clamp(18px, 3.5vw, 24px);line-height:1.35;color:#f3ecdf;margin:0 0 8px"><Fragment set:html={cleanHtml(q.question)} /></h4>
+            </div>
+
+            <!-- Options Grid -->
+            <div class="trial-options-grid" style="display:grid;grid-template-columns:repeat(auto-fit, minmax(260px, 1fr));gap:12px;margin-bottom:20px">
+              {q.answers.map((ans, aIdx) => {
+                const letters = ['A', 'B', 'C', 'D', 'E', 'F'];
+                const letter = letters[aIdx] || String(aIdx + 1);
+                return (
+                  <button type="button" class="trial-opt-btn" data-correct={ans.correct ? 'true' : 'false'} data-opt-id={ans.id} style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-radius:6px;border:1px solid rgba(216,181,107,0.18);background:#15121c;color:#cdc3b6;cursor:pointer;text-align:left;font-family:var(--font-body, 'EB Garamond', serif);font-size:16px;line-height:1.4;transition:all 0.2s ease">
+                    <span class="opt-letter" style="width:26px;height:26px;border-radius:50%;border:1px solid rgba(216,181,107,0.3);display:flex;align-items:center;justify-content:center;font-family:var(--font-mono, monospace);font-size:11px;color:#d8b56b;flex-shrink:0">{letter}</span>
+                    <span class="opt-text" style="flex:1"><Fragment set:html={cleanHtml(ans.text)} /></span>
+                    <span class="opt-mark" style="font-size:16px;opacity:0">●</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <!-- Optional Explanation (revealed after submitting answer) -->
+            {q.explanation && (
+              <div class="trial-explanation-box" style="display:none;background:rgba(185,143,216,0.08);border:1px solid rgba(185,143,216,0.25);border-radius:6px;padding:14px 18px;margin-bottom:20px">
+                <div style="font-family:var(--font-mono, monospace);font-size:11px;color:#d8b56b;letter-spacing:1px;margin-bottom:4px">EXPLANATION</div>
+                <div style="font-family:var(--font-body, serif);font-size:15px;color:#cdc3b6;line-height:1.5"><Fragment set:html={cleanHtml(q.explanation)} /></div>
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <!-- Action Bar -->
+      <div style="display:flex;justify-content:space-between;align-items:center;padding-top:16px;border-top:1px solid rgba(216,181,107,0.12)">
+        <span style="font-family:var(--font-body, serif);font-size:14px;color:#8f857a">Select an answer to prove your understanding.</span>
+        <button type="button" class="trial-primary-action" disabled style="padding:10px 24px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);color:#221809;font-family:var(--font-display, serif);font-size:12px;font-weight:600;letter-spacing:1px;border:none;cursor:pointer;opacity:0.45;transition:all 0.2s ease">
+          Confirm Answer
+        </button>
+      </div>
+    </div>
+  )}
+
+  <!-- 3. Final State: Result Screen -->
+  {rawQuestions.length > 0 && (
+    <div class="trial-result-view" style="display:none;text-align:center;padding:12px 0">
+      <div class="result-icon" style="font-size:36px;color:#d8b56b;margin-bottom:12px">✦</div>
+      <h3 class="result-title" style="font-family:var(--font-display, serif);font-size:26px;color:#f3ecdf;margin:0 0 10px">TRIAL MASTERED</h3>
+      <p class="result-desc" style="font-family:var(--font-body, serif);font-size:17px;color:#cdc3b6;max-width:520px;margin:0 auto 24px;line-height:1.6">
+        You have answered all inquiries correctly. Claim your <strong style="color:#e8cf95">✦ {aetherReward} Aether</strong> and ascend the ranks of the Coven.
+      </p>
+      <div class="result-actions" style="display:flex;justify-content:center;gap:12px">
+        <button type="button" class="trial-retry-btn" style="display:none;padding:10px 24px;border-radius:3px;background:#181322;border:1px solid rgba(216,181,107,0.3);color:#e8cf95;font-family:var(--font-display, serif);font-size:12px;cursor:pointer">
+          ✦ Retry Trial
+        </button>
+        <button type="button" class="trial-close-btn" style="padding:10px 24px;border-radius:3px;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:none;color:#1a1205;font-family:var(--font-display, serif);font-size:12px;font-weight:600;cursor:pointer">
+          ✓ Seal Scroll
+        </button>
+      </div>
+    </div>
+  )}
+
+</div>
+
+<script define:vars={{ trialId, questionsCount: rawQuestions.length, aetherReward, rank, slug }}>
+  (function() {
+    var container = document.getElementById(trialId);
+    if (!container) return;
+
+    var initialView = container.querySelector('.trial-initial-view');
+    var interactiveView = container.querySelector('.trial-interactive-view');
+    var resultView = container.querySelector('.trial-result-view');
+    var startBtn = container.querySelector('.trial-start-btn');
+
+    if (!interactiveView) {
+      // Legacy banner without questions
+      if (startBtn) {
+        startBtn.addEventListener('click', function() {
+          window.location.href = '/quiz';
+        });
+      }
+      return;
+    }
+
+    var currentQIndex = 0;
+    var selectedOpt = null;
+    var isSubmitted = false;
+    var correctScore = 0;
+
+    var primaryBtn = container.querySelector('.trial-primary-action');
+    var stepBadge = container.querySelector('.trial-step-badge');
+    var retryBtn = container.querySelector('.trial-retry-btn');
+    var closeBtn = container.querySelector('.trial-close-btn');
+
+    // Start Button Click -> Expand In-Place Assessment
+    startBtn.addEventListener('click', function() {
+      initialView.style.display = 'none';
+      interactiveView.style.display = 'block';
+      showQuestion(0);
+    });
+
+    function updateSegments(activeIdx) {
+      for (var i = 0; i < questionsCount; i++) {
+        var seg = container.querySelector('.seg-' + i);
+        if (!seg) continue;
+        if (i < activeIdx) {
+          seg.style.background = '#81c784'; // passed
+        } else if (i === activeIdx) {
+          seg.style.background = '#d8b56b'; // current
+        } else {
+          seg.style.background = 'rgba(216,181,107,0.18)';
+        }
+      }
+    }
+
+    function showQuestion(idx) {
+      currentQIndex = idx;
+      selectedOpt = null;
+      isSubmitted = false;
+
+      // Update Slides
+      var slides = container.querySelectorAll('.trial-q-slide');
+      slides.forEach(function(s, i) {
+        s.style.display = i === idx ? 'block' : 'none';
+      });
+
+      // Reset options styling in this slide
+      var currentSlide = container.querySelector('.q-slide-' + idx);
+      if (currentSlide) {
+        var opts = currentSlide.querySelectorAll('.trial-opt-btn');
+        opts.forEach(function(b) {
+          b.style.borderColor = 'rgba(216,181,107,0.18)';
+          b.style.background = '#15121c';
+          b.style.color = '#cdc3b6';
+          var mark = b.querySelector('.opt-mark');
+          if (mark) mark.style.opacity = '0';
+        });
+        var exp = currentSlide.querySelector('.trial-explanation-box');
+        if (exp) exp.style.display = 'none';
+      }
+
+      // Update Step text
+      if (stepBadge) {
+        stepBadge.textContent = 'QUESTION ' + (idx + 1) + ' OF ' + questionsCount;
+      }
+      updateSegments(idx);
+
+      // Reset button
+      if (primaryBtn) {
+        primaryBtn.disabled = true;
+        primaryBtn.style.opacity = '0.45';
+        primaryBtn.textContent = 'Confirm Answer';
+      }
+    }
+
+    // Option Selection
+    container.addEventListener('click', function(e) {
+      var optBtn = e.target.closest('.trial-opt-btn');
+      if (!optBtn || isSubmitted) return;
+
+      var currentSlide = container.querySelector('.q-slide-' + currentQIndex);
+      if (!currentSlide || !currentSlide.contains(optBtn)) return;
+
+      // Deselect siblings
+      var siblings = currentSlide.querySelectorAll('.trial-opt-btn');
+      siblings.forEach(function(s) {
+        s.style.borderColor = 'rgba(216,181,107,0.18)';
+        s.style.background = '#15121c';
+        var m = s.querySelector('.opt-mark');
+        if (m) m.style.opacity = '0';
+      });
+
+      // Select clicked
+      selectedOpt = optBtn;
+      optBtn.style.borderColor = '#d8b56b';
+      optBtn.style.background = 'rgba(216,181,107,0.12)';
+      var mark = optBtn.querySelector('.opt-mark');
+      if (mark) {
+        mark.textContent = '●';
+        mark.style.color = '#d8b56b';
+        mark.style.opacity = '1';
+      }
+
+      // Enable Primary Button
+      if (primaryBtn) {
+        primaryBtn.disabled = false;
+        primaryBtn.style.opacity = '1';
+      }
+    });
+
+    // Primary Button (Confirm -> Next)
+    if (primaryBtn) {
+      primaryBtn.addEventListener('click', function() {
+        if (!selectedOpt) return;
+
+        if (!isSubmitted) {
+          // 1. Submit current answer
+          isSubmitted = true;
+          var isCorrect = selectedOpt.getAttribute('data-correct') === 'true';
+          if (isCorrect) correctScore++;
+
+          var currentSlide = container.querySelector('.q-slide-' + currentQIndex);
+          if (currentSlide) {
+            // Highlight options
+            var opts = currentSlide.querySelectorAll('.trial-opt-btn');
+            opts.forEach(function(o) {
+              var optCorrect = o.getAttribute('data-correct') === 'true';
+              var mark = o.querySelector('.opt-mark');
+              if (optCorrect) {
+                o.style.borderColor = '#81c784';
+                o.style.background = 'rgba(76,175,80,0.12)';
+                if (mark) {
+                  mark.textContent = '✓';
+                  mark.style.color = '#81c784';
+                  mark.style.opacity = '1';
+                }
+              } else if (o === selectedOpt && !isCorrect) {
+                o.style.borderColor = '#e57373';
+                o.style.background = 'rgba(244,67,54,0.12)';
+                if (mark) {
+                  mark.textContent = '✕';
+                  mark.style.color = '#e57373';
+                  mark.style.opacity = '1';
+                }
+              }
+            });
+
+            // Reveal Explanation
+            var exp = currentSlide.querySelector('.trial-explanation-box');
+            if (exp) exp.style.display = 'block';
+          }
+
+          // Advance button state
+          if (currentQIndex < questionsCount - 1) {
+            primaryBtn.textContent = 'Next Question ➔';
+          } else {
+            primaryBtn.textContent = 'Complete Trial ✦';
+          }
+        } else {
+          // 2. Next question or finish
+          if (currentQIndex < questionsCount - 1) {
+            showQuestion(currentQIndex + 1);
+          } else {
+            finishTrial();
+          }
+        }
+      });
+    }
+
+    function finishTrial() {
+      interactiveView.style.display = 'none';
+      resultView.style.display = 'block';
+
+      var titleEl = resultView.querySelector('.result-title');
+      var descEl = resultView.querySelector('.result-desc');
+      var iconEl = resultView.querySelector('.result-icon');
+
+      var passed = correctScore === questionsCount;
+
+      if (passed) {
+        try {
+          localStorage.setItem('coven_trial_passed_' + slug, 'true');
+        } catch (e) {}
+
+        iconEl.textContent = '✦';
+        iconEl.style.color = '#d8b56b';
+        titleEl.textContent = 'TRIAL MASTERED';
+        descEl.innerHTML = 'You answered all ' + questionsCount + ' inquiries with flawless precision. Claim your <strong style="color:#e8cf95">✦ ' + aetherReward + ' Aether</strong> and ascend toward <strong>' + rank + '</strong>.';
+        if (retryBtn) retryBtn.style.display = 'none';
+        if (closeBtn) closeBtn.textContent = '✓ Seal Scroll';
+      } else {
+        iconEl.textContent = '⚠';
+        iconEl.style.color = '#ffb74d';
+        titleEl.textContent = 'TRIAL INCOMPLETE';
+        descEl.textContent = 'You answered ' + correctScore + ' of ' + questionsCount + ' inquiries correctly. Review the scroll doctrine and re-attempt the assessment.';
+        if (retryBtn) retryBtn.style.display = 'inline-block';
+        if (closeBtn) closeBtn.textContent = 'Return to Scroll';
+      }
+    }
+
+    if (retryBtn) {
+      retryBtn.addEventListener('click', function() {
+        correctScore = 0;
+        resultView.style.display = 'none';
+        interactiveView.style.display = 'block';
+        showQuestion(0);
+      });
+    }
+
+    if (closeBtn) {
+      closeBtn.addEventListener('click', function() {
+        resultView.style.display = 'none';
+        initialView.style.display = 'block';
+      });
+    }
+  })();
+</script>

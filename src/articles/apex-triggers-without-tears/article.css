@@ -1,0 +1,22 @@
+/**
+ * Specific styles for "The Apex Incantation: Triggers Without Tears"
+ */
+
+.apex-illustration {
+  height: clamp(160px, 35vw, 240px);
+  border-radius: 6px;
+  background: repeating-linear-gradient(135deg, rgba(216, 181, 107, 0.08) 0 12px, rgba(216, 181, 107, 0.02) 12px 24px);
+  border: 1px solid rgba(216, 181, 107, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 12px;
+  color: #8a7f70;
+  margin-bottom: 40px;
+}
+
+.code-comment {
+  color: #8a7f70;
+  font-style: italic;
+}

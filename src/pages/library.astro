@@ -1,206 +1,164 @@
 ---
-import { getCollection } from 'astro:content';
+import { getPublishedStudioArticles } from '../lib/articles';
+import { ARTICLE_CATEGORIES } from '../lib/article-taxonomy';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
-const publishedPosts = await getCollection('blog', ({ data }) => data.status === 'published');
-publishedPosts.sort((a, b) => (a.data.order ?? 99) - (b.data.order ?? 99));
+const publishedArticles = getPublishedStudioArticles();
+const SHOW_HEADER_RANK_UI = false;
 
-const collectionLibraryCardsHtml = publishedPosts.map(post => {
-  const tag = (post.data.tags && post.data.tags.length > 0)
-    ? post.data.tags[0].toUpperCase()
-    : (post.data.category || '').toUpperCase();
-  const rank = post.data.rank || 'Mechanic';
-  const thumbBg = post.data.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+// Dynamic category discovery strictly from visible published Studio articles
+const representedCatsMap = new Map<string, string>(); // lowercase -> display name
+for (const article of publishedArticles) {
+  const cat = (article.meta.category || '').trim();
+  if (cat) {
+    const lower = cat.toLowerCase();
+    if (!representedCatsMap.has(lower)) {
+      representedCatsMap.set(lower, cat);
+    }
+  }
+}
 
-  const cat = (post.data.category || '').toLowerCase();
-  const tags = (post.data.tags || []).map(t => String(t).toLowerCase());
+// Order: Canonical categories in canonical order first, then custom categories alphabetically
+const canonicalRepresented: string[] = [];
+for (const c of ARTICLE_CATEGORIES) {
+  const lower = c.toLowerCase();
+  if (representedCatsMap.has(lower)) {
+    canonicalRepresented.push(representedCatsMap.get(lower)!);
+    representedCatsMap.delete(lower);
+  }
+}
 
-  const matchesApexOrFlow = cat === 'apex' || cat === 'flow' || tags.includes('apex') || tags.includes('flow');
-  const matchesMentorship = cat === 'mentorship' || cat === 'mentor' || tags.includes('mentorship') || tags.includes('mentor');
-  const matchesBA = cat === 'business analysis' || cat === 'ba' || tags.includes('business analysis') || tags.includes('ba');
+const customRepresented = Array.from(representedCatsMap.values())
+  .sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
-  let filterCond = 'isFilterAll';
-  if (matchesApexOrFlow) filterCond = 'showApexCards';
-  else if (matchesMentorship) filterCond = 'showMentorshipCards';
-  else if (matchesBA) filterCond = 'showBaCards';
+const allFilterCategories = ['All scrolls', ...canonicalRepresented, ...customRepresented];
 
-  return `
-    <sc-if value="{{ ${filterCond} }}" hint-placeholder-val="{{ true }}">
-      <div data-category="${post.data.category}" data-tags="${(post.data.tags || []).join(',')}" data-tag="${tag}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
-        <a href="/article/${post.id}" style="text-decoration:none;color:inherit;display:block">
-          <div style="height:120px;background:${thumbBg};border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-          <div style="padding:20px">
-            <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-              <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">${tag}</span>
-              <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">${rank}</span>
-            </div>
-            <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">${post.data.title}</h3>
-            <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">${post.data.description}</p>
-            <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-              <div style="width:65%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-              <span>Scroll unrolled</span>
-              <span style="color:#e8cf95">Read →</span>
-            </div>
-          </div>
-        </a>
-      </div>
-    </sc-if>
-  `;
+const headerRankUiHtml = `
+      <div class="cov-header-desktop-cta" style="text-align:right">
+        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;letter-spacing:1px">{{ navRankLabel }}</div>
+        <div style="width:120px;height:4px;border-radius:3px;background:rgba(216,181,107,.14);margin-top:5px">
+          <div style="{{ navAetherBarStyle }}"></div>
+        </div>
+      </div>`;
+
+const filterButtonsHtml = allFilterCategories.map((label, idx) => {
+  const isAll = idx === 0;
+  const filterKey = (isAll ? 'all' : label.toLowerCase().trim()).replace(/"/g, '&quot;');
+  const activeStyle = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+  const inactiveStyle = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+  return `<div class="cov-filter-chip" data-filter="${filterKey}" style="${isAll ? activeStyle : inactiveStyle}">${label}</div>`;
 }).join('\n');
+
+const collectionLibraryCardsHtml = publishedArticles.length > 0
+  ? publishedArticles.map(article => {
+      const { slug, meta } = article;
+      const categoryBadge = (meta.category || '').toUpperCase();
+      const difficultyOrRank = meta.difficulty || meta.rank || '';
+      const thumbBg = meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
+      const coverSrc = meta.coverImageSrc || meta.cover;
+      const coverAlt = meta.coverImageAlt || meta.title || '';
+      const headerVisualHtml = coverSrc
+        ? `<img src="${coverSrc}" alt="${coverAlt.replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;" />`
+        : `[ scroll · 560×280 ]`;
+      const safeCategory = (meta.category || '').trim().toLowerCase().replace(/"/g, '&quot;');
+      const safeTags = (Array.isArray(meta.tags) ? meta.tags : []).map(t => String(t || '').trim()).filter(Boolean).join(',').toLowerCase().replace(/"/g, '&quot;');
+      const safeTitle = (meta.title || '').trim().replace(/"/g, '&quot;');
+      const safeDesc = (meta.description || '').trim().replace(/"/g, '&quot;');
+
+      return `
+        <div class="cov-library-card" data-category="${safeCategory}" data-tags="${safeTags}" data-title="${safeTitle}" data-desc="${safeDesc}" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer;min-width:0" style-hover="border:1px solid rgba(216,181,107,.4)">
+          <a href="/article/${slug}" style="text-decoration:none;color:inherit;display:block">
+            <div style="height:120px;background:${thumbBg};border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70;overflow:hidden;">
+              ${headerVisualHtml}
+            </div>
+            <div style="padding:20px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:12px">
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">${categoryBadge}</span>
+                <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">${difficultyOrRank}</span>
+              </div>
+              <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">${meta.title}</h3>
+              <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">${meta.description}</p>
+              <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
+                <div style="width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
+              </div>
+              <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
+                <span>${meta.readingTime || meta.meta || 'Scroll unrolled'}</span>
+                <span style="color:#e8cf95">Study scroll →</span>
+              </div>
+            </div>
+          </a>
+        </div>
+      `;
+    }).join('\n')
+  : `
+    <div id="cov-library-empty" style="grid-column: 1 / -1; text-align: center; padding: 72px 24px; border: 1px dashed rgba(216,181,107,.18); border-radius: 8px; background: rgba(21,18,28,.4); margin: 20px 0;">
+      <div style="font-size: 28px; color: #d8b56b; margin-bottom: 14px; opacity: 0.85;">✦</div>
+      <h2 style="font-family: Cinzel, serif; font-size: 20px; font-weight: 600; color: #ece6dd; letter-spacing: 2px; margin: 0 0 10px; text-transform: uppercase;">No Scrolls Have Been Unsealed Yet</h2>
+      <p style="font-family: 'EB Garamond', serif; font-size: 16px; color: #9b9189; max-width: 440px; margin: 0 auto; line-height: 1.5;">Published scrolls created through Article Studio will appear here.</p>
+    </div>
+  `;
 
 const libraryHtml = `<!-- ═══════════════════════════════════════════════════════════════
   SPELL BOOK (LIBRARY)
-  Edit scroll cards in CONTENT.libraryScrolls.
-  Active scrolls: set progress (0–100), statusLabel, cta.
-  Locked scrolls: set locked:true and lockNote.
+  Dynamic Coven Article Studio published catalog.
 ════════════════════════════════════════════════════════════════ -->
 <sc-if value="{{ isLibrary }}" hint-placeholder-val="{{ true }}">
-<div style="position:relative;overflow:hidden;background:radial-gradient(1100px 640px at 50% -14%,rgba(124,77,196,.40),transparent 58%),radial-gradient(720px 520px at 16% 2%,rgba(86,58,150,.32),transparent 60%),radial-gradient(640px 460px at 86% 10%,rgba(170,128,224,.24),transparent 62%),#08060e">
+<div class="cov-library-page" style="position:relative;overflow:hidden;background:transparent">
   <div style="position:absolute;top:64px;left:0;right:0;height:260px;z-index:0;pointer-events:none">
     <div style="position:absolute;top:34px;right:6%;width:50px;height:50px;border-radius:50%;background:radial-gradient(circle at 38% 36%,#efe7d2,#cdbfae 58%,#6f6450);box-shadow:0 0 40px rgba(214,208,236,.38),inset -7px -5px 12px rgba(40,30,60,.55);opacity:.42;animation:covFloat 9s ease-in-out infinite"></div>
     <div style="position:absolute;top:30px;left:28%;width:3px;height:3px;border-radius:50%;background:#c9b8ff;box-shadow:0 0 10px 2px rgba(201,184,255,.7);animation:covTwinkle 4s infinite"></div>
     <div style="position:absolute;top:96px;left:16%;width:2px;height:2px;border-radius:50%;background:#e8cf95;box-shadow:0 0 8px 2px rgba(232,207,149,.5);animation:covTwinkle 3.4s .6s infinite"></div>
     <div style="position:absolute;top:150px;right:24%;width:3px;height:3px;border-radius:50%;background:#d6d0ec;box-shadow:0 0 9px 2px rgba(214,208,236,.6);animation:covTwinkle 5s .3s infinite"></div>
   </div>
-  <header style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:2">
-    <div onclick="{{ toLanding }}" style="display:flex;align-items:center;gap:13px;cursor:pointer">
-      <div style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
-      <div style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
+  <header class="cov-header" style="display:flex;align-items:center;justify-content:space-between;padding:18px 48px;border-bottom:1px solid rgba(216,181,107,.12);position:relative;z-index:10">
+    <div onclick="{{ toLanding }}" class="cov-brand" style="display:flex;align-items:center;gap:13px;cursor:pointer">
+      <div class="cov-brand-logo" style="width:36px;height:36px;border-radius:50%;border:1px solid #d8b56b;display:flex;align-items:center;justify-content:center;color:#d8b56b;font-size:16px;background:#0b0a0e;box-shadow:inset 0 0 12px rgba(216,181,107,.18)">✶</div>
+      <div class="cov-brand-text" style="font-family:Cinzel,serif;font-size:14px;font-weight:600;letter-spacing:2px;color:#ece6dd">{{ brand.name }}</div>
     </div>
-    <nav style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
+    <nav class="cov-nav-desktop" style="display:flex;gap:16px;font-family:'EB Garamond',serif;font-size:13px;color:#c5b9a8;white-space:nowrap">
       <span onclick="{{ toLibrary }}" style="color:#e8cf95;cursor:pointer">Spell Book</span>
       <span onclick="{{ toMemes }}" style="cursor:pointer">Grimoire of Memes</span>
-      <sc-if value="{{ loggedIn }}" hint-placeholder-val="{{ false }}"><span onclick="{{ toProfile }}" style="cursor:pointer">About Me</span></sc-if>
+      <span onclick="{{ toAbout }}" style="cursor:pointer">About Me</span>
       <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
     </nav>
     <div style="display:flex;align-items:center;gap:14px">
-      <div style="text-align:right">
-        <div style="font-family:'EB Garamond',serif;font-size:13px;color:#8f857a;letter-spacing:1px">{{ navRankLabel }}</div>
-        <div style="width:120px;height:4px;border-radius:3px;background:rgba(216,181,107,.14);margin-top:5px">
-          <div style="{{ navAetherBarStyle }}"></div>
-        </div>
-      </div>
+      ${SHOW_HEADER_RANK_UI ? headerRankUiHtml : ''}
       <div onclick="{{ toProfile }}" style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px;cursor:pointer">{{ profileInitial }}</div>
+      <button class="cov-mobile-toggle" aria-label="Toggle navigation menu" type="button">☰</button>
+    </div>
+    <div class="cov-mobile-drawer">
+      <span onclick="{{ toLanding }}">The Sanctuary (Home)</span>
+      <span onclick="{{ toLibrary }}" style="color:#e8cf95">Spell Book</span>
+      <span onclick="{{ toMemes }}">Grimoire of Memes</span>
+      <span onclick="{{ toAbout }}">About Me</span>
+      <span onclick="{{ toTerms }}">Mystic Terms &amp; Privacy</span>
     </div>
   </header>
 
-  <div style="padding:46px 48px 18px;position:relative;z-index:1">
+  <div class="cov-section-pad" style="padding:46px 48px 18px;position:relative;z-index:1">
     <div style="font-family:'EB Garamond',serif;letter-spacing:4px;text-transform:uppercase;font-size:12px;color:#b98fd8;margin-bottom:10px">☽ The Grimoire</div>
-    <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:42px;color:#f3ecdf;margin:0 0 10px">Scrolls of the craft</h1>
-    <p style="font-family:'EB Garamond',serif;font-size:18px;color:#9b9189;margin:0;max-width:560px">Study each scroll, then face its trial to claim your Aether. Some remain sealed until you rise in rank.</p>
+    <h1 style="font-family:Cinzel,serif;font-weight:700;font-size:clamp(28px,6vw,42px);color:#f3ecdf;margin:0 0 10px">Scrolls of the craft</h1>
+    <p style="font-family:'EB Garamond',serif;font-size:clamp(16px,4vw,18px);color:#9b9189;margin:0;max-width:560px">Study each scroll, then face its trial to claim your Aether. Some remain sealed until you rise in rank.</p>
   </div>
 
-  <div style="display:flex;align-items:center;justify-content:space-between;padding:24px 48px 26px;gap:20px;position:relative;z-index:1">
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <div onclick="{{ setFilterAll }}" style="{{ filterAllStyle }}">All scrolls</div>
-      <div onclick="{{ setFilterApex }}" style="{{ filterApexStyle }}">Apex &amp; Flow</div>
-      <div onclick="{{ setFilterMentorship }}" style="{{ filterMentorshipStyle }}">Mentorship</div>
-      <div onclick="{{ setFilterBA }}" style="{{ filterBAStyle }}">Business Analysis</div>
+  <div class="cov-section-pad cov-flex-stack" style="display:flex;align-items:center;justify-content:space-between;padding:24px 48px 26px;gap:20px;position:relative;z-index:1">
+    <div style="display:flex;gap:10px;flex-wrap:wrap" id="library-filter-chips-container">
+      ${filterButtonsHtml}
     </div>
-    <div style="font-family:'EB Garamond',serif;font-size:14px;color:#8f857a;border:1px solid rgba(216,181,107,.18);padding:8px 16px;border-radius:6px;display:flex;gap:10px;align-items:center;min-width:200px">
-      <span style="color:#d8b56b">⌕</span><span>Search the grimoire…</span>
+    <div style="font-family:'EB Garamond',serif;font-size:14px;color:#8f857a;border:1px solid rgba(216,181,107,.18);padding:8px 16px;border-radius:6px;display:flex;gap:10px;align-items:center;min-width:0;max-width:100%">
+      <span style="color:#d8b56b">⌕</span>
+      <input type="text" id="cov-library-search" placeholder="Search the grimoire…" style="background:transparent;border:none;outline:none;color:#ece6dd;font-family:'EB Garamond',serif;font-size:14px;width:160px;" />
     </div>
   </div>
 
   <!-- Active scroll cards -->
-  <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:0 48px 52px;position:relative;z-index:1">
+  <div class="cov-section-pad cov-grid-3" id="cov-library-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:22px;padding:0 48px 52px;position:relative;z-index:1">
     ${collectionLibraryCardsHtml}
-    <!-- Demo scrolls not yet written in markdown -->
-    <sc-if value="{{ showMentorshipCards }}" hint-placeholder-val="{{ true }}">
-      <div data-category="Mentorship" data-tag="MENTORSHIP" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
-        <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-        <div style="padding:20px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">MENTORSHIP</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Shaper</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Guiding Apprentices: The Art of the Mentor</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Grow new admins without casting for them.</p>
-          <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-            <div style="width:100%;height:100%;border-radius:3px;background:linear-gradient(90deg,#7bbf6a,#a9e09a)"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span style="color:#a9e09a">✓ Trial passed</span>
-            <span style="color:#e8cf95">Review →</span>
-          </div>
-        </div>
-      </div>
-    </sc-if>
-    <sc-if value="{{ showBaCards }}" hint-placeholder-val="{{ true }}">
-      <div data-category="Business Analysis" data-tag="BA · DIVINATION" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
-        <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-        <div style="padding:20px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">BA · DIVINATION</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Shaper</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Reading the Omens: Requirements Divination</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Surface what stakeholders truly need.</p>
-          <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-            <div style="width:0%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span>Not started</span>
-            <span style="color:#e8cf95">Begin →</span>
-          </div>
-        </div>
-      </div>
-    </sc-if>
-    <sc-if value="{{ showApexCards }}" hint-placeholder-val="{{ true }}">
-      <div data-category="Flow" data-tag="FLOW" style="background:#15121c;border:1px solid rgba(216,181,107,.14);border-radius:6px;overflow:hidden;cursor:pointer" style-hover="border:1px solid rgba(216,181,107,.4)">
-        <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px);border-bottom:1px solid rgba(216,181,107,.12);display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:#8a7f70">[ scroll · 560×280 ]</div>
-        <div style="padding:20px">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#b98fd8;border:1px solid rgba(185,143,216,.3);border-radius:2px;padding:3px 8px">FLOW</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Mechanic</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#ece6dd;margin:0 0 8px">Flow Sorcery: Automations That Don't Backfire</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#9b9189;margin:0 0 16px;line-height:1.45">Orchestrate without summoning chaos.</p>
-          <div style="height:5px;border-radius:3px;background:rgba(216,181,107,.12);margin-bottom:8px">
-            <div style="width:20%;height:100%;border-radius:3px;background:linear-gradient(90deg,#c49a4e,#e3c47e)"></div>
-          </div>
-          <div style="display:flex;justify-content:space-between;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span>20% complete</span>
-            <span style="color:#e8cf95">Continue →</span>
-          </div>
-        </div>
-      </div>
-    </sc-if>
-    <!-- Locked scroll cards -->
-    <sc-if value="{{ showLockedCards }}" hint-placeholder-val="{{ true }}">
-      <div data-category="Architecture" data-tag="ARCHITECTURE" style="background:#100d15;border:1px solid rgba(216,181,107,.1);border-radius:6px;overflow:hidden;position:relative">
-        <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.05) 0 10px,rgba(216,181,107,.01) 10px 20px);border-bottom:1px solid rgba(216,181,107,.08);display:flex;align-items:center;justify-content:center;color:#6b6258;font-size:22px">⟡</div>
-        <div style="padding:20px;opacity:.65">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#8f857a;border:1px solid rgba(216,181,107,.18);border-radius:2px;padding:3px 8px">ARCHITECTURE</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Witch</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#b3a99d;margin:0 0 8px">The Grand Design: Scalable Org Architecture</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#7a7066;margin:0 0 16px;line-height:1.45">Sealed until you reach the rank of Witch.</p>
-          <div style="display:flex;align-items:center;gap:8px;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span style="color:#d8b56b">⚿</span><span>Locked · 13,000 Aether to unlock</span>
-          </div>
-        </div>
-      </div>
-    </sc-if>
-    <sc-if value="{{ showLockedCards }}" hint-placeholder-val="{{ true }}">
-      <div data-category="Leadership" data-tag="LEADERSHIP" style="background:#100d15;border:1px solid rgba(216,181,107,.1);border-radius:6px;overflow:hidden;position:relative">
-        <div style="height:120px;background:repeating-linear-gradient(135deg,rgba(216,181,107,.05) 0 10px,rgba(216,181,107,.01) 10px 20px);border-bottom:1px solid rgba(216,181,107,.08);display:flex;align-items:center;justify-content:center;color:#6b6258;font-size:22px">⟡</div>
-        <div style="padding:20px;opacity:.65">
-          <div style="display:flex;justify-content:space-between;margin-bottom:12px">
-            <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:1px;color:#8f857a;border:1px solid rgba(216,181,107,.18);border-radius:2px;padding:3px 8px">LEADERSHIP</span>
-            <span style="font-family:'EB Garamond',serif;font-size:12px;color:#8f857a">Warden</span>
-          </div>
-          <h3 style="font-family:Cinzel,serif;font-weight:600;font-size:18px;line-height:1.25;color:#b3a99d;margin:0 0 8px">Convening the Circle: Leading Discovery Workshops</h3>
-          <p style="font-family:'EB Garamond',serif;font-size:14px;color:#7a7066;margin:0 0 16px;line-height:1.45">Sealed until you reach the rank of Warden.</p>
-          <div style="display:flex;align-items:center;gap:8px;font-family:'EB Garamond',serif;font-size:13px;color:#8f857a">
-            <span style="color:#d8b56b">⚿</span><span>Locked · 3,000 Aether to unlock</span>
-          </div>
-        </div>
-      </div>
-    </sc-if>
+    <div id="cov-library-no-results" style="display:none; grid-column: 1 / -1; text-align: center; padding: 48px 24px; border: 1px dashed rgba(216,181,107,.14); border-radius: 8px; background: rgba(21,18,28,.3);">
+      <div style="font-size: 20px; color: #d8b56b; margin-bottom: 8px; opacity: 0.8;">✦</div>
+      <p style="font-family: Cinzel, serif; font-size: 16px; color: #ece6dd; margin: 0 0 6px;">No scrolls match this search</p>
+      <p style="font-family: 'EB Garamond', serif; font-size: 14px; color: #8f857a; margin: 0;">Try adjusting your search query or selected category.</p>
+    </div>
   </div>
 </div>
 </sc-if>`;
@@ -209,3 +167,100 @@ const libraryHtml = `<!-- ══════════════════
 <BaseLayout title="Coven of Technology — Spell Book">
   <Fragment set:html={libraryHtml} />
 </BaseLayout>
+
+<script is:inline>
+  (function() {
+    var currentCategory = 'all';
+    var currentSearch = '';
+
+    var BTN_ACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#221809;background:linear-gradient(180deg,#e3c47e,#c49a4e);border:1px solid transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+    var BTN_INACTIVE = "font-family:'EB Garamond',serif;font-size:14px;color:#c5b9a8;border:1px solid rgba(216,181,107,.24);background:transparent;padding:8px 16px;border-radius:20px;cursor:pointer;";
+
+    function getLiveScope() {
+      return document.getElementById('dc-root') || document;
+    }
+
+    function applyLibraryFilter() {
+      var scope = getLiveScope();
+      var chips = scope.querySelectorAll('.cov-filter-chip');
+      var cards = scope.querySelectorAll('.cov-library-card');
+      var noResults = scope.querySelector('#cov-library-no-results');
+      var searchInput = scope.querySelector('#cov-library-search');
+
+      if (searchInput && document.activeElement !== searchInput && searchInput.value !== currentSearch) {
+        searchInput.value = currentSearch;
+      }
+
+      chips.forEach(function(chip) {
+        var chipKey = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
+        var isActive = chipKey === currentCategory;
+        chip.setAttribute('style', isActive ? BTN_ACTIVE : BTN_INACTIVE);
+        chip.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
+
+      var query = currentSearch.trim().toLowerCase();
+      var visibleCount = 0;
+
+      cards.forEach(function(card) {
+        var cat = (card.getAttribute('data-category') || '').toLowerCase().trim();
+        var tags = (card.getAttribute('data-tags') || '').toLowerCase().trim();
+        var title = (card.getAttribute('data-title') || '').toLowerCase().trim();
+        var desc = (card.getAttribute('data-desc') || '').toLowerCase().trim();
+
+        var matchesCategory = (currentCategory === 'all') || (cat === currentCategory);
+        var matchesSearch = !query ||
+          title.includes(query) ||
+          desc.includes(query) ||
+          cat.includes(query) ||
+          tags.includes(query);
+
+        var visible = matchesCategory && matchesSearch;
+        if (visible) {
+          card.style.display = '';
+          visibleCount++;
+        } else {
+          card.style.display = 'none';
+        }
+      });
+
+      if (noResults) {
+        noResults.style.display = (cards.length > 0 && visibleCount === 0) ? 'block' : 'none';
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      var target = e.target;
+      if (!target || typeof target.closest !== 'function') return;
+      var chip = target.closest('.cov-filter-chip');
+      if (!chip) return;
+      currentCategory = (chip.getAttribute('data-filter') || 'all').toLowerCase().trim();
+      applyLibraryFilter();
+    });
+
+    function handleSearchEvent(e) {
+      var target = e.target;
+      if (!target || target.id !== 'cov-library-search') return;
+      currentSearch = target.value || '';
+      applyLibraryFilter();
+    }
+
+    document.addEventListener('input', handleSearchEvent);
+    document.addEventListener('search', handleSearchEvent);
+
+    function startObserver() {
+      applyLibraryFilter();
+      if (typeof MutationObserver !== 'undefined' && document.body) {
+        var observer = new MutationObserver(function() {
+          applyLibraryFilter();
+        });
+        observer.observe(document.body, { childList: true, subtree: true });
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', startObserver);
+    } else {
+      startObserver();
+    }
+  })();
+</script>

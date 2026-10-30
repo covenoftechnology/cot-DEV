@@ -1,0 +1,422 @@
+---
+/**
+ * SPIRIT PROGRESS COMPONENT (CANVAS 2D ENGINE)
+ * Subsistema visual de alto rendimiento para los Espíritus Arcanos de Progreso.
+ * Encapsulado como un Custom Element autónomo ('spirit-progress') con 1 solo canvas.
+ * 
+ * Contrato de interfaz preservado:
+ *   spiritProgress.build(sections: Element[])
+ *   spiritProgress.update(progress: number 0-100)
+ *   spiritProgress.measureThresholds()
+ *   spiritProgress.thresholds: number[]
+ */
+---
+
+<spirit-progress id="article-spirit-progress" aria-hidden="true">
+  <canvas id="spirits-canvas" class="spirits-canvas-layer" aria-hidden="true" style="position: absolute; top: 50%; left: 0; width: 100%; height: 70px; transform: translateY(-50%); pointer-events: none; z-index: 1001;"></canvas>
+</spirit-progress>
+
+<script is:inline>
+  if (typeof customElements !== 'undefined' && !customElements.get('spirit-progress')) {
+    class SpiritProgressElement extends HTMLElement {
+      constructor() {
+        super();
+        this.canvas = null;
+        this.ctx = null;
+        this.cachedTrack = null;
+        this.thresholds = [];
+        this.centers = [];
+        this.numSpirits = 0;
+        this.currentProgress = 0;
+        this.scale = 0.18;
+        this.dpr = 1;
+        this.rafId = null;
+        this.isRunning = false;
+        this.lastTime = 0;
+        this.prefersReducedMotion = false;
+        this.width = 0;
+        this.height = 70;
+      }
+
+      connectedCallback() {
+        this.canvas = this.querySelector('#spirits-canvas') || this.querySelector('canvas');
+        if (this.canvas) {
+          this.ctx = this.canvas.getContext('2d');
+        }
+        this.cachedTrack = document.getElementById('article-progress-track');
+
+        if (window.matchMedia) {
+          var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+          this.prefersReducedMotion = mq.matches;
+          var self = this;
+          mq.addEventListener('change', function(e) {
+            self.prefersReducedMotion = e.matches;
+            self.draw(performance.now());
+          });
+        }
+
+        var self = this;
+        document.addEventListener('visibilitychange', function() {
+          if (document.hidden) {
+            self.stopLoop();
+          } else {
+            self.lastTime = performance.now();
+            self.startLoop();
+          }
+        });
+
+        window.addEventListener('resize', function() {
+          self.measureThresholds();
+          self.draw(performance.now());
+        });
+      }
+
+      measureThresholds() {
+        if (!this.canvas) {
+          this.canvas = this.querySelector('#spirits-canvas') || this.querySelector('canvas');
+          if (this.canvas) this.ctx = this.canvas.getContext('2d');
+        }
+        if (!this.canvas) return;
+
+        var track = this.cachedTrack || document.getElementById('article-progress-track');
+        var trackWidth = track ? track.getBoundingClientRect().width : window.innerWidth;
+        if (trackWidth <= 0) trackWidth = window.innerWidth || 1024;
+
+        this.width = trackWidth;
+        this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+        // Adjust scale responsive to viewport
+        if (trackWidth <= 420) {
+          this.scale = 0.10;
+        } else if (trackWidth <= 640) {
+          this.scale = 0.12;
+        } else if (trackWidth <= 980) {
+          this.scale = 0.15;
+        } else {
+          this.scale = 0.18;
+        }
+
+        this.canvas.width = Math.round(this.width * this.dpr);
+        this.canvas.height = Math.round(this.height * this.dpr);
+
+        var N = this.numSpirits;
+        this.thresholds = [];
+        this.centers = [];
+
+        if (N > 0) {
+          for (var i = 0; i < N; i++) {
+            // Formula for CSS space-evenly with width 0 markers: (i + 1) / (N + 1)
+            var ratio = (i + 1) / (N + 1);
+            var pct = ratio * 100;
+            var cx = ratio * this.width;
+            this.thresholds.push(pct);
+            this.centers.push(cx);
+          }
+        }
+      }
+
+      build(sections) {
+        this.numSpirits = (sections && sections.length) ? sections.length : 0;
+        this.measureThresholds();
+
+        // Immediate first draw
+        this.draw(performance.now());
+
+        if (this.numSpirits > 0 && !this.isRunning) {
+          this.startLoop();
+        } else if (this.numSpirits === 0) {
+          this.stopLoop();
+          if (this.ctx && this.canvas) {
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          }
+        }
+      }
+
+      update(progress) {
+        this.currentProgress = typeof progress === 'number' ? progress : 0;
+        if (!this.thresholds || this.thresholds.length === 0) {
+          this.measureThresholds();
+        }
+        // If loop is paused (e.g. reduced motion or stationary), do an immediate draw
+        if (this.prefersReducedMotion || !this.isRunning) {
+          this.draw(performance.now());
+        }
+      }
+
+      startLoop() {
+        if (this.isRunning) return;
+        this.isRunning = true;
+        this.lastTime = performance.now();
+        var self = this;
+
+        function tick(now) {
+          if (!self.isRunning) return;
+          self.draw(now);
+          self.rafId = requestAnimationFrame(tick);
+        }
+
+        this.rafId = requestAnimationFrame(tick);
+      }
+
+      stopLoop() {
+        this.isRunning = false;
+        if (this.rafId) {
+          cancelAnimationFrame(this.rafId);
+          this.rafId = null;
+        }
+      }
+
+      draw(now) {
+        if (!this.ctx || !this.canvas || this.width <= 0 || this.numSpirits <= 0) return;
+
+        var ctx = this.ctx;
+        ctx.save();
+        ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+        ctx.scale(this.dpr, this.dpr);
+
+        var t = this.prefersReducedMotion ? 0 : (now / 1000);
+        var cy = this.height / 2;
+        var scale = this.scale;
+        var progress = this.currentProgress;
+
+        for (var i = 0; i < this.numSpirits; i++) {
+          var cx = this.centers[i];
+          var threshold = this.thresholds[i];
+          var isActive = progress >= threshold;
+          this.renderSingleSpirit(ctx, cx, cy, scale, isActive, t, i);
+        }
+
+        ctx.restore();
+      }
+
+      renderSingleSpirit(ctx, cx, cy, scale, isActive, time, spiritIdx) {
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(scale, scale);
+
+        var offsetT = time + spiritIdx * 0.7;
+
+        // Floating vertical oscillation (float 4s, -15px max)
+        var floatY = this.prefersReducedMotion ? 0 : (Math.sin(offsetT * 1.57) * 7.5);
+        ctx.translate(0, floatY);
+
+        // 1. AURA (pulseGlow 3s)
+        var auraPulse = this.prefersReducedMotion ? 1.0 : (0.95 + 0.1 * Math.sin(offsetT * 2.09));
+        var auraGrad = ctx.createRadialGradient(0, 0, 10, 0, 0, 95 * auraPulse);
+        if (!isActive) {
+          auraGrad.addColorStop(0, 'rgba(83, 45, 107, 0.28)');
+          auraGrad.addColorStop(0.4, 'rgba(43, 35, 60, 0.12)');
+          auraGrad.addColorStop(0.75, 'rgba(43, 35, 60, 0)');
+        } else {
+          auraGrad.addColorStop(0, 'rgba(243, 196, 255, 0.85)');
+          auraGrad.addColorStop(0.32, 'rgba(214, 128, 255, 0.45)');
+          auraGrad.addColorStop(0.60, 'rgba(170, 88, 243, 0.14)');
+          auraGrad.addColorStop(0.80, 'rgba(170, 88, 243, 0)');
+        }
+        ctx.fillStyle = auraGrad;
+        ctx.beginPath();
+        ctx.arc(0, 0, 100 * auraPulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. SMOKE (smokeLeft & smokeRight)
+        var smokeL_x = -35 + (this.prefersReducedMotion ? 0 : Math.sin(offsetT * 1.8) * 4);
+        var smokeL_y = 25 + (this.prefersReducedMotion ? 0 : Math.cos(offsetT * 1.8) * 4);
+        ctx.save();
+        ctx.strokeStyle = isActive ? '#d88dff' : '#70388d';
+        ctx.lineWidth = 6;
+        ctx.globalAlpha = isActive ? 0.6 : 0.32;
+        ctx.beginPath();
+        ctx.arc(smokeL_x, smokeL_y, 35, Math.PI * 0.5, Math.PI * 1.2);
+        ctx.stroke();
+
+        var smokeR_x = 35 - (this.prefersReducedMotion ? 0 : Math.sin(offsetT * 1.7) * 4);
+        var smokeR_y = 22 + (this.prefersReducedMotion ? 0 : Math.cos(offsetT * 1.7) * 4);
+        ctx.strokeStyle = isActive ? '#d47dff' : '#6d378b';
+        ctx.beginPath();
+        ctx.arc(smokeR_x, smokeR_y, 35, -Math.PI * 0.2, Math.PI * 0.5);
+        ctx.stroke();
+        ctx.restore();
+
+        // 3. FLAMES CROWN (burn animation oscillation)
+        var flames = [
+          { angle: -24, h: 95, w: 40, x: -30, y: -20, delay: 0 },
+          { angle: 22,  h: 92, w: 38, x: 30,  y: -15, delay: 0.5 },
+          { angle: -2,  h: 96, w: 38, x: 0,   y: -40, delay: 1.0 },
+          { angle: -48, h: 80, w: 42, x: -50, y: 15,  delay: 1.5 },
+          { angle: 45,  h: 80, w: 42, x: 50,  y: 15,  delay: 2.0 },
+        ];
+
+        for (var idx = 0; idx < flames.length; idx++) {
+          var fl = flames[idx];
+          ctx.save();
+          var wave = this.prefersReducedMotion ? 0 : (Math.sin(offsetT * 2.5 + fl.delay) * 5);
+          ctx.translate(fl.x, fl.y);
+          ctx.rotate((fl.angle + wave) * Math.PI / 180);
+
+          var flameGrad = ctx.createLinearGradient(0, fl.h * 0.5, 0, -fl.h * 0.5);
+          if (!isActive) {
+            flameGrad.addColorStop(0, 'rgba(26, 13, 43, 0)');
+            flameGrad.addColorStop(0.2, '#21132f');
+            flameGrad.addColorStop(0.6, '#43235e');
+            flameGrad.addColorStop(1.0, '#693b89');
+          } else {
+            flameGrad.addColorStop(0, 'rgba(138, 62, 224, 0)');
+            flameGrad.addColorStop(0.2, '#8a3ee0');
+            flameGrad.addColorStop(0.6, '#d06cff');
+            flameGrad.addColorStop(1.0, '#f5c1ff');
+          }
+
+          ctx.fillStyle = flameGrad;
+          ctx.beginPath();
+          ctx.moveTo(0, -fl.h * 0.5);
+          ctx.bezierCurveTo(fl.w * 0.5, -fl.h * 0.1, fl.w * 0.4, fl.h * 0.4, 0, fl.h * 0.5);
+          ctx.bezierCurveTo(-fl.w * 0.4, fl.h * 0.4, -fl.w * 0.5, -fl.h * 0.1, 0, -fl.h * 0.5);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        // 4. FLAME WISPS (flickerLeft & flickerRight)
+        ctx.save();
+        var wispL_rot = -15 + (this.prefersReducedMotion ? 0 : Math.sin(offsetT * 2.5) * 8);
+        ctx.translate(-25, 25);
+        ctx.rotate(wispL_rot * Math.PI / 180);
+        var wispLGrad = ctx.createLinearGradient(0, 0, -30, 40);
+        wispLGrad.addColorStop(0, 'transparent');
+        wispLGrad.addColorStop(0.5, isActive ? '#d78eff' : '#171124');
+        wispLGrad.addColorStop(1, isActive ? '#8e45d8' : '#0a0612');
+        ctx.fillStyle = wispLGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 25, 35, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        var wispR_rot = 15 - (this.prefersReducedMotion ? 0 : Math.sin(offsetT * 2.8) * 8);
+        ctx.translate(25, 25);
+        ctx.rotate(wispR_rot * Math.PI / 180);
+        var wispRGrad = ctx.createLinearGradient(0, 0, 30, 40);
+        wispRGrad.addColorStop(0, 'transparent');
+        wispRGrad.addColorStop(0.5, isActive ? '#d78eff' : '#171124');
+        wispRGrad.addColorStop(1, isActive ? '#8e45d8' : '#0a0612');
+        ctx.fillStyle = wispRGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 25, 35, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // 5. MAIN FLAME BODY (droplet with morphFlame)
+        ctx.save();
+        var bodyGrad = ctx.createRadialGradient(-10, -5, 5, 0, 10, 50);
+        if (!isActive) {
+          bodyGrad.addColorStop(0, '#2b233c');
+          bodyGrad.addColorStop(0.45, '#171124');
+          bodyGrad.addColorStop(0.9, '#0a0612');
+        } else {
+          ctx.shadowColor = 'rgba(221, 126, 255, 0.72)';
+          ctx.shadowBlur = 20;
+          bodyGrad.addColorStop(0, '#fff8ff');
+          bodyGrad.addColorStop(0.18, '#f4d3ff');
+          bodyGrad.addColorStop(0.45, '#d78eff');
+          bodyGrad.addColorStop(0.88, '#8e45d8');
+        }
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.moveTo(0, -38);
+        ctx.bezierCurveTo(38, -10, 42, 28, 0, 42);
+        ctx.bezierCurveTo(-42, 28, -38, -10, 0, -38);
+        ctx.fill();
+        ctx.restore();
+
+        // 6. FACE & EYES (with blink)
+        var blinkPhase = (offsetT * 0.25) % 1.0;
+        var eyeScaleY = (this.prefersReducedMotion || blinkPhase <= 0.96) ? 1.0 : 0.1;
+
+        ctx.save();
+        ctx.translate(0, 8);
+        if (!isActive) {
+          ctx.fillStyle = '#433d52';
+        } else {
+          ctx.fillStyle = '#ffffff';
+          ctx.shadowColor = 'rgba(255, 255, 255, 0.95)';
+          ctx.shadowBlur = 10;
+        }
+
+        // Left eye
+        ctx.save();
+        ctx.translate(-10, 0);
+        ctx.rotate(10 * Math.PI / 180);
+        ctx.scale(1, eyeScaleY);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, isActive ? 5.5 : 4.5, isActive ? 7.5 : 6.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        // Right eye
+        ctx.save();
+        ctx.translate(10, 0);
+        ctx.rotate(-10 * Math.PI / 180);
+        ctx.scale(1, eyeScaleY);
+        ctx.beginPath();
+        ctx.ellipse(0, 0, isActive ? 5.5 : 4.5, isActive ? 7.5 : 6.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+        ctx.restore();
+
+        // 7. SPARKS (5 floating particles)
+        if (!this.prefersReducedMotion) {
+          var sparks = [
+            { x0: -20, y0: 10, dx: -26, dy: -55, dur: 3.3, delay: 0 },
+            { x0: 25,  y0: 15, dx: 31,  dy: -67, dur: 3.8, delay: 1.1 },
+            { x0: 5,   y0: -5, dx: 11,  dy: -45, dur: 2.9, delay: 0.5 },
+            { x0: -30, y0: 20, dx: -45, dy: -52, dur: 4.1, delay: 1.7 },
+            { x0: 32,  y0: 18, dx: 38,  dy: -68, dur: 3.5, delay: 0.9 }
+          ];
+
+          ctx.save();
+          for (var sIdx = 0; sIdx < sparks.length; sIdx++) {
+            var sp = sparks[sIdx];
+            var prog = ((offsetT / sp.dur) + sp.delay) % 1.0;
+            var curX = sp.x0 + sp.dx * prog;
+            var curY = sp.y0 + sp.dy * prog;
+            var alpha = prog < 0.2 ? (prog / 0.2) : (1.0 - prog);
+
+            ctx.fillStyle = isActive ? '#fff0ff' : '#a875c6';
+            if (isActive) {
+              ctx.shadowColor = 'rgba(193, 109, 255, 0.7)';
+              ctx.shadowBlur = 8;
+            }
+            ctx.globalAlpha = alpha;
+            ctx.beginPath();
+            ctx.arc(curX, curY, 2.5 * (1 - prog * 0.5), 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        ctx.restore();
+      }
+    }
+
+    customElements.define('spirit-progress', SpiritProgressElement);
+  }
+</script>
+
+<style is:global>
+  /* ── Arcane Spirits of Progress Canvas 2D Engine ────────────── */
+  spirit-progress {
+    display: contents;
+  }
+
+  #spirits-canvas,
+  spirit-progress .spirits-canvas-layer,
+  .spirits-canvas-layer {
+    position: absolute !important;
+    top: 50% !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 70px !important;
+    transform: translateY(-50%) !important;
+    pointer-events: none !important;
+    z-index: 1001 !important;
+  }
+</style>

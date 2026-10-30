@@ -1,0 +1,30 @@
+[
+  {
+    "id": "admin-life",
+    "name": "Admin life",
+    "glyph": "🧙",
+    "createdAt": "2026-10-30T10:00:00.000Z",
+    "updatedAt": "2026-10-30T16:56:52.952Z"
+  },
+  {
+    "id": "apex-pain",
+    "name": "Apex pain",
+    "glyph": "⚡",
+    "createdAt": "2026-10-30T10:00:00.000Z",
+    "updatedAt": "2026-10-30T10:00:00.000Z"
+  },
+  {
+    "id": "deploy-disasters",
+    "name": "Deploy disasters",
+    "glyph": "💥",
+    "createdAt": "2026-10-30T10:00:00.000Z",
+    "updatedAt": "2026-10-30T10:00:00.000Z"
+  },
+  {
+    "id": "stakeholder-spells",
+    "name": "Stakeholder spells",
+    "glyph": "🔮",
+    "createdAt": "2026-10-30T10:00:00.000Z",
+    "updatedAt": "2026-10-30T10:00:00.000Z"
+  }
+]

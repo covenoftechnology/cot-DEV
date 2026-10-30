@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420" width="600" height="420">
+  <defs>
+    <radialGradient id="tmBg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#231538" />
+      <stop offset="100%" stop-color="#0c0914" />
+    </radialGradient>
+    <linearGradient id="hourBar" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#3a2559" />
+      <stop offset="60%" stop-color="#8b5cc4" />
+      <stop offset="100%" stop-color="#e8cf95" />
+    </linearGradient>
+  </defs>
+  <rect width="600" height="420" fill="url(#tmBg)" rx="6" />
+  <rect width="598" height="418" x="1" y="1" fill="none" stroke="rgba(216,181,107,0.18)" stroke-width="1" rx="6" />
+
+  <text x="300" y="45" font-family="'Cinzel', serif" font-size="16" font-weight="600" fill="#f3ecdf" letter-spacing="1.5" text-anchor="middle">INDIVIDUAL SEND TIME MATRIX</text>
+  <text x="300" y="68" font-family="'EB Garamond', serif" font-size="13" fill="#8f857a" text-anchor="middle">Predicted Likelihood of Open Across a 24-Hour Cycle</text>
+
+  <!-- 24-Hour Probability Histogram -->
+  <g transform="translate(50, 110)">
+    <!-- Base line -->
+    <line x1="0" y1="200" x2="500" y2="200" stroke="rgba(216,181,107,0.3)" stroke-width="1" />
+    
+    <!-- Bars for 24 hours -->
+    <!-- 00-05 low -->
+    <rect x="5" y="180" width="14" height="20" rx="2" fill="#2b1e42" />
+    <rect x="25" y="186" width="14" height="14" rx="2" fill="#2b1e42" />
+    <rect x="45" y="190" width="14" height="10" rx="2" fill="#2b1e42" />
+    <rect x="65" y="188" width="14" height="12" rx="2" fill="#2b1e42" />
+    <rect x="85" y="178" width="14" height="22" rx="2" fill="#2b1e42" />
+    <rect x="105" y="160" width="14" height="40" rx="2" fill="#442a6d" />
+
+    <!-- 06-11 rising -->
+    <rect x="125" y="130" width="14" height="70" rx="2" fill="#58358c" />
+    <rect x="145" y="90" width="14" height="110" rx="2" fill="#7142b3" />
+    <rect x="165" y="40" width="14" height="160" rx="2" fill="url(#hourBar)" />
+    <rect x="185" y="70" width="14" height="130" rx="2" fill="#8b5cc4" />
+    <rect x="205" y="105" width="14" height="95" rx="2" fill="#7142b3" />
+    <rect x="225" y="125" width="14" height="75" rx="2" fill="#58358c" />
+
+    <!-- 12-17 afternoon plateau -->
+    <rect x="245" y="115" width="14" height="85" rx="2" fill="#58358c" />
+    <rect x="265" y="120" width="14" height="80" rx="2" fill="#58358c" />
+    <rect x="285" y="85" width="14" height="115" rx="2" fill="#7142b3" />
+    <rect x="305" y="60" width="14" height="140" rx="2" fill="#8b5cc4" />
+    <rect x="325" y="90" width="14" height="110" rx="2" fill="#7142b3" />
+    <rect x="345" y="110" width="14" height="90" rx="2" fill="#58358c" />
+
+    <!-- 18-23 evening descent -->
+    <rect x="365" y="130" width="14" height="70" rx="2" fill="#58358c" />
+    <rect x="385" y="145" width="14" height="55" rx="2" fill="#442a6d" />
+    <rect x="405" y="160" width="14" height="40" rx="2" fill="#3a2559" />
+    <rect x="425" y="172" width="14" height="28" rx="2" fill="#2b1e42" />
+    <rect x="445" y="180" width="14" height="20" rx="2" fill="#2b1e42" />
+    <rect x="465" y="185" width="14" height="15" rx="2" fill="#2b1e42" />
+
+    <!-- Optimal Hour Callout Marker -->
+    <g transform="translate(172, 10)">
+      <polygon points="0,0 8,14 -8,14" fill="#e8cf95" />
+      <text x="0" y="-8" font-family="'IBM Plex Mono', monospace" font-size="11" fill="#e8cf95" text-anchor="middle" font-weight="bold">09:00 AM (87%)</text>
+    </g>
+
+    <!-- Labels -->
+    <text x="5" y="222" font-family="'IBM Plex Mono', monospace" font-size="10" fill="#8f857a">00:00</text>
+    <text x="165" y="222" font-family="'IBM Plex Mono', monospace" font-size="10" fill="#e8cf95">09:00</text>
+    <text x="245" y="222" font-family="'IBM Plex Mono', monospace" font-size="10" fill="#8f857a">12:00</text>
+    <text x="365" y="222" font-family="'IBM Plex Mono', monospace" font-size="10" fill="#8f857a">18:00</text>
+    <text x="465" y="222" font-family="'IBM Plex Mono', monospace" font-size="10" fill="#8f857a">23:00</text>
+  </g>
+
+  <!-- Legend -->
+  <g transform="translate(70, 360)">
+    <rect x="0" y="0" width="12" height="12" rx="2" fill="#e8cf95" />
+    <text x="20" y="10" font-family="'EB Garamond', serif" font-size="13" fill="#cdc3b6">Optimal Hour Window</text>
+
+    <rect x="180" y="0" width="12" height="12" rx="2" fill="#7142b3" />
+    <text x="200" y="10" font-family="'EB Garamond', serif" font-size="13" fill="#cdc3b6">Moderate Engagement</text>
+
+    <rect x="360" y="0" width="12" height="12" rx="2" fill="#2b1e42" />
+    <text x="380" y="10" font-family="'EB Garamond', serif" font-size="13" fill="#cdc3b6">Quiet Hours</text>
+  </g>
+</svg>
