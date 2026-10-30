@@ -657,6 +657,7 @@ export function getAdminCenterHtml(): string {
 
     <div class="admin-top-actions">
       <a href="/template-preview/studio?new=1" class="btn btn-primary" id="btn-header-new">+ New Article</a>
+      <a href="/template-preview/memes" class="btn btn-secondary" id="btn-meme-center">Meme Center</a>
       <a href="/template-preview/studio" class="btn btn-secondary" id="btn-back-studio">Back to Studio</a>
     </div>
   </header>

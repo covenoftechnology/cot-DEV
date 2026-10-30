@@ -6,6 +6,7 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ArticleDocument } from '../types/article-document';
 import { normalizeSlug, isValidSlug } from '../lib/article-taxonomy';
 import { getAdminCenterHtml } from './article-admin-html';
+import { handleMemeStudioRequest, copyMemeImagesToDist } from './meme-studio';
 
 function isSafeSlugPath(baseDir: string, slug: string): boolean {
   if (!isValidSlug(slug)) return false;
@@ -104,6 +105,11 @@ export default function articleStudioIntegration(): AstroIntegration {
       'astro:config:setup': ({ updateConfig }) => {
         updateConfig({
           vite: {
+            server: {
+              watch: {
+                ignored: ['**/src/memes/**'],
+              },
+            },
             plugins: [
               {
                 name: 'vite-plugin-coven-article-studio',
@@ -132,6 +138,11 @@ export default function articleStudioIntegration(): AstroIntegration {
                         'Cache-Control': 'no-cache',
                       });
                       return res.end(getAdminCenterHtml());
+                    }
+
+                    // Handle Meme Studio API and meme image serving routes
+                    if (await handleMemeStudioRequest(req, res, rootDir)) {
+                      return;
                     }
 
                     // Only handle /__article-studio/ routes
@@ -749,6 +760,14 @@ import content from './content.json';
             ],
           },
         });
+      },
+      'astro:build:done': async ({ dir }) => {
+        try {
+          const outDir = dir instanceof URL ? fs.realpathSync(dir) : String(dir);
+          await copyMemeImagesToDist(process.cwd(), outDir);
+        } catch (err) {
+          console.warn('[Meme Studio Build Hook Warning]', err);
+        }
       },
     },
   };

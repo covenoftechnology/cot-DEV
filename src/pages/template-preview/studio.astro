@@ -59,6 +59,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
     <div class="studio-actions">
       <button class="studio-btn studio-btn--secondary" id="btn-new" title="Create a new article draft" type="button">+ New Article</button>
+      <a href="/template-preview/meme-studio?new=1" class="studio-btn studio-btn--ghost" id="btn-create-meme" title="Open Coven Meme Studio">Create Meme</a>
       <a href="/template-preview/articles" class="studio-btn studio-btn--ghost" id="btn-article-center" title="Open Coven Article Center">Article Center</a>
       <button class="studio-btn studio-btn--ghost" id="btn-duplicate-article" title="Duplicate current article" type="button">Duplicate</button>
       <button class="studio-btn studio-btn--secondary" id="btn-save-draft" title="Save draft immediately" type="button">Save Draft</button>
@@ -796,7 +797,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
         var popRect = popoverEl.getBoundingClientRect();
         var popHeight = popRect.height || 220;
-        var popWidth = popRect.width || 170;
+        var popWidth = popRect.width || (popoverEl.classList.contains('rich-link-popover') ? 290 : 170);
 
         var spaceBelow = window.innerHeight - trigRect.bottom;
         var spaceAbove = trigRect.top;
@@ -832,6 +833,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             m.style.right = '';
             m.style.position = '';
             m.style.zIndex = '';
+            m.style.visibility = '';
           }
         });
       }
@@ -1638,7 +1640,15 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           }
 
           function closeLinkPopover() {
-            if (linkPopover) linkPopover.style.display = 'none';
+            if (linkPopover) {
+              linkPopover.style.display = 'none';
+              linkPopover.style.position = '';
+              linkPopover.style.zIndex = '';
+              linkPopover.style.top = '';
+              linkPopover.style.left = '';
+              linkPopover.style.visibility = '';
+              linkPopover.classList.remove('is-flipped-above');
+            }
             if (applyBtn) applyBtn.style.display = 'inline-block';
             savedRange = null;
             activeAnchor = null;
@@ -1858,8 +1868,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 }
                 if (urlError) urlError.style.display = 'none';
 
-                linkPopover.style.display = 'flex';
-                setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+                openAnchoredPopover(linkPopover, linkBtn);
+                setTimeout(function() { if (urlInput) urlInput.focus({ preventScroll: true }); }, 30);
               } else if (selInfo.hasText) {
                 // Creating new link on selected range
                 activeAnchor = null;
@@ -1879,8 +1889,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 }
                 if (urlError) urlError.style.display = 'none';
 
-                linkPopover.style.display = 'flex';
-                setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+                openAnchoredPopover(linkPopover, linkBtn);
+                setTimeout(function() { if (urlInput) urlInput.focus({ preventScroll: true }); }, 30);
               } else {
                 // Selection collapsed: show message
                 activeAnchor = null;
@@ -1895,7 +1905,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 if (applyBtn) applyBtn.style.display = 'none';
                 if (urlError) urlError.style.display = 'none';
 
-                linkPopover.style.display = 'flex';
+                openAnchoredPopover(linkPopover, linkBtn);
               }
             });
 
@@ -2029,12 +2039,12 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
                   var newRange = document.createRange();
                   newRange.selectNodeContents(a);
+                  closeLinkPopover();
+                  surface.focus();
+                  var sel = window.getSelection();
                   sel.removeAllRanges();
                   sel.addRange(newRange);
                 }
-
-                closeLinkPopover();
-                surface.focus();
                 var cur = getCurrentData();
                 cur.text = sanitizeRichText(surface.innerHTML);
                 setCurrentData(cur);
@@ -2387,7 +2397,15 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         }
 
         function closeLinkPopover() {
-          if (linkPopover) linkPopover.style.display = 'none';
+          if (linkPopover) {
+            linkPopover.style.display = 'none';
+            linkPopover.style.position = '';
+            linkPopover.style.zIndex = '';
+            linkPopover.style.top = '';
+            linkPopover.style.left = '';
+            linkPopover.style.visibility = '';
+            linkPopover.classList.remove('is-flipped-above');
+          }
           if (applyBtn) applyBtn.style.display = 'inline-block';
           savedRange = null;
           activeAnchor = null;
@@ -2629,8 +2647,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
               }
               if (urlError) urlError.style.display = 'none';
 
-              linkPopover.style.display = 'flex';
-              setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+              openAnchoredPopover(linkPopover, linkBtn);
+              setTimeout(function() { if (urlInput) urlInput.focus({ preventScroll: true }); }, 30);
             } else if (hasText) {
               activeAnchor = null;
               savedRange = range.cloneRange();
@@ -2649,8 +2667,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
               }
               if (urlError) urlError.style.display = 'none';
 
-              linkPopover.style.display = 'flex';
-              setTimeout(function() { if (urlInput) urlInput.focus(); }, 30);
+              openAnchoredPopover(linkPopover, linkBtn);
+              setTimeout(function() { if (urlInput) urlInput.focus({ preventScroll: true }); }, 30);
             } else {
               activeAnchor = null;
               savedRange = null;
@@ -2664,7 +2682,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
               if (applyBtn) applyBtn.style.display = 'none';
               if (urlError) urlError.style.display = 'none';
 
-              linkPopover.style.display = 'flex';
+              openAnchoredPopover(linkPopover, linkBtn);
             }
           });
 
@@ -2787,12 +2805,14 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
                 var newRange = document.createRange();
                 newRange.selectNodeContents(a);
-                sel.removeAllRanges();
-                sel.addRange(newRange);
+                closeLinkPopover();
+                if (activeSurface) {
+                  activeSurface.focus();
+                  var sel = window.getSelection();
+                  sel.removeAllRanges();
+                  sel.addRange(newRange);
+                }
               }
-
-              closeLinkPopover();
-              activeSurface.focus();
               var cur = getActiveData();
               cur.text = sanitizeRichText(activeSurface.innerHTML);
               setActiveData(cur);
@@ -4213,11 +4233,23 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
       window.addEventListener('resize', function() {
         handleInlineDeleteScrollOrResize();
-        closeAllPopovers();
+        var openLinkPop = document.querySelector('.rich-link-popover[style*="display: flex"]');
+        closeAllPopovers(openLinkPop);
+        if (openLinkPop) {
+          var wrap = openLinkPop.closest('.rich-link-dropdown-wrap') || openLinkPop.closest('.table-contextual-bar');
+          var btn = wrap ? wrap.querySelector('.rich-btn-link') : null;
+          if (btn) openAnchoredPopover(openLinkPop, btn);
+        }
       }, { passive: true });
       window.addEventListener('scroll', function() {
         handleInlineDeleteScrollOrResize();
-        closeAllPopovers();
+        var openLinkPop = document.querySelector('.rich-link-popover[style*="display: flex"]');
+        closeAllPopovers(openLinkPop);
+        if (openLinkPop) {
+          var wrap = openLinkPop.closest('.rich-link-dropdown-wrap') || openLinkPop.closest('.table-contextual-bar');
+          var btn = wrap ? wrap.querySelector('.rich-btn-link') : null;
+          if (btn) openAnchoredPopover(openLinkPop, btn);
+        }
       }, { capture: true, passive: true });
 
       document.addEventListener('mousedown', function(e) {
@@ -4232,7 +4264,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         var openPop = document.querySelector('.rich-color-menu[style*="display: flex"], .rich-color-menu[style*="display: block"], .rich-highlight-menu[style*="display: flex"], .rich-highlight-menu[style*="display: block"], .rich-link-popover[style*="display: flex"], .coven-custom-color-popover[style*="display: block"], .coven-custom-color-popover[style*="display: flex"], .nested-marker-dropdown[style*="display: flex"], .nested-marker-dropdown[style*="display: block"]');
         if (openPop && !openPop.contains(e.target)) {
           var isTrigger = e.target.closest('.rich-btn-color, .rich-btn-highlight, .rich-btn-link, .nested-marker-trigger, .callout-accent-custom-btn');
-          if (!isTrigger) {
+          var isInsideLinkPop = e.target.closest('.rich-link-popover');
+          if (!isTrigger && !isInsideLinkPop) {
             closeAllPopovers();
           }
         }
@@ -7999,9 +8032,15 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             m.style.display = 'none';
           });
         }
-        if (!e.target.closest('.rich-link-dropdown-wrap')) {
+        if (!e.target.closest('.rich-link-dropdown-wrap, .rich-link-popover')) {
           document.querySelectorAll('.rich-link-popover').forEach(function(p) {
             p.style.display = 'none';
+            p.style.position = '';
+            p.style.zIndex = '';
+            p.style.top = '';
+            p.style.left = '';
+            p.style.visibility = '';
+            p.classList.remove('is-flipped-above');
           });
         }
       });
@@ -8521,6 +8560,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
       window.closeAllPopovers = closeAllPopovers;
       window.openCustomColorPicker = openCustomColorPicker;
       window.normalizeHex = normalizeHex;
+      window.addBlockToActiveSection = addBlockToActiveSection;
+      window.addSection = addSection;
 
     })();
   </script>

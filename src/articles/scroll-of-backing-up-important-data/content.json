@@ -1,0 +1,656 @@
+{
+  "version": 1,
+  "studioId": "draft_mvtycvem_zuk03",
+  "slug": "scroll-of-backing-up-important-data",
+  "meta": {
+    "title": "Incantation of Backing Up Important Data",
+    "description": "",
+    "author": "Oracle of Orgs",
+    "category": "Salesforce",
+    "difficulty": "Lv. 1 - Incantation",
+    "tags": [],
+    "rank": "Mechanic",
+    "readingTime": "5 min",
+    "aetherReward": 120,
+    "status": "published",
+    "featured": false,
+    "wide": true,
+    "cover": "",
+    "coverCaption": ""
+  },
+  "sections": [
+    {
+      "id": "sec_mvtyfj8q_k0rst",
+      "title": "Intro",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvtyg0fh_4p79t",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Have you ever worked with data so delicate that if you accidentally miss/add a symbol in an entry it will not be processed by an automation and the entire flow will fail? ☠️ Too specific perhaps? 😅",
+                "align": "left"
+              },
+              {
+                "text": "Yeah, that was my experience and I wish I had earlier placed in a backup automation to prevent and save me several hours of rework in SFMCE (’Salesforce Marketing Cloud Engagement’ —a bit of a mouthful).<br>",
+                "align": "left"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvtygcdj_ugn56",
+      "title": "Process",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvtygjfa_5tsku",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "1) 📝&nbsp;Define",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "Whether you are used to do this or not, I can’t stress and recommend enough to <span class=\"article-text-bg-green\">initiate designing and creating a representation of what your final product is expected to achieve.</span> Depending on the type software you feel comfortable with, you may develop a diagram flow, a list of items, an audio recording or perhaps align some sticky notes —what counts is for you to examine and acknowledge all necessary components to reach your goal. I personally prefer to outline these steps into a diagram as I will typically reuse it in technical documentation later on —you can customize your symbols and have a standard iconography in place too.",
+                "align": "left"
+              },
+              {
+                "text": "In this case, our proposed product is an <span class=\"article-text-gold\">automation</span> to back up important data, which would require the below items to properly work:",
+                "align": "left"
+              }
+            ],
+            "showText": true
+          }
+        },
+        {
+          "id": "blk_mvtyhe6a_6yhrs",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "<span class=\"article-text-bg-red\">Run automatically</span> at X-hour/day intervals",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvtyhhux_1135h",
+                "text": {
+                  "text": "<span class=\"article-text-bg-red\">Extract</span> information from our very important Data Extension",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvtyhiu4_pcg2o",
+                "text": {
+                  "text": "<span class=\"article-text-bg-red\">Transfer</span> this file to a safe location (SFTP)",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ],
+            "markerStyle": "decimal"
+          }
+        },
+        {
+          "id": "blk_mvtyjo3h_7xzco",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvtyjo3h_bcvoi",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "For those of you who are probably not familiar with the terminology, an <span class=\"article-text-bg-red\">SFTP</span> stands for ‘SSH File Transfer Protocol’ —a method of <span class=\"article-text-bg-green\">securely transferring data</span> from one place to another.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "It is a safe folder in the cloud that you can use for importing/exporting data to/from SFMCE.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "blk_mvtyk7tk_8h381",
+                "type": "related-docs",
+                "data": {
+                  "items": [
+                    {
+                      "id": "rd_1",
+                      "type": "external",
+                      "title": {
+                        "text": "SFTP Accounts in Marketing Cloud Engagement",
+                        "align": "left"
+                      },
+                      "slug": "",
+                      "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_overview_ftp_accounts.htm&type=5",
+                      "ctaText": "Official documentation"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtynnc0_fkqsb",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "2) ⚙️&nbsp;Develop",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "How do we do this, then? In SFMCE there is a tool called ‘<span class=\"article-text-bg-gold\">Automation Studio</span>’, where we can build automatic processes that will trigger on either a <span class=\"article-text-bg-gold\">schedule</span> or when a <span class=\"article-text-bg-gold\">file is dropped</span> into the SFTP. When scheduled, we can define a prudent timeframe for the process to <span class=\"article-text-bg-purple\">automatically trigger</span> —this covers our first [1] outlined step.<br>",
+                "align": "left"
+              }
+            ],
+            "showText": true
+          }
+        },
+        {
+          "id": "blk_mvtypg83_ocby2",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvtypg83_kpxok",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Depending on the importance/sensitivity of the information you may contemplate choosing from hours, days, weeks, months or years.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "blk_mvtyptv1_enf8t",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Addressing <span class=\"article-text-muted\"><u>our second [2]</u></span> step, we can leverage one of the activities <span class=\"article-text-bg-gold\">Automation Studio</span> has to offer: <span class=\"article-text-bg-red\">Data Extract</span>. It creates a compressed (zipped) file for you to use outside SFMCE —we also have the capability of selecting the file extension of the backup asset. And you may ask: “<span class=\"article-text-muted\"><u>What do you mean outside SFMCE?</u></span>”. This file would be placed in a <span class=\"article-text-bg-red\">Safehouse</span> —technically outside our reach unless we use a <span class=\"article-text-bg-purple\">File Transfer</span> activity— this will be later addressed in the third step.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "Regarding the last item [3] in our definition section, we can use a <span class=\"article-text-bg-purple\">File Transfer</span> activity to move the file we just extracted and converted from the <span class=\"article-text-bg-red\">Safehouse</span> to the <span class=\"article-text-bg-red\">SFTP</span>. As the format the file is extracted may not correctly render special characters, we require to leverage our wildcard from the tip above and convert the document into <span class=\"article-text-bg-red\">UTF-8</span> using <span class=\"article-text-bg-red\">another Data Extract</span> activity.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "Once that is taken care of, we are able to transfer our easily readable file to the SFTP for the business, you, or an API to retrieve 🎉.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtyskn8_v9jqr",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "3) 🔬&nbsp;Validate",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "Before configuring all activities, your automation canvas should look like the image below:",
+                "align": "left"
+              }
+            ],
+            "showText": true
+          }
+        },
+        {
+          "id": "blk_mvtyswhn_sge5p",
+          "type": "full-image",
+          "data": {
+            "src": "/articles/scroll-of-backing-up-important-data/images/1793303853270_Starting_Source.webp",
+            "alt": "Starting Source",
+            "caption": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtytkhk_qojmz",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "As stated in the steps’ annotations, we will <span class=\"article-text-gold\"><span class=\"article-text-bg-gold\">extract, convert and transfer</span></span> the Data Extension, and depending on the amount of information in the table this may take around 3-5 minutes or less to run.",
+                "align": "left"
+              },
+              {
+                "text": "Validating the technical side:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtyujzp_sntuz",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "<span class=\"article-text-bg-red\">Data Extract</span>",
+                  "align": "left"
+                },
+                "children": [
+                  {
+                    "id": "sub_mvtyv104_pykr6",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">PROPERTIES</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvtzv6ag_d3ls2",
+                        "text": {
+                          "text": "Confirm the naming convention in <span class=\"article-text-bg-red\">File Naming Pattern</span> is using the expected file extension: <span class=\"article-text-bg-red\">.csv</span>",
+                          "align": "left"
+                        },
+                        "children": [
+                          {
+                            "id": "sub_l4_mvtzwvuz_5p8l5",
+                            "text": {
+                              "text": "<span class=\"article-text-muted\">Sample name</span>: campaign_extract_%%Year%%-%%Month%%-%%Day%%.csv",
+                              "align": "left"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "sub_l3_mvtzxmnn_odeho",
+                        "text": {
+                          "text": "This same file name is used in the next activities",
+                          "align": "left"
+                        },
+                        "children": [
+                          {
+                            "id": "sub_l4_mvtzxs7o_a163i",
+                            "text": {
+                              "text": "Copy the entire name —including the <span class=\"article-text-bg-red\">.csv</span> extension",
+                              "align": "left"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "sub_l3_mvtzyett_8mhpe",
+                        "text": {
+                          "text": "For the <span class=\"article-text-bg-red\">Extract Type</span> select <span class=\"article-text-bg-gold\">Data Extension Extract&nbsp;</span>",
+                          "align": "left"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "sub_mvtyv8uk_jmm4f",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">CONFIGURATION</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvu0033c_zatnz",
+                        "text": {
+                          "text": "Confirm the <span class=\"article-text-bg-red\">Column Delimiter</span>",
+                          "align": "left"
+                        },
+                        "children": []
+                      },
+                      {
+                        "id": "sub_l3_mvu007wv_y4qyo",
+                        "text": {
+                          "text": "For <span class=\"article-text-bg-red\">DECustomer Key</span> copy and paste your <span class=\"article-text-bg-gold\">Data Extension’s External Key</span>",
+                          "align": "left"
+                        },
+                        "children": []
+                      },
+                      {
+                        "id": "sub_l3_mvu00cmw_wb3kl",
+                        "text": {
+                          "text": "Check the <span class=\"article-text-bg-red\">Has Column Headers</span> box",
+                          "align": "left"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "sub_l2_mvu035pp_u7tjm",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">SUMMARY</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvv5h0hg_tyj5s",
+                        "text": {
+                          "text": "Verify all information is correct before setting up the below activity",
+                          "align": "left"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "main_mvv7gahw_vcqbu",
+                "text": {
+                  "text": "<span class=\"article-text-bg-red\">Data Extract [UTF-8]</span>",
+                  "align": "left"
+                },
+                "children": [
+                  {
+                    "id": "sub_l2_mvv7hbxv_jz2c0",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">PROPERTIES</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvv7hlwx_vtk7t",
+                        "text": {
+                          "text": "Confirm the naming convention in File Naming Pattern is exactly the same as the activity above",
+                          "align": "left"
+                        },
+                        "children": []
+                      },
+                      {
+                        "id": "sub_l3_mvv7hmvv_1nanw",
+                        "text": {
+                          "text": "For the Extract Type select one of the options below:",
+                          "align": "left"
+                        },
+                        "children": [
+                          {
+                            "id": "sub_l4_mvv7hzun_hgwm1",
+                            "text": {
+                              "text": "Custom UTF-16 to UTF-8 Encoding",
+                              "align": "left"
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "sub_l4_mvv7i3xc_8zq2e",
+                            "text": {
+                              "text": "Custom UTF-8 Encoding<br>",
+                              "align": "left"
+                            },
+                            "children": []
+                          },
+                          {
+                            "id": "sub_l4_mvv7i82g_jpbkw",
+                            "text": {
+                              "text": "<span class=\"article-text-bg-gold\">You can request the Salesforce Support Team to enable these Extract Conversion Types in your account via a Case.</span>",
+                              "align": "left"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "sub_l2_mvv7ln7w_ntm0j",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">CONFIGURATION</span>&nbsp;",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvv7lx6c_al5tr",
+                        "text": {
+                          "text": "Select your SFTP <span class=\"article-text-bg-red\">Folder</span> to store the extract",
+                          "align": "left"
+                        },
+                        "children": [
+                          {
+                            "id": "sub_l4_mvv7m0i6_f86bc",
+                            "text": {
+                              "text": "For instance: <span class=\"article-text-bg-gold\">Export/Campaign/Backup</span>",
+                              "align": "left"
+                            },
+                            "children": []
+                          }
+                        ]
+                      },
+                      {
+                        "id": "sub_l3_mvv7m4gj_7zkpg",
+                        "text": {
+                          "text": "For your <span class=\"article-text-bg-gold\">Input File Location</span> select Safehouse",
+                          "align": "left"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "sub_l2_mvv7n4gq_zt0l7",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">SUMMARY</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvv7ncrn_bawmz",
+                        "text": {
+                          "text": "Verify all information is correct before setting up the below activity<br>",
+                          "align": "left"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "main_mvv7nrle_ls7vx",
+                "text": {
+                  "text": "<span class=\"article-text-bg-red\">File Transfer</span>",
+                  "align": "left"
+                },
+                "children": [
+                  {
+                    "id": "sub_l2_mvv7o8u1_crceb",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">PROPERTIES</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvv7ohrv_dyb4y",
+                        "text": {
+                          "text": "For your <span class=\"article-text-bg-red\">File Action</span> select Move a File From Safehouse",
+                          "align": "left"
+                        },
+                        "children": [
+                          {
+                            "id": "sub_l4_mvv7ou6x_pef4j",
+                            "text": {
+                              "text": "<span class=\"article-text-bg-red\">SFMC’s Safehouse is a secure file storage location.</span>",
+                              "align": "left"
+                            },
+                            "children": []
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "id": "sub_l2_mvv7o9ld_r9l26",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">CONFIGURATION</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvv7pcdz_10i6x",
+                        "text": {
+                          "text": "Confirm the naming convention in <span class=\"article-text-bg-red\">File Naming Pattern</span> is exactly the same as the activities above",
+                          "align": "left"
+                        },
+                        "children": []
+                      },
+                      {
+                        "id": "sub_l3_mvv7pgon_vgo22",
+                        "text": {
+                          "text": "In <span class=\"article-text-bg-red\">Destination</span> choose the target folder/system where your file will be placed",
+                          "align": "left"
+                        },
+                        "children": []
+                      }
+                    ]
+                  },
+                  {
+                    "id": "sub_l2_mvv7oadd_0o129",
+                    "text": {
+                      "text": "<span class=\"article-text-bg-green\">SUMMARY</span>",
+                      "align": "left"
+                    },
+                    "children": [
+                      {
+                        "id": "sub_l3_mvv7q55e_hgykr",
+                        "text": {
+                          "text": "Verify all information is correct before running a first iteration of your automated process",
+                          "align": "left"
+                        },
+                        "children": []
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "markerStyle": "roman"
+          }
+        },
+        {
+          "id": "blk_mvv7qcgq_ig87k",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Up to this point your automation should be looking similar to the one below:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvv7qpzj_1uidj",
+          "type": "full-image",
+          "data": {
+            "src": "/articles/scroll-of-backing-up-important-data/images/1793379329203_up_to.webp",
+            "alt": "Up to this point",
+            "caption": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvv7ri3z_re3lx",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "4) 🔎&nbsp;Monitor",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "After setting up your automation flow don’t forget to include in the <span class=\"article-text-bg-red\">Activity Tab</span> your email address for <span class=\"article-text-bg-red\">Runtime Error or Skipped Run</span> notifications in case the process breaks down. Regularly monitor if the automation is running at the expected time, if it is taking longer than usual, and in case an activity fails, you can review the details the system provides.",
+                "align": "left"
+              }
+            ],
+            "showText": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvv7s9bd_1psw8",
+      "title": "To Sum-Up",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvv7sokv_ltvwy",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Evidently for a project the business would have their own custom processes to back up their information, however, if you are implementing or a stakeholder is feeling courageous to get their hands dirty in the platform, and need to frequently save a copy of a table or two, you can definitely leverage a simple automation that will save you a lot of time.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvv7svnx_4m4es",
+          "type": "related-docs",
+          "data": {
+            "items": [
+              {
+                "id": "rd_1",
+                "type": "external",
+                "title": {
+                  "text": "Recommended resources:",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=sf.mc_as_using_automation_studio_activities.htm&type=5",
+                "ctaText": "Automation Studio’s Activities"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

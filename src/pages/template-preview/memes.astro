@@ -1,0 +1,1437 @@
+---
+import { getAllMemeCategoryObjects, getMemeCategoryGlyphs } from '../../lib/memes';
+
+const initialCategories = getAllMemeCategoryObjects();
+const categoryGlyphs = getMemeCategoryGlyphs();
+
+const canonicalCategoriesJson = JSON.stringify(initialCategories.map((c) => c.name));
+const categoryGlyphsJson = JSON.stringify(categoryGlyphs);
+---
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coven Meme Center — Local Meme Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;600&family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
+  <style is:global>
+    :root {
+      --bg-base: #0b0a0e;
+      --bg-panel: #111017;
+      --bg-card: #16141f;
+      --bg-card-hover: #1b1826;
+      --border-subtle: rgba(216, 181, 107, 0.14);
+      --border-hover: rgba(216, 181, 107, 0.35);
+      --gold: #d8b56b;
+      --gold-bright: #f2d492;
+      --gold-dim: rgba(216, 181, 107, 0.12);
+      --purple: #b98fd8;
+      --purple-dim: rgba(185, 143, 216, 0.12);
+      --text-main: #ece6dd;
+      --text-muted: #9a938c;
+      --text-dim: #6e6761;
+      --green: #6bc48d;
+      --green-bg: rgba(107, 196, 141, 0.12);
+      --amber: #e0a958;
+      --amber-bg: rgba(224, 169, 88, 0.12);
+      --red: #e06c75;
+      --red-bg: rgba(224, 108, 117, 0.12);
+      --font-display: 'Metamorphous', 'Cinzel', serif;
+      --font-cinzel: 'Cinzel', serif;
+      --font-serif: 'EB Garamond', Georgia, serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-base);
+      background-image:
+        radial-gradient(circle at 15% 0%, rgba(185, 143, 216, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 85% 10%, rgba(216, 181, 107, 0.05) 0%, transparent 45%);
+      color: var(--text-main);
+      font-family: var(--font-serif);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Sticky Header */
+    .admin-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 11, 18, 0.94);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-subtle);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .admin-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .admin-brand-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+    }
+
+    .admin-brand-icon {
+      color: var(--gold);
+      font-size: 20px;
+      text-shadow: 0 0 10px rgba(216, 181, 107, 0.4);
+    }
+
+    .admin-brand-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--gold-bright);
+      letter-spacing: 0.05em;
+    }
+
+    .admin-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: var(--purple-dim);
+      color: var(--purple);
+      border: 1px solid rgba(185, 143, 216, 0.3);
+    }
+
+    .admin-top-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* Unified Coven Authoring Button Language */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      padding: 8px 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.18s ease;
+      border: 1px solid transparent;
+      white-space: nowrap;
+      line-height: 1.2;
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #d8b56b 0%, #b58d3d 100%);
+      color: #0b0a0e;
+      border-color: #e6c883;
+      box-shadow: 0 2px 12px rgba(216, 181, 107, 0.2);
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      filter: brightness(1.08);
+      box-shadow: 0 4px 16px rgba(216, 181, 107, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(216, 181, 107, 0.1);
+      color: var(--gold-bright);
+      border-color: rgba(216, 181, 107, 0.35);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      background: rgba(216, 181, 107, 0.2);
+      border-color: rgba(216, 181, 107, 0.55);
+      box-shadow: 0 0 12px rgba(216, 181, 107, 0.18);
+    }
+
+    .btn-ghost {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      border-color: rgba(255, 255, 255, 0.12);
+    }
+
+    .btn-ghost:hover:not(:disabled) {
+      color: var(--text-main);
+      border-color: rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.06);
+    }
+
+    .btn-success {
+      background: var(--green-bg);
+      color: var(--green);
+      border-color: rgba(107, 196, 141, 0.45);
+    }
+
+    .btn-success:hover:not(:disabled) {
+      background: rgba(107, 196, 141, 0.25);
+      border-color: var(--green);
+      box-shadow: 0 0 12px rgba(107, 196, 141, 0.25);
+    }
+
+    .btn-danger {
+      background: var(--red-bg);
+      color: var(--red);
+      border-color: rgba(224, 108, 117, 0.45);
+    }
+
+    .btn-danger:hover:not(:disabled) {
+      background: rgba(224, 108, 117, 0.25);
+      border-color: var(--red);
+      box-shadow: 0 0 12px rgba(224, 108, 117, 0.25);
+    }
+
+    .btn-sm {
+      font-size: 10px;
+      padding: 6px 10px;
+    }
+
+    /* Main Container */
+    .admin-container {
+      max-width: 1360px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 32px 28px 64px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .admin-title-row {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 20px;
+      flex-wrap: wrap;
+      border-bottom: 1px solid var(--border-subtle);
+      padding-bottom: 20px;
+    }
+
+    .admin-heading h1 {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--text-main);
+      letter-spacing: 0.03em;
+      margin-bottom: 6px;
+    }
+
+    .admin-heading p {
+      font-size: 16px;
+      color: var(--text-muted);
+    }
+
+    .admin-metrics {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .metric-pill {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 6px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .metric-pill .label {
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .metric-pill .val {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--gold-bright);
+    }
+
+    .metric-pill.metric-pub .val { color: var(--green); }
+    .metric-pill.metric-draft .val { color: var(--amber); }
+    .metric-pill.metric-feat .val { color: var(--purple); }
+
+    /* Controls Bar */
+    .admin-controls-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: var(--bg-panel);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .filter-tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .filter-tab {
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 7px 13px;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .filter-tab:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.03);
+    }
+
+    .filter-tab.active {
+      background: var(--gold-dim);
+      color: var(--gold-bright);
+      border-color: rgba(216, 181, 107, 0.35);
+    }
+
+    .right-filters {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      flex: 1;
+      justify-content: flex-end;
+    }
+
+    .category-select {
+      background: #0d0b12;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 5px;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 12px;
+    }
+
+    .search-wrapper {
+      position: relative;
+      min-width: 240px;
+      max-width: 340px;
+      flex: 1;
+    }
+
+    .search-input {
+      width: 100%;
+      background: #0d0b12;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 5px;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 30px 8px 12px;
+    }
+
+    .search-input:focus,
+    .category-select:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    .search-clear {
+      position: absolute;
+      right: 8px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      display: none;
+    }
+
+    /* Meme Cards Grid */
+    .meme-center-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+      gap: 20px;
+    }
+
+    .center-meme-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      transition: border-color 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
+    }
+
+    .center-meme-card:hover {
+      border-color: var(--border-hover);
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+    }
+
+    .center-meme-card.is-featured {
+      border-color: rgba(216, 181, 107, 0.42);
+    }
+
+    .center-meme-thumb {
+      height: 190px;
+      background: repeating-linear-gradient(135deg, rgba(185, 143, 216, 0.08) 0 12px, rgba(185, 143, 216, 0.02) 12px 24px), #0d0b12;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .center-meme-thumb img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
+      background: #09080d;
+    }
+
+    .center-meme-no-img {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .thumb-badges-row {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 9px;
+      border-radius: 4px;
+      backdrop-filter: blur(6px);
+    }
+
+    .status-badge.pub {
+      background: rgba(16, 36, 24, 0.9);
+      color: var(--green);
+      border: 1px solid rgba(107, 196, 141, 0.4);
+    }
+
+    .status-badge.draft {
+      background: rgba(40, 29, 14, 0.9);
+      color: var(--amber);
+      border: 1px solid rgba(224, 169, 88, 0.4);
+    }
+
+    .featured-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      padding: 4px 9px;
+      border-radius: 4px;
+      background: rgba(28, 22, 12, 0.92);
+      color: var(--gold-bright);
+      border: 1px solid rgba(216, 181, 107, 0.45);
+      backdrop-filter: blur(6px);
+    }
+
+    .center-meme-body {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .center-meme-cat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .cat-pill {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--purple);
+      background: var(--purple-dim);
+      border: 1px solid rgba(185, 143, 216, 0.28);
+      padding: 3px 8px;
+      border-radius: 3px;
+    }
+
+    .slug-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .center-meme-caption {
+      font-family: var(--font-cinzel);
+      font-size: 17px;
+      color: var(--text-main);
+      line-height: 1.35;
+      word-break: break-word;
+    }
+
+    .center-meme-desc {
+      font-size: 14px;
+      color: var(--text-muted);
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .center-meme-dates {
+      margin-top: auto;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--text-dim);
+    }
+
+    /* Fixed & Polished Meme Center Action Bar */
+    .center-meme-actions {
+      padding: 12px 18px;
+      background: rgba(0, 0, 0, 0.28);
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .inline-confirm-group {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Manage Categories Modal */
+    .cat-modal-backdrop {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(8, 7, 12, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .cat-modal-backdrop.is-open {
+      display: flex;
+    }
+
+    .cat-modal-box {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-hover);
+      border-radius: 12px;
+      max-width: 580px;
+      width: 100%;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7);
+      display: flex;
+      flex-direction: column;
+      max-height: 88vh;
+      overflow: hidden;
+    }
+
+    .cat-modal-header {
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .cat-modal-header h2 {
+      font-family: var(--font-display);
+      font-size: 18px;
+      color: var(--gold-bright);
+      font-weight: 400;
+    }
+
+    .cat-modal-close {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 22px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px 8px;
+    }
+
+    .cat-modal-close:hover {
+      color: var(--text-main);
+    }
+
+    .cat-modal-body {
+      padding: 20px 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .cat-list-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cat-item-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--bg-card);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+    }
+
+    .cat-item-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 1;
+    }
+
+    .cat-item-glyph {
+      font-size: 18px;
+      width: 24px;
+      text-align: center;
+    }
+
+    .cat-item-name {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      color: var(--text-main);
+      font-weight: 600;
+    }
+
+    .cat-item-count {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 7px;
+      border-radius: 3px;
+    }
+
+    .cat-item-actions {
+      display: flex;
+      gap: 6px;
+    }
+
+    .cat-add-form {
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cat-add-form h3 {
+      font-family: var(--font-cinzel);
+      font-size: 14px;
+      color: var(--gold-bright);
+    }
+
+    .cat-inputs-row {
+      display: grid;
+      grid-template-columns: 80px 1fr auto;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .cat-modal-input {
+      background: #0d0b12;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 5px;
+      color: var(--text-main);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 10px;
+    }
+
+    .cat-modal-input:focus {
+      outline: none;
+      border-color: var(--gold);
+    }
+
+    /* Empty State */
+    .empty-state {
+      background: var(--bg-panel);
+      border: 1px dashed rgba(216, 181, 107, 0.25);
+      border-radius: 10px;
+      padding: 52px 24px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .empty-state h2 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      color: var(--gold-bright);
+      font-weight: 400;
+    }
+
+    .empty-state p {
+      font-size: 16px;
+      color: var(--text-muted);
+      max-width: 460px;
+    }
+
+    /* Toast */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-width: 420px;
+    }
+
+    .toast-msg {
+      background: #171421;
+      border: 1px solid var(--border-hover);
+      border-left: 4px solid var(--gold);
+      color: var(--text-main);
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.45;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.55);
+    }
+
+    .toast-msg.toast-success { border-left-color: var(--green); }
+    .toast-msg.toast-error { border-left-color: var(--red); }
+
+    @media (max-width: 640px) {
+      .admin-header {
+        padding: 12px 16px;
+      }
+      .admin-container {
+        padding: 20px 14px 48px;
+      }
+      .meme-center-grid {
+        grid-template-columns: 1fr;
+      }
+      .cat-inputs-row {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Sticky Header -->
+  <header class="admin-header">
+    <div class="admin-brand">
+      <a href="/" class="admin-brand-link" aria-label="Go to Coven of Technology home">
+        <span class="admin-brand-icon">✶</span>
+        <span class="admin-brand-title">MEME CENTER</span>
+      </a>
+      <span class="admin-badge">Local Admin</span>
+    </div>
+
+    <div class="admin-top-actions">
+      <a href="/template-preview/meme-studio?new=1" class="btn btn-primary" id="btn-create-meme">+ Create Meme</a>
+      <button type="button" class="btn btn-secondary" id="btn-manage-categories">Manage Categories 🏷️</button>
+      <a href="/template-preview/meme-studio" class="btn btn-secondary" id="btn-open-meme-studio">Meme Studio</a>
+      <a href="/template-preview/articles" class="btn btn-ghost" id="btn-open-article-center">Article Center</a>
+      <a href="/template-preview/studio" class="btn btn-ghost" id="btn-open-article-studio">Article Studio</a>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="admin-container">
+    <!-- Title & Metrics Row -->
+    <div class="admin-title-row">
+      <div class="admin-heading">
+        <h1>Conjured Memes &amp; Draft Incantations</h1>
+        <p>Manage meme drafts, publication lifecycles, and Cackle of the Day spotlights stored in <code>src/memes/</code>.</p>
+      </div>
+
+      <div class="admin-metrics">
+        <div class="metric-pill">
+          <span class="label">Total</span>
+          <span class="val" id="count-total">0</span>
+        </div>
+        <div class="metric-pill metric-pub">
+          <span class="label">Published</span>
+          <span class="val" id="count-published">0</span>
+        </div>
+        <div class="metric-pill metric-draft">
+          <span class="label">Draft</span>
+          <span class="val" id="count-draft">0</span>
+        </div>
+        <div class="metric-pill metric-feat">
+          <span class="label">Featured</span>
+          <span class="val" id="count-featured">0</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filter & Search Bar -->
+    <div class="admin-controls-bar">
+      <div class="filter-tabs" role="tablist" aria-label="Filter memes by status">
+        <button type="button" class="filter-tab active" data-filter="all">All</button>
+        <button type="button" class="filter-tab" data-filter="draft">Draft</button>
+        <button type="button" class="filter-tab" data-filter="published">Published</button>
+      </div>
+
+      <div class="right-filters">
+        <select id="filter-category" class="category-select" aria-label="Filter by meme category">
+          <option value="all">All Categories</option>
+          {initialCategories.map((cat) => (
+            <option value={cat.id}>{cat.glyph || '✦'} {cat.name}</option>
+          ))}
+        </select>
+
+        <div class="search-wrapper">
+          <input
+            type="text"
+            id="search-input"
+            class="search-input"
+            placeholder="Search caption, slug, category..."
+            autocomplete="off"
+          />
+          <button type="button" id="search-clear" class="search-clear" title="Clear search">×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Meme Grid Container -->
+    <div id="memes-list-container"></div>
+  </main>
+
+  <!-- Manage Categories Modal -->
+  <div class="cat-modal-backdrop" id="category-modal" role="dialog" aria-modal="true" aria-labelledby="cat-modal-title">
+    <div class="cat-modal-box">
+      <div class="cat-modal-header">
+        <h2 id="cat-modal-title">🏷️ Managed Meme Categories</h2>
+        <button type="button" class="cat-modal-close" id="btn-close-cat-modal" aria-label="Close category modal">×</button>
+      </div>
+
+      <div class="cat-modal-body">
+        <div class="cat-list-wrap" id="cat-items-list">
+          <!-- Populated dynamically -->
+        </div>
+
+        <form class="cat-add-form" id="cat-add-form" onsubmit="return false;">
+          <h3 id="cat-form-title">+ Add New Category</h3>
+          <input type="hidden" id="input-cat-id" value="" />
+          <div class="cat-inputs-row">
+            <input type="text" id="input-cat-glyph" class="cat-modal-input" placeholder="Glyph" maxlength="4" />
+            <input type="text" id="input-cat-name" class="cat-modal-input" placeholder="Category Name (e.g. Marketing Cloud chaos)" required />
+            <button type="button" class="btn btn-primary" id="btn-save-cat">Save</button>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" id="btn-cancel-edit-cat" style="display:none;align-self:flex-start;">Cancel Editing</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast-container" id="toast-container" aria-live="polite"></div>
+
+  <script is:inline define:vars={{ canonicalCategoriesJson, categoryGlyphsJson }}>
+    let CATEGORY_GLYPHS = JSON.parse(categoryGlyphsJson);
+
+    let allMemes = [];
+    let allCategories = [];
+    let activeStatusFilter = 'all';
+    let activeCategoryFilter = 'all';
+    let searchQuery = '';
+    let confirmingUnpublishSlug = null;
+
+    const elCountTotal = document.getElementById('count-total');
+    const elCountPublished = document.getElementById('count-published');
+    const elCountDraft = document.getElementById('count-draft');
+    const elCountFeatured = document.getElementById('count-featured');
+    const elCategorySelect = document.getElementById('filter-category');
+    const elSearchInput = document.getElementById('search-input');
+    const elSearchClear = document.getElementById('search-clear');
+    const elListContainer = document.getElementById('memes-list-container');
+    const elToastContainer = document.getElementById('toast-container');
+
+    // Category Modal DOM
+    const elBtnManageCategories = document.getElementById('btn-manage-categories');
+    const elCategoryModal = document.getElementById('category-modal');
+    const elBtnCloseCatModal = document.getElementById('btn-close-cat-modal');
+    const elCatItemsList = document.getElementById('cat-items-list');
+    const elCatFormTitle = document.getElementById('cat-form-title');
+    const elInputCatId = document.getElementById('input-cat-id');
+    const elInputCatGlyph = document.getElementById('input-cat-glyph');
+    const elInputCatName = document.getElementById('input-cat-name');
+    const elBtnSaveCat = document.getElementById('btn-save-cat');
+    const elBtnCancelEditCat = document.getElementById('btn-cancel-edit-cat');
+
+    function showToast(message, type = 'info') {
+      const toast = document.createElement('div');
+      toast.className = `toast-msg toast-${type}`;
+      toast.textContent = message;
+      elToastContainer.appendChild(toast);
+      setTimeout(() => toast.remove(), 4200);
+    }
+
+    function escapeHtml(str) {
+      return String(str || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function formatShortDate(val) {
+      if (!val) return '—';
+      try {
+        const d = new Date(val + (val.length === 10 ? 'T00:00:00' : ''));
+        if (Number.isNaN(d.getTime())) return val;
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      } catch (_) {
+        return val;
+      }
+    }
+
+    async function fetchCategories() {
+      try {
+        const res = await fetch('/__meme-studio/categories');
+        const data = await res.json();
+        if (res.ok && Array.isArray(data.categories)) {
+          allCategories = data.categories;
+          if (data.glyphs) {
+            CATEGORY_GLYPHS = { ...CATEGORY_GLYPHS, ...data.glyphs };
+          }
+          syncCategoryDropdown();
+          renderCategoryModalList();
+        }
+      } catch (_) {}
+    }
+
+    function syncCategoryDropdown() {
+      const currentVal = elCategorySelect.value;
+      elCategorySelect.innerHTML = '<option value="all">All Categories</option>';
+      for (const cat of allCategories) {
+        const opt = document.createElement('option');
+        opt.value = cat.id;
+        opt.textContent = `${cat.glyph || '✦'} ${cat.name}`;
+        elCategorySelect.appendChild(opt);
+      }
+      for (const meme of allMemes) {
+        if (!meme.categoryId) continue;
+        const exists = Array.from(elCategorySelect.options).some((o) => o.value === meme.categoryId);
+        if (!exists) {
+          const opt = document.createElement('option');
+          opt.value = meme.categoryId;
+          const glyph = CATEGORY_GLYPHS[meme.categoryId] || CATEGORY_GLYPHS[meme.category] || '✦';
+          const name = meme.category || meme.categoryId;
+          opt.textContent = `${glyph} ${name}`;
+          elCategorySelect.appendChild(opt);
+        }
+      }
+      if (currentVal && Array.from(elCategorySelect.options).some((o) => o.value === currentVal)) {
+        elCategorySelect.value = currentVal;
+      } else {
+        elCategorySelect.value = 'all';
+        activeCategoryFilter = 'all';
+      }
+    }
+
+    async function fetchMemes() {
+      try {
+        const res = await fetch('/__meme-studio/memes');
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || 'Failed to load memes.');
+        }
+        allMemes = Array.isArray(data.memes) ? data.memes : [];
+
+        if (Array.isArray(data.categoryObjects)) {
+          allCategories = data.categoryObjects;
+          if (data.categoryGlyphs) {
+            CATEGORY_GLYPHS = { ...CATEGORY_GLYPHS, ...data.categoryGlyphs };
+          }
+          syncCategoryDropdown();
+        }
+
+        updateMetrics();
+        renderMemes();
+        renderCategoryModalList();
+      } catch (err) {
+        showToast(err.message || 'Error loading memes.', 'error');
+      }
+    }
+
+    function updateMetrics() {
+      const total = allMemes.length;
+      const pub = allMemes.filter((m) => m.status === 'published').length;
+      const draft = allMemes.filter((m) => m.status === 'draft').length;
+      const feat = allMemes.filter((m) => Boolean(m.featured)).length;
+
+      elCountTotal.textContent = String(total);
+      elCountPublished.textContent = String(pub);
+      elCountDraft.textContent = String(draft);
+      elCountFeatured.textContent = String(feat);
+    }
+
+    function getFilteredMemes() {
+      return allMemes.filter((meme) => {
+        if (activeStatusFilter !== 'all' && meme.status !== activeStatusFilter) {
+          return false;
+        }
+        if (activeCategoryFilter !== 'all') {
+          const filterClean = activeCategoryFilter.toLowerCase();
+          const memeCatId = (meme.categoryId || '').toLowerCase();
+          const memeCatName = (meme.category || '').toLowerCase();
+          if (memeCatId !== filterClean && memeCatName !== filterClean) {
+            return false;
+          }
+        }
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          const hay = [
+            meme.caption,
+            meme.description,
+            meme.slug,
+            meme.category,
+            meme.categoryId,
+            meme.id,
+          ]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+          if (!hay.includes(q)) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderMemes() {
+      const filtered = getFilteredMemes();
+
+      if (filtered.length === 0) {
+        const isEmptyRepo = allMemes.length === 0;
+        elListContainer.innerHTML = `
+          <div class="empty-state">
+            <h2>${isEmptyRepo ? 'No Memes Conjured Yet' : 'No Matching Memes Found'}</h2>
+            <p>${
+              isEmptyRepo
+                ? 'Start authoring your first Coven meme in Meme Studio. Drafts and published memes are stored cleanly in src/memes/<slug>/meme.json.'
+                : 'Try clearing your search query or switching the status/category filters above.'
+            }</p>
+            ${
+              isEmptyRepo
+                ? '<a href="/template-preview/meme-studio?new=1" class="btn btn-primary" style="margin-top:6px;">+ Create First Meme</a>'
+                : ''
+            }
+          </div>
+        `;
+        return;
+      }
+
+      const cardsHtml = filtered
+        .map((meme) => {
+          const isPublished = meme.status === 'published';
+          const catObj = allCategories.find((c) => c.id === meme.categoryId || c.name === meme.category);
+          const glyph = catObj ? catObj.glyph : (CATEGORY_GLYPHS[meme.categoryId] || CATEGORY_GLYPHS[meme.category] || '✦');
+          const catDisplayName = catObj ? catObj.name : (meme.category || meme.categoryId || 'Unknown Category');
+          const hasImg = Boolean(meme.imageSrc);
+          const isConfirming = confirmingUnpublishSlug === meme.slug;
+          const displayDate = formatShortDate(meme.publishedAt || meme.publishDate);
+
+          return `
+            <article class="center-meme-card ${meme.featured ? 'is-featured' : ''}" data-slug="${escapeHtml(meme.slug)}">
+              <div class="center-meme-thumb">
+                <div class="thumb-badges-row">
+                  <span class="status-badge ${isPublished ? 'pub' : 'draft'}">
+                    ${isPublished ? '● Published' : '○ Draft'}
+                  </span>
+                  ${meme.featured ? '<span class="featured-badge">🔥 Cackle of the Day</span>' : ''}
+                </div>
+                ${
+                  hasImg
+                    ? `<img src="${escapeHtml(meme.imageSrc)}" alt="${escapeHtml(meme.imageAlt || meme.caption)}" loading="lazy" />`
+                    : `<div class="center-meme-no-img">[ no image uploaded · ${escapeHtml(meme.slug)} ]</div>`
+                }
+              </div>
+
+              <div class="center-meme-body">
+                <div class="center-meme-cat-row">
+                  <span class="cat-pill">${glyph} ${escapeHtml(catDisplayName)}</span>
+                  <span class="slug-pill">/${escapeHtml(meme.slug)}</span>
+                </div>
+
+                <h2 class="center-meme-caption">${escapeHtml(meme.caption || 'Untitled Meme')}</h2>
+                ${
+                  meme.description
+                    ? `<p class="center-meme-desc">${escapeHtml(meme.description)}</p>`
+                    : ''
+                }
+
+                <div class="center-meme-dates">
+                  <span>${isPublished ? 'Published: ' + escapeHtml(displayDate) : 'Status: Draft'}</span>
+                  <span>Updated: ${escapeHtml(formatShortDate(meme.updatedAt))}</span>
+                </div>
+              </div>
+
+              <div class="center-meme-actions">
+                <a href="/template-preview/meme-studio?slug=${encodeURIComponent(meme.slug)}" class="btn btn-secondary">
+                  Edit ✎
+                </a>
+
+                ${
+                  isPublished
+                    ? isConfirming
+                      ? `
+                        <div class="inline-confirm-group">
+                          <button type="button" class="btn btn-danger" data-action="confirm-unpublish" data-slug="${escapeHtml(meme.slug)}">Confirm Unpublish</button>
+                          <button type="button" class="btn btn-ghost" data-action="cancel-unpublish">Cancel</button>
+                        </div>
+                      `
+                      : `
+                        <button type="button" class="btn btn-danger" data-action="request-unpublish" data-slug="${escapeHtml(meme.slug)}">
+                          Unpublish
+                        </button>
+                      `
+                    : `
+                      <button type="button" class="btn btn-success" data-action="publish" data-slug="${escapeHtml(meme.slug)}">
+                        Publish ✦
+                      </button>
+                    `
+                }
+              </div>
+            </article>
+          `;
+        })
+        .join('');
+
+      elListContainer.innerHTML = `<div class="meme-center-grid">${cardsHtml}</div>`;
+    }
+
+    // Filter Tabs
+    document.querySelectorAll('.filter-tab').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-tab').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+        activeStatusFilter = btn.getAttribute('data-filter') || 'all';
+        renderMemes();
+      });
+    });
+
+    // Category Select
+    elCategorySelect.addEventListener('change', () => {
+      activeCategoryFilter = elCategorySelect.value;
+      renderMemes();
+    });
+
+    // Search Input
+    elSearchInput.addEventListener('input', () => {
+      searchQuery = elSearchInput.value.trim();
+      elSearchClear.style.display = searchQuery ? 'block' : 'none';
+      renderMemes();
+    });
+
+    elSearchClear.addEventListener('click', () => {
+      elSearchInput.value = '';
+      searchQuery = '';
+      elSearchClear.style.display = 'none';
+      renderMemes();
+    });
+
+    // Delegated Card Actions (Publish / Unpublish)
+    elListContainer.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-action');
+      const slug = btn.getAttribute('data-slug');
+
+      if (action === 'request-unpublish') {
+        confirmingUnpublishSlug = slug;
+        renderMemes();
+        return;
+      }
+
+      if (action === 'cancel-unpublish') {
+        confirmingUnpublishSlug = null;
+        renderMemes();
+        return;
+      }
+
+      if (action === 'confirm-unpublish' && slug) {
+        btn.disabled = true;
+        try {
+          const res = await fetch('/__meme-studio/unpublish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to unpublish meme.');
+          }
+          confirmingUnpublishSlug = null;
+          showToast(`Unpublished "${data.meme.caption}" — preserved publishDate: ${formatShortDate(data.meme.publishDate)}`, 'info');
+          await fetchMemes();
+        } catch (err) {
+          showToast(err.message || 'Unpublish failed.', 'error');
+          btn.disabled = false;
+        }
+        return;
+      }
+
+      if (action === 'publish' && slug) {
+        btn.disabled = true;
+        try {
+          const res = await fetch('/__meme-studio/publish', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug }),
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to publish meme.');
+          }
+          showToast(`Published "${data.meme.caption}" (Auto publishDate: ${data.meme.publishDate})`, 'success');
+          await fetchMemes();
+        } catch (err) {
+          showToast(err.message || 'Publish blocked.', 'error');
+          btn.disabled = false;
+        }
+      }
+    });
+
+    // Manage Categories Modal Logic
+    function getUsageCount(cat) {
+      if (!allMemes) return 0;
+      const cId = (cat.id || '').toLowerCase();
+      const cName = (cat.name || '').toLowerCase();
+      return allMemes.filter((m) => {
+        const mCatId = (m.categoryId || '').toLowerCase();
+        const mCat = (m.category || '').toLowerCase();
+        return mCatId === cId || mCat === cId || mCat === cName;
+      }).length;
+    }
+
+    function renderCategoryModalList() {
+      if (!elCatItemsList) return;
+      if (allCategories.length === 0) {
+        elCatItemsList.innerHTML = '<div style="font-family:var(--font-mono);font-size:12px;color:var(--text-muted);">No categories defined.</div>';
+        return;
+      }
+
+      const rows = allCategories.map((cat) => {
+        const usage = getUsageCount(cat);
+        return `
+          <div class="cat-item-row" data-id="${escapeHtml(cat.id)}">
+            <div class="cat-item-info">
+              <span class="cat-item-glyph">${escapeHtml(cat.glyph || '✦')}</span>
+              <span class="cat-item-name">${escapeHtml(cat.name)}</span>
+              <span class="cat-item-count">${usage} ${usage === 1 ? 'meme' : 'memes'}</span>
+            </div>
+            <div class="cat-item-actions">
+              <button type="button" class="btn btn-secondary btn-sm" data-cat-action="edit" data-id="${escapeHtml(cat.id)}" data-name="${escapeHtml(cat.name)}" data-glyph="${escapeHtml(cat.glyph || '')}">Edit</button>
+              <button type="button" class="btn btn-danger btn-sm" data-cat-action="delete" data-id="${escapeHtml(cat.id)}" data-usage="${usage}">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      elCatItemsList.innerHTML = rows;
+    }
+
+    function resetCategoryForm() {
+      elInputCatId.value = '';
+      elInputCatGlyph.value = '';
+      elInputCatName.value = '';
+      elCatFormTitle.textContent = '+ Add New Category';
+      elBtnSaveCat.textContent = 'Save';
+      elBtnCancelEditCat.style.display = 'none';
+    }
+
+    elBtnManageCategories.addEventListener('click', () => {
+      resetCategoryForm();
+      renderCategoryModalList();
+      elCategoryModal.classList.add('is-open');
+    });
+
+    elBtnCloseCatModal.addEventListener('click', () => {
+      elCategoryModal.classList.remove('is-open');
+    });
+
+    elCategoryModal.addEventListener('click', (e) => {
+      if (e.target === elCategoryModal) {
+        elCategoryModal.classList.remove('is-open');
+      }
+    });
+
+    elBtnCancelEditCat.addEventListener('click', () => {
+      resetCategoryForm();
+    });
+
+    // Save Category (Create or Edit)
+    elBtnSaveCat.addEventListener('click', async () => {
+      const name = elInputCatName.value.trim();
+      const glyph = elInputCatGlyph.value.trim();
+      const id = elInputCatId.value.trim();
+
+      if (!name) {
+        showToast('Category name is required.', 'error');
+        elInputCatName.focus();
+        return;
+      }
+
+      elBtnSaveCat.disabled = true;
+      try {
+        const res = await fetch('/__meme-studio/categories', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: id || undefined, name, glyph }),
+        });
+        const data = await res.json();
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || 'Failed to save category.');
+        }
+
+        showToast(id ? `Updated category "${name}"` : `Created category "${name}"`, 'success');
+        resetCategoryForm();
+        await fetchCategories();
+        await fetchMemes();
+      } catch (err) {
+        showToast(err.message || 'Error saving category.', 'error');
+      } finally {
+        elBtnSaveCat.disabled = false;
+      }
+    });
+
+    // Delegated Category Actions (Edit / Delete)
+    elCatItemsList.addEventListener('click', async (e) => {
+      const btn = e.target.closest('button[data-cat-action]');
+      if (!btn) return;
+      const action = btn.getAttribute('data-cat-action');
+      const id = btn.getAttribute('data-id');
+
+      if (action === 'edit') {
+        const name = btn.getAttribute('data-name');
+        const glyph = btn.getAttribute('data-glyph');
+        elInputCatId.value = id;
+        elInputCatName.value = name;
+        elInputCatGlyph.value = glyph;
+        elCatFormTitle.textContent = `Edit Category "${name}"`;
+        elBtnSaveCat.textContent = 'Update';
+        elBtnCancelEditCat.style.display = 'inline-flex';
+        elInputCatName.focus();
+        return;
+      }
+
+      if (action === 'delete') {
+        const usage = parseInt(btn.getAttribute('data-usage') || '0', 10);
+        if (usage > 0) {
+          showToast(`This category is used by ${usage} meme(s). Reassign those memes before deleting it.`, 'error');
+          return;
+        }
+
+        btn.disabled = true;
+        try {
+          const res = await fetch(`/__meme-studio/categories/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+          });
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Failed to delete category.');
+          }
+          showToast('Category deleted safely.', 'info');
+          await fetchCategories();
+          await fetchMemes();
+        } catch (err) {
+          showToast(err.message || 'Error deleting category.', 'error');
+          btn.disabled = false;
+        }
+      }
+    });
+
+    // Initial Load
+    fetchCategories();
+    fetchMemes();
+  </script>
+</body>
+</html>
