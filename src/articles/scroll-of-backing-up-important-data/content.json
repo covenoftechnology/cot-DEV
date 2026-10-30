@@ -15,8 +15,11 @@
     "status": "published",
     "featured": false,
     "wide": true,
-    "cover": "",
-    "coverCaption": ""
+    "cover": "/articles/scroll-of-backing-up-important-data/images/1793389811613_CoT_BackUpImportantData.webp",
+    "coverCaption": "",
+    "coverImageSrc": "/articles/scroll-of-backing-up-important-data/images/1793389811613_CoT_BackUpImportantData.webp",
+    "coverImageAlt": "",
+    "showCoverImageOnArticle": false
   },
   "sections": [
     {

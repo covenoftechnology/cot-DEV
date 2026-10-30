@@ -16,6 +16,9 @@ export interface ArticleMeta {
   featured?: boolean;
   order?: number;
   thumbBg?: string;
+  coverImageSrc?: string;
+  coverImageAlt?: string;
+  showCoverImageOnArticle?: boolean;
   cover?: string;
   coverCaption?: string;
   publishedDate?: Date | string;

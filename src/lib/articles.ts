@@ -50,6 +50,17 @@ function validateMeta(slug: string, meta: any): ArticleMeta {
     console.warn(`[Article Meta Warning] "${slug}" has issues: ${warnings.join(', ')}`);
   }
 
+  // Canonicalize cover image metadata for backwards compatibility
+  if (!meta.coverImageSrc && meta.cover) {
+    meta.coverImageSrc = meta.cover;
+  }
+  if (!meta.coverImageAlt && meta.coverCaption) {
+    meta.coverImageAlt = meta.coverCaption;
+  }
+  if (meta.showCoverImageOnArticle === undefined) {
+    meta.showCoverImageOnArticle = true;
+  }
+
   return meta as ArticleMeta;
 }
 

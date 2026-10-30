@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "studioId": "draft_mvr248cz_qf0xf",
+  "studioId": "draft_mvve3lcd_szdos",
   "slug": "the-magic-science-in-sfmc-einstein-ai",
   "meta": {
     "title": "The Magic Science in SFMC’s Einstein AI",
@@ -15,8 +15,10 @@
     "status": "published",
     "featured": false,
     "wide": true,
-    "cover": "",
-    "coverCaption": ""
+    "coverImageSrc": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793390001663_SFMC-Einstein-AI.webp",
+    "coverImageAlt": "",
+    "showCoverImageOnArticle": false,
+    "cover": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793390001663_SFMC-Einstein-AI.webp"
   },
   "sections": [
     {
@@ -2249,7 +2251,8 @@
                     "text": {
                       "text": "If Deleting Tags, these can take up to 24 hours to be removed.",
                       "align": "left"
-                    }
+                    },
+                    "children": []
                   }
                 ]
               }

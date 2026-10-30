@@ -74,13 +74,17 @@ const formattedUpdatedDate = formatDate(meta.updatedDate);
 const isWide = Boolean(wide || meta.wide);
 const containerMaxWidth = isWide ? '1220px' : '820px';
 const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : undefined;
+
+const coverSrc = meta.coverImageSrc || meta.cover;
+const coverAlt = meta.coverImageAlt || meta.coverCaption || meta.title || '';
+const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== false;
 ---
 
 <BaseLayout
   title={`Coven of Technology — ${meta.title}`}
   description={meta.description}
   canonical={canonicalUrl}
-  ogImage={meta.cover}
+  ogImage={coverSrc || meta.cover}
   ogType="article"
   disableDc={true}
 >
@@ -156,10 +160,10 @@ const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : 
         </p>
       )}
 
-      <!-- Hero Cover from meta.cover -->
-      {meta.cover && (
+      <!-- Editorial Hero Cover Image -->
+      {showHeroCover && (
         <figure class="hero-cover">
-          <img src={meta.cover} alt={meta.title} width="1200" height="560" loading="eager" />
+          <img src={coverSrc} alt={coverAlt} width="1200" height="560" loading="eager" />
           {meta.coverCaption && <figcaption>{meta.coverCaption}</figcaption>}
         </figure>
       )}

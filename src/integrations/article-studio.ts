@@ -65,8 +65,11 @@ function generateMetaTs(meta: any, slug: string): string {
   const featured = Boolean(meta.featured);
   const order = typeof meta.order === 'number' ? meta.order : 10;
   const wide = meta.wide !== undefined ? Boolean(meta.wide) : true;
-  const cover = (meta.cover && typeof meta.cover === 'string' && meta.cover.trim() && meta.cover !== '/favicon.svg') ? JSON.stringify(meta.cover.trim()) : 'undefined';
-  const coverCaption = (cover !== 'undefined' && meta.coverCaption && typeof meta.coverCaption === 'string' && meta.coverCaption.trim()) ? JSON.stringify(meta.coverCaption.trim()) : 'undefined';
+  const rawCoverSrc = meta.coverImageSrc || meta.cover;
+  const coverImageSrc = (rawCoverSrc && typeof rawCoverSrc === 'string' && rawCoverSrc.trim() && rawCoverSrc !== '/favicon.svg') ? JSON.stringify(rawCoverSrc.trim()) : 'undefined';
+  const rawCoverAlt = meta.coverImageAlt || meta.coverCaption;
+  const coverImageAlt = (coverImageSrc !== 'undefined' && rawCoverAlt && typeof rawCoverAlt === 'string' && rawCoverAlt.trim()) ? JSON.stringify(rawCoverAlt.trim()) : 'undefined';
+  const showCoverImageOnArticle = meta.showCoverImageOnArticle !== false;
   const thumbBg = meta.thumbBg
     ? JSON.stringify(meta.thumbBg)
     : JSON.stringify('repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)');
@@ -89,8 +92,9 @@ const meta: ArticleMeta = {
   featured: ${featured},
   order: ${order},
   wide: ${wide},
-  cover: ${cover},
-  coverCaption: ${coverCaption},
+  coverImageSrc: ${coverImageSrc},
+  coverImageAlt: ${coverImageAlt},
+  showCoverImageOnArticle: ${showCoverImageOnArticle},
   thumbBg: ${thumbBg},
 };
 
@@ -120,7 +124,6 @@ export default function articleStudioIntegration(): AstroIntegration {
                   const uploadsDir = path.join(studioDir, 'uploads');
                   const previewFile = path.join(studioDir, 'preview.json');
                   const articlesDir = path.join(rootDir, 'src', 'articles');
-                  const publicArticlesDir = path.join(rootDir, 'public', 'articles');
 
                   // Ensure local storage directories exist
                   fs.mkdirSync(draftsDir, { recursive: true });
@@ -143,6 +146,46 @@ export default function articleStudioIntegration(): AstroIntegration {
                     // Handle Meme Studio API and meme image serving routes
                     if (await handleMemeStudioRequest(req, res, rootDir)) {
                       return;
+                    }
+
+                    // Serve article images directly from src/articles/<slug>/images/<filename> (or public fallback)
+                    const articleImageMatch = pathname.match(/^\/articles\/([^/]+)\/images\/([^/]+)$/);
+                    if (articleImageMatch && req.method === 'GET') {
+                      const [, slug, rawFile] = articleImageMatch;
+                      if (!isSafeSlugPath(articlesDir, slug)) {
+                        res.writeHead(400);
+                        return res.end('Invalid article slug.');
+                      }
+                      const safeFile = sanitizeFilename(rawFile);
+                      if (!safeFile || safeFile !== rawFile) {
+                        res.writeHead(400);
+                        return res.end('Invalid image filename.');
+                      }
+                      const ext = path.extname(safeFile).toLowerCase();
+                      const allowedExts = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
+                      if (!allowedExts.has(ext)) {
+                        res.writeHead(403);
+                        return res.end('File type not permitted.');
+                      }
+                      const targetPath = path.join(articlesDir, slug, 'images', safeFile);
+                      if (!fs.existsSync(targetPath)) {
+                        res.writeHead(404);
+                        return res.end('Article image not found.');
+                      }
+                      const mimeMap: Record<string, string> = {
+                        '.png': 'image/png',
+                        '.jpg': 'image/jpeg',
+                        '.jpeg': 'image/jpeg',
+                        '.webp': 'image/webp',
+                        '.gif': 'image/gif',
+                        '.svg': 'image/svg+xml',
+                      };
+                      res.writeHead(200, {
+                        'Content-Type': mimeMap[ext] || 'application/octet-stream',
+                        'Cache-Control': 'no-cache',
+                        'X-Content-Type-Options': 'nosniff',
+                      });
+                      return fs.createReadStream(targetPath).pipe(res);
                     }
 
                     // Only handle /__article-studio/ routes
@@ -295,6 +338,8 @@ export default function articleStudioIntegration(): AstroIntegration {
                         const metaTsContent = generateMetaTs(contentDoc.meta, slug);
                         await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
 
+
+
                         // If any working draft links to this article, update its status too
                         const draftFiles = await fsp.readdir(draftsDir);
                         for (const file of draftFiles) {
@@ -332,6 +377,12 @@ export default function articleStudioIntegration(): AstroIntegration {
                         const contentDoc: ArticleDocument = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
                         contentDoc.meta.status = 'published';
                         delete contentDoc.sourceArticleSlug;
+                        if (contentDoc.meta) {
+                          if (!contentDoc.meta.coverImageSrc && contentDoc.meta.cover) contentDoc.meta.coverImageSrc = contentDoc.meta.cover;
+                          if (!contentDoc.meta.coverImageAlt && contentDoc.meta.coverCaption) contentDoc.meta.coverImageAlt = contentDoc.meta.coverCaption;
+                          delete contentDoc.meta.cover;
+                          delete contentDoc.meta.coverCaption;
+                        }
                         await fsp.writeFile(contentJsonPath, JSON.stringify(contentDoc, null, 2), 'utf-8');
 
                         // Regenerate meta.ts with status: 'published'
@@ -402,6 +453,12 @@ export default function articleStudioIntegration(): AstroIntegration {
                         const doc: ArticleDocument = await readJsonBody(req);
                         if (!doc || !doc.studioId) {
                           return sendJson(res, 400, { error: 'studioId is required.' });
+                        }
+                        if (doc.meta) {
+                          if (!doc.meta.coverImageSrc && doc.meta.cover) doc.meta.coverImageSrc = doc.meta.cover;
+                          if (!doc.meta.coverImageAlt && doc.meta.coverCaption) doc.meta.coverImageAlt = doc.meta.coverCaption;
+                          delete doc.meta.cover;
+                          delete doc.meta.coverCaption;
                         }
                         const safeId = sanitizeFilename(doc.studioId);
                         const targetFile = path.join(draftsDir, `${safeId}.json`);
@@ -563,9 +620,7 @@ export default function articleStudioIntegration(): AstroIntegration {
 
                         // Create destination article folders
                         const articleImagesDir = path.join(articleFolder, 'images');
-                        const publicArticleImagesDir = path.join(publicArticlesDir, slug, 'images');
                         await fsp.mkdir(articleImagesDir, { recursive: true });
-                        await fsp.mkdir(publicArticleImagesDir, { recursive: true });
 
                         // Process referenced uploaded images
                         const processedDoc: ArticleDocument = JSON.parse(JSON.stringify(doc));
@@ -578,18 +633,28 @@ export default function articleStudioIntegration(): AstroIntegration {
                             const sourcePath = path.join(uploadsDir, filename);
                             if (fs.existsSync(sourcePath)) {
                               const destPath = path.join(articleImagesDir, filename);
-                              const pubDestPath = path.join(publicArticleImagesDir, filename);
                               await fsp.copyFile(sourcePath, destPath);
-                              await fsp.copyFile(sourcePath, pubDestPath);
                               return `/articles/${slug}/images/${filename}`;
                             }
                           }
                           return srcVal;
                         }
 
+                        // Normalize legacy cover/caption into canonical fields
+                        if (!processedDoc.meta.coverImageSrc && processedDoc.meta.cover) {
+                          processedDoc.meta.coverImageSrc = processedDoc.meta.cover;
+                        }
+                        if (!processedDoc.meta.coverImageAlt && processedDoc.meta.coverCaption) {
+                          processedDoc.meta.coverImageAlt = processedDoc.meta.coverCaption;
+                        }
+
+                        // Remove legacy fields on write so only canonical fields are persisted
+                        delete processedDoc.meta.cover;
+                        delete processedDoc.meta.coverCaption;
+
                         // Cover rewrite
-                        if (processedDoc.meta.cover) {
-                          processedDoc.meta.cover = await processImageString(processedDoc.meta.cover);
+                        if (processedDoc.meta.coverImageSrc) {
+                          processedDoc.meta.coverImageSrc = await processImageString(processedDoc.meta.coverImageSrc);
                         }
 
                         // Walk sections and blocks (including nested container blocks) to migrate upload paths
@@ -765,10 +830,79 @@ import content from './content.json';
         try {
           const outDir = dir instanceof URL ? fs.realpathSync(dir) : String(dir);
           await copyMemeImagesToDist(process.cwd(), outDir);
+          await copyArticleImagesToDist(process.cwd(), outDir);
         } catch (err) {
-          console.warn('[Meme Studio Build Hook Warning]', err);
+          console.warn('[Article Studio Build Hook Warning]', err);
         }
       },
     },
   };
+}
+
+export async function copyArticleImagesToDist(rootDir: string, outDir: string): Promise<void> {
+  const articlesDir = path.join(rootDir, 'src', 'articles');
+  if (!fs.existsSync(articlesDir)) return;
+  try {
+    const entries = await fsp.readdir(articlesDir, { withFileTypes: true });
+    const publishedSlugs = new Set<string>();
+
+    for (const entry of entries) {
+      if (!entry.isDirectory() || entry.name.startsWith('_') || entry.name.startsWith('.')) {
+        continue;
+      }
+      const slug = entry.name;
+      const articleFolder = path.join(articlesDir, slug);
+      const contentJsonPath = path.join(articleFolder, 'content.json');
+      const metaTsPath = path.join(articleFolder, 'meta.ts');
+
+      let isPublished = false;
+      if (fs.existsSync(contentJsonPath)) {
+        try {
+          const doc = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
+          isPublished = doc.meta?.status === 'published';
+        } catch (_) {}
+      }
+      if (!isPublished && fs.existsSync(metaTsPath)) {
+        try {
+          const metaContent = await fsp.readFile(metaTsPath, 'utf-8');
+          isPublished = /status:\s*['"]published['"]/.test(metaContent);
+        } catch (_) {}
+      }
+
+      if (isPublished) {
+        publishedSlugs.add(slug);
+      }
+    }
+
+    // Clean up any non-published folders in dist/articles (e.g. copied from public/articles)
+    const distArticlesDir = path.join(outDir, 'articles');
+    if (fs.existsSync(distArticlesDir)) {
+      const distEntries = await fsp.readdir(distArticlesDir, { withFileTypes: true });
+      for (const dEntry of distEntries) {
+        if (dEntry.isDirectory() && !publishedSlugs.has(dEntry.name)) {
+          await fsp.rm(path.join(distArticlesDir, dEntry.name), { recursive: true, force: true }).catch(() => {});
+        }
+      }
+    }
+
+    // Copy published images from src/articles/<slug>/images to dist/articles/<slug>/images
+    for (const slug of publishedSlugs) {
+      const srcImagesDir = path.join(articlesDir, slug, 'images');
+      if (fs.existsSync(srcImagesDir)) {
+        const dstImagesDir = path.join(distArticlesDir, slug, 'images');
+        const imageFiles = await fsp.readdir(srcImagesDir);
+        for (const file of imageFiles) {
+          if (file.startsWith('.')) continue;
+          const srcFilePath = path.join(srcImagesDir, file);
+          const stat = await fsp.stat(srcFilePath);
+          if (stat.isFile()) {
+            await fsp.mkdir(dstImagesDir, { recursive: true });
+            await fsp.copyFile(srcFilePath, path.join(dstImagesDir, file));
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.warn('[Article Build Warning] Failed to copy published article images to dist:', err);
+  }
 }

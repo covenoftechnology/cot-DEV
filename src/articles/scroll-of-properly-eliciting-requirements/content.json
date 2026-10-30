@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "studioId": "draft_mvr44y2m_sk5su",
+  "studioId": "draft_mvve2e25_xpv8p",
   "slug": "scroll-of-properly-eliciting-requirements",
   "meta": {
     "title": "Scroll of Properly Eliciting Requirements",
@@ -15,8 +15,10 @@
     "status": "published",
     "featured": false,
     "wide": true,
-    "cover": "",
-    "coverCaption": ""
+    "coverImageSrc": "/articles/scroll-of-properly-eliciting-requirements/images/1793389947238_scroll.webp",
+    "coverImageAlt": "",
+    "showCoverImageOnArticle": false,
+    "cover": "/articles/scroll-of-properly-eliciting-requirements/images/1793389947238_scroll.webp"
   },
   "sections": [
     {

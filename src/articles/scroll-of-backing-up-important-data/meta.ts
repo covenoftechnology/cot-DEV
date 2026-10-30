@@ -16,7 +16,10 @@ const meta: ArticleMeta = {
   featured: false,
   order: 10,
   wide: true,
-  cover: undefined,
+  coverImageSrc: "/articles/scroll-of-backing-up-important-data/images/1793389811613_CoT_BackUpImportantData.webp",
+  coverImageAlt: undefined,
+  showCoverImageOnArticle: false,
+  cover: "/articles/scroll-of-backing-up-important-data/images/1793389811613_CoT_BackUpImportantData.webp",
   coverCaption: undefined,
   thumbBg: "repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)",
 };

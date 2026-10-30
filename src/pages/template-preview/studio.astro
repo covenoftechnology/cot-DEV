@@ -217,6 +217,42 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         </div>
       </div>
 
+      <!-- COVER IMAGE SECTION -->
+      <div class="studio-form-group studio-cover-section" id="studio-cover-section">
+        <label class="studio-label">Cover Image</label>
+        <div class="cover-upload-zone" id="cover-upload-zone">
+          <input type="file" id="cover-file-upload" style="display:none" accept=".png,.jpg,.jpeg,.webp,.gif" />
+          <div class="cover-empty-state" id="cover-empty-state">
+            <div class="cover-upload-glyph">✦</div>
+            <div class="cover-upload-prompt">Upload cover image</div>
+            <div class="cover-upload-hint">PNG, JPG, WebP, GIF</div>
+            <button type="button" class="studio-btn studio-btn--sm" id="btn-select-cover">Choose Image</button>
+          </div>
+          <div class="cover-filled-state" id="cover-filled-state" style="display:none">
+            <div class="cover-preview-wrapper">
+              <img id="cover-preview-img" src="" alt="Cover preview" />
+            </div>
+            <div class="cover-actions-row">
+              <button type="button" class="studio-btn studio-btn--sm" id="btn-replace-cover">Replace</button>
+              <button type="button" class="studio-btn studio-btn--sm studio-btn--danger" id="btn-remove-cover">Remove</button>
+            </div>
+          </div>
+        </div>
+        <div class="studio-form-group" id="cover-alt-group" style="display:none;margin-top:10px">
+          <label class="studio-label" for="meta-cover-alt">Cover Alt Text</label>
+          <input type="text" id="meta-cover-alt" class="studio-input" placeholder="Accessibility description of cover visual..." />
+        </div>
+        <div id="cover-display-toggle-wrap" style="display:none;flex-direction:column;gap:4px;margin-top:10px">
+          <label class="checkbox-row" style="margin:0">
+            <input type="checkbox" id="meta-show-cover" checked />
+            <span>Show cover image on public article page</span>
+          </label>
+          <div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted)">
+            When unchecked, the image is hidden from the article hero but remains visible on Library cards.
+          </div>
+        </div>
+      </div>
+
       <!-- ADVANCED SETTINGS (DISCLOSURE) -->
       <div class="advanced-settings-box" id="adv-settings-box">
         <button type="button" class="advanced-settings-toggle" id="adv-settings-toggle">
@@ -250,20 +286,6 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             <input type="checkbox" id="meta-wide" checked />
             <span>Wide Editorial Layout</span>
           </label>
-
-          <div class="studio-form-group">
-            <label class="studio-label">Cover Image URL / Upload</label>
-            <div class="image-picker-row">
-              <input type="text" id="meta-cover" class="studio-input" placeholder="Start empty or paste URL / upload" />
-              <input type="file" id="cover-file-upload" style="display:none" accept="image/*" />
-              <button type="button" class="studio-btn studio-btn--sm" id="btn-upload-cover">Upload</button>
-            </div>
-          </div>
-
-          <div class="studio-form-group" id="cover-caption-group" style="display:none">
-            <label class="studio-label">Cover Caption</label>
-            <input type="text" id="meta-cover-caption" class="studio-input" placeholder="Figure · Architectural overview..." />
-          </div>
         </div>
       </div>
 
@@ -2918,8 +2940,9 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           status: 'draft',
           featured: false,
           wide: true,
-          cover: '',
-          coverCaption: ''
+          coverImageSrc: '',
+          coverImageAlt: '',
+          showCoverImageOnArticle: true
         },
         sections: []
       };
@@ -7305,12 +7328,22 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         document.getElementById('meta-aether').value = m.aetherReward || 120;
         document.getElementById('meta-featured').checked = Boolean(m.featured);
         document.getElementById('meta-wide').checked = m.wide !== false;
-        document.getElementById('meta-cover').value = m.cover || '';
-        document.getElementById('meta-cover-caption').value = m.coverCaption || '';
 
-        // Cover Caption visibility based on cover existence
-        var capGroup = document.getElementById('cover-caption-group');
-        if (capGroup) capGroup.style.display = m.cover ? 'flex' : 'none';
+        // Cover Image Setup
+        var coverSrc = m.coverImageSrc || m.cover || '';
+        var coverAlt = m.coverImageAlt || m.coverCaption || '';
+        var showCover = m.showCoverImageOnArticle !== false;
+        m.coverImageSrc = coverSrc;
+        m.coverImageAlt = coverAlt;
+        m.showCoverImageOnArticle = showCover;
+        delete m.cover;
+        delete m.coverCaption;
+
+        var altInput = document.getElementById('meta-cover-alt');
+        if (altInput) altInput.value = coverAlt;
+        var showToggle = document.getElementById('meta-show-cover');
+        if (showToggle) showToggle.checked = showCover;
+        updateCoverUiState(coverSrc);
 
         // Slug
         var sVal = currentDoc.slug || '';
@@ -7380,13 +7413,19 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         m.difficulty = document.getElementById('meta-difficulty').value || 'Lv. 1 - Incantation';
         m.rank = document.getElementById('meta-rank').value || 'Mechanic';
         m.aetherReward = parseInt(document.getElementById('meta-aether').value, 10) || 120;
-        m.cover = (document.getElementById('meta-cover').value || '').trim();
-        m.coverCaption = (document.getElementById('meta-cover-caption').value || '').trim();
         m.featured = document.getElementById('meta-featured').checked;
         m.wide = document.getElementById('meta-wide').checked;
 
-        var capGroup = document.getElementById('cover-caption-group');
-        if (capGroup) capGroup.style.display = m.cover ? 'flex' : 'none';
+        var altInput = document.getElementById('meta-cover-alt');
+        if (altInput) {
+          m.coverImageAlt = (altInput.value || '').trim();
+        }
+        var showToggle = document.getElementById('meta-show-cover');
+        if (showToggle) {
+          m.showCoverImageOnArticle = showToggle.checked;
+        }
+        delete m.cover;
+        delete m.coverCaption;
 
         calculateReadingTime();
       }
@@ -8050,14 +8089,56 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         document.getElementById('adv-settings-box').classList.toggle('open');
       });
 
-      // Cover upload handler
-      document.getElementById('btn-upload-cover').addEventListener('click', function() {
-        document.getElementById('cover-file-upload').click();
-      });
+      // ── Cover Image UI and Management ───────────────────
+      function updateCoverUiState(src) {
+        var emptyState = document.getElementById('cover-empty-state');
+        var filledState = document.getElementById('cover-filled-state');
+        var previewImg = document.getElementById('cover-preview-img');
+        var altGroup = document.getElementById('cover-alt-group');
+        var toggleWrap = document.getElementById('cover-display-toggle-wrap');
 
-      document.getElementById('cover-file-upload').addEventListener('change', function(e) {
-        var file = e.target.files[0];
+        if (src) {
+          if (previewImg) previewImg.src = src;
+          if (emptyState) emptyState.style.display = 'none';
+          if (filledState) filledState.style.display = 'flex';
+          if (altGroup) altGroup.style.display = 'flex';
+          if (toggleWrap) toggleWrap.style.display = 'flex';
+        } else {
+          if (previewImg) {
+            previewImg.removeAttribute('src');
+          }
+          if (emptyState) emptyState.style.display = 'flex';
+          if (filledState) filledState.style.display = 'none';
+          if (altGroup) altGroup.style.display = 'none';
+          if (toggleWrap) toggleWrap.style.display = 'none';
+        }
+      }
+      window.updateCoverUiState = updateCoverUiState;
+
+      var btnSelectCover = document.getElementById('btn-select-cover');
+      var btnReplaceCover = document.getElementById('btn-replace-cover');
+      var btnRemoveCover = document.getElementById('btn-remove-cover');
+      var coverFileInput = document.getElementById('cover-file-upload');
+      var coverAltInput = document.getElementById('meta-cover-alt');
+      var coverShowToggle = document.getElementById('meta-show-cover');
+      var coverUploadZone = document.getElementById('cover-upload-zone');
+
+      function openCoverFileChooser() {
+        if (coverFileInput) coverFileInput.click();
+      }
+
+      if (btnSelectCover) btnSelectCover.addEventListener('click', openCoverFileChooser);
+      if (btnReplaceCover) btnReplaceCover.addEventListener('click', openCoverFileChooser);
+
+      function handleCoverFile(file) {
         if (!file) return;
+        var ext = '.' + file.name.split('.').pop().toLowerCase();
+        var allowed = ['.png', '.jpg', '.jpeg', '.webp', '.gif'];
+        if (!allowed.includes(ext)) {
+          showToast('Only .png, .jpg, .jpeg, .webp, and .gif images are supported.', 'error');
+          return;
+        }
+
         var reader = new FileReader();
         reader.onload = function(evt) {
           fetch('/__article-studio/upload', {
@@ -8068,26 +8149,78 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           .then(function(res) { return res.json(); })
           .then(function(data) {
             if (data.success && data.url) {
-              document.getElementById('meta-cover').value = data.url;
-              currentDoc.meta.cover = data.url;
-              document.getElementById('cover-caption-group').style.display = 'flex';
+              currentDoc.meta.coverImageSrc = data.url;
+              delete currentDoc.meta.cover;
+              updateCoverUiState(data.url);
               triggerAutosave();
-              showToast('Cover image uploaded: ' + file.name, 'success');
+              showToast('Cover image updated: ' + file.name, 'success');
+            } else {
+              showToast(data.error || 'Failed to upload cover image.', 'error');
             }
+          })
+          .catch(function() {
+            showToast('Failed to upload image.', 'error');
           });
         };
         reader.readAsDataURL(file);
-      });
+      }
 
-      document.getElementById('meta-cover').addEventListener('input', function(e) {
-        var val = (e.target.value || '').trim();
-        currentDoc.meta.cover = val;
-        document.getElementById('cover-caption-group').style.display = val ? 'flex' : 'none';
-        triggerAutosave();
-      });
+      if (coverFileInput) {
+        coverFileInput.addEventListener('change', function(e) {
+          var file = e.target.files && e.target.files[0];
+          handleCoverFile(file);
+        });
+      }
+
+      if (coverUploadZone) {
+        coverUploadZone.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          coverUploadZone.classList.add('dragover');
+        });
+        coverUploadZone.addEventListener('dragleave', function() {
+          coverUploadZone.classList.remove('dragover');
+        });
+        coverUploadZone.addEventListener('drop', function(e) {
+          e.preventDefault();
+          coverUploadZone.classList.remove('dragover');
+          if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+            handleCoverFile(e.dataTransfer.files[0]);
+          }
+        });
+      }
+
+      if (btnRemoveCover) {
+        btnRemoveCover.addEventListener('click', function() {
+          currentDoc.meta.coverImageSrc = '';
+          currentDoc.meta.coverImageAlt = '';
+          delete currentDoc.meta.cover;
+          delete currentDoc.meta.coverCaption;
+          if (coverFileInput) coverFileInput.value = '';
+          if (coverAltInput) coverAltInput.value = '';
+          updateCoverUiState('');
+          triggerAutosave();
+          showToast('Cover image removed', 'info');
+        });
+      }
+
+      if (coverAltInput) {
+        coverAltInput.addEventListener('input', function(e) {
+          var val = (e.target.value || '').trim();
+          currentDoc.meta.coverImageAlt = val;
+          delete currentDoc.meta.coverCaption;
+          triggerAutosave();
+        });
+      }
+
+      if (coverShowToggle) {
+        coverShowToggle.addEventListener('change', function(e) {
+          currentDoc.meta.showCoverImageOnArticle = e.target.checked;
+          triggerAutosave();
+        });
+      }
 
       // Settings generic listeners
-      ['meta-desc', 'meta-author', 'meta-rank', 'meta-aether', 'meta-cover-caption', 'meta-featured', 'meta-wide'].forEach(function(id) {
+      ['meta-desc', 'meta-author', 'meta-rank', 'meta-aether', 'meta-featured', 'meta-wide'].forEach(function(id) {
         var el = document.getElementById(id);
         if (el) {
           el.addEventListener('change', function() {
@@ -8229,8 +8362,9 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             status: 'draft',
             featured: false,
             wide: true,
-            cover: '',
-            coverCaption: ''
+            coverImageSrc: '',
+            coverImageAlt: '',
+            showCoverImageOnArticle: true
           },
           sections: []
         };

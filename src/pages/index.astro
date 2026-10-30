@@ -40,8 +40,10 @@ const collectionCardsHtml = featuredArticles.length > 0
       const difficultyLabel = (meta.difficulty || meta.rank || '').trim();
       const readingTimeLabel = (meta.readingTime || '').trim();
       const thumbBg = meta.thumbBg || 'repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)';
-      const headerVisualHtml = meta.cover
-        ? `<img src="${meta.cover}" alt="${(meta.title || '').replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;" />`
+      const coverSrc = meta.coverImageSrc || meta.cover;
+      const coverAlt = meta.coverImageAlt || meta.title || '';
+      const headerVisualHtml = coverSrc
+        ? `<img src="${coverSrc}" alt="${coverAlt.replace(/"/g, '&quot;')}" style="width:100%;height:100%;object-fit:cover;" />`
         : '[ scroll glyph · 640×360 ]';
 
       return `
