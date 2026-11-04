@@ -28,12 +28,8 @@ window.SITE_CONTENT = {
       ctaSecondary: 'BROWSE THE GRIMOIRE',
     },
 
-    // ── Hero stats bar ────────────────────────────────────────────
-    stats: [
-      { value: '128',   label: 'Scrolls'   },
-      { value: '44',    label: 'Trials'    },
-      { value: '2,340', label: 'Initiates' },
-    ],
+    // ── Hero stats bar (computed dynamically from published Studio articles via getHomeStats) ──
+    stats: [],
 
     // ── Ranks ─────────────────────────────────────────────────────
     // isTop marks the final gold rank displayed differently everywhere.
@@ -54,10 +50,10 @@ window.SITE_CONTENT = {
     ],
 
     // ── Spell Book scrolls (user state + legacy demo placeholders) ─
-    // Real articles link via articleId and resolve editorial metadata from Content Collections.
-    // Demo scrolls without markdown retain their placeholder copy.
+    // Real articles link via articleId and resolve editorial metadata from the articles system (window.COVEN_ARTICLES_INDEX).
+    // Demo scrolls without an article folder retain their placeholder copy.
     libraryScrolls: [
-      // Real article user state (title, tag, rank, thumbBg resolved from Content Collections)
+      // Real article user state (title, tag, rank, thumbBg resolved from articles metadata index)
       { articleId: 'apex-triggers-without-tears', locked: false, progress: 65,  progressColor: 'linear-gradient(90deg,#c49a4e,#e3c47e)', statusLabel: '65% complete',   cta: 'Continue →' },
       // Demo scrolls not yet written in markdown
       { tag: 'MENTORSHIP',     rank: 'Shaper',   locked: false, progress: 100, progressColor: 'linear-gradient(90deg,#7bbf6a,#a9e09a)', statusLabel: '✓ Trial passed', statusColor: '#a9e09a', cta: 'Review →', title: 'Guiding Apprentices: The Art of the Mentor',  body: 'Grow new admins without casting for them.',     thumbBg: 'repeating-linear-gradient(135deg,rgba(185,143,216,.10) 0 10px,rgba(185,143,216,.03) 10px 20px)' },
@@ -84,24 +80,9 @@ window.SITE_CONTENT = {
       ],
     },
 
-    // ── Featured meme (hero on Grimoire of Memes page) ────────────
-    featuredMeme: {
-      label:       '🔮 CACKLE OF THE DAY',
-      title:       '"When someone edits the production org directly… on a Friday… at 4:59 PM"',
-      attribution: 'Submitted by Thorne Blackwood, Witch · may the governor limits have mercy.',
-      r1: '😂 612', r2: '🔥 388', r3: '👻 207',
-    },
-
-    // ── Meme grid ─────────────────────────────────────────────────
-    // Each card: tag, title, r1 + r2 reaction pills, thumbBg
-    memes: [
-      { tag: '💥 DEPLOY DISASTERS',   title: '"It passed in sandbox, I swear it passed in sandbox"',               r1: '😂 247', r2: '🔥 132', thumbBg: 'repeating-linear-gradient(135deg,rgba(185,143,216,.12) 0 10px,rgba(185,143,216,.03) 10px 20px)' },
-      { tag: '🔮 STAKEHOLDER SPELLS', title: '"POV: the stakeholder said \'it\'s just a quick change\'"',          r1: '😂 389', r2: '👻 92',  thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.10) 0 10px,rgba(216,181,107,.03) 10px 20px)' },
-      { tag: '🧙 ADMIN LIFE',         title: '"Why is EVERYONE a System Administrator?"',                          r1: '😂 156', r2: '🔥 98',  thumbBg: 'repeating-linear-gradient(135deg,rgba(185,143,216,.12) 0 10px,rgba(185,143,216,.03) 10px 20px)' },
-      { tag: '⚡ APEX PAIN',          title: '"Me summoning a Flow to avoid writing one line of Apex"',            r1: '😂 203', r2: '🔥 167', thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.10) 0 10px,rgba(216,181,107,.03) 10px 20px)' },
-      { tag: '🧙 ADMIN LIFE',         title: '"Validation rule: 1 · My Friday plans: 0"',                         r1: '😂 312', r2: '🔥 144', thumbBg: 'repeating-linear-gradient(135deg,rgba(185,143,216,.12) 0 10px,rgba(185,143,216,.03) 10px 20px)' },
-      { tag: '🔮 STAKEHOLDER SPELLS', title: '"\'We don\'t need another custom object,\' I whisper into the void"', r1: '😂 178', r2: '👻 71',  thumbBg: 'repeating-linear-gradient(135deg,rgba(216,181,107,.10) 0 10px,rgba(216,181,107,.03) 10px 20px)' },
-    ],
+    // ── Grimoire of Memes (computed dynamically at build/render time from src/memes/ via getPublishedMemes) ──
+    featuredMeme: null,
+    memes: [],
 
     // ── Profile / logged-in user ───────────────────────────────────
     // rankIndex: 0=Novice, 1=Shaper … 6=Archmage

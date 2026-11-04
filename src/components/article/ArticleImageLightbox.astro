@@ -1,0 +1,248 @@
+---
+// Reusable Coven Public Article Image Lightbox
+---
+
+<div
+  id="article-lightbox"
+  class="coven-article-lightbox"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Image preview"
+  tabindex="-1"
+  style="display: none;"
+>
+  <div class="coven-lightbox-backdrop" data-lightbox-close></div>
+  <div class="coven-lightbox-dialog">
+    <button
+      type="button"
+      class="coven-lightbox-close-btn"
+      data-lightbox-close
+      aria-label="Close image preview"
+      title="Close (Esc)"
+    >
+      <span aria-hidden="true">✕</span>
+    </button>
+    <div class="coven-lightbox-figure-wrap">
+      <img
+        id="coven-lightbox-active-img"
+        src=""
+        alt=""
+        class="coven-lightbox-active-img"
+      />
+      <div
+        id="coven-lightbox-caption"
+        class="coven-lightbox-caption"
+        style="display: none;"
+      ></div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .coven-article-lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 99999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    box-sizing: border-box;
+  }
+
+  .coven-lightbox-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(6, 4, 10, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    cursor: pointer;
+  }
+
+  .coven-lightbox-dialog {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100vw - 48px);
+    max-height: calc(100vh - 48px);
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .coven-lightbox-close-btn {
+    position: fixed;
+    top: 20px;
+    right: 24px;
+    z-index: 2;
+    pointer-events: auto;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(22, 18, 30, 0.85);
+    border: 1px solid rgba(216, 181, 107, 0.35);
+    border-radius: 50%;
+    color: #d8b56b;
+    font-size: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none;
+    user-select: none;
+  }
+
+  .coven-lightbox-close-btn:hover,
+  .coven-lightbox-close-btn:focus-visible {
+    background: rgba(36, 28, 50, 0.95);
+    border-color: rgba(216, 181, 107, 0.8);
+    color: #f7e7be;
+    box-shadow: 0 0 12px rgba(216, 181, 107, 0.3);
+    transform: scale(1.05);
+  }
+
+  .coven-lightbox-figure-wrap {
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    max-width: calc(100vw - 64px);
+    max-height: calc(100vh - 64px);
+  }
+
+  .coven-lightbox-active-img {
+    max-width: calc(100vw - 80px);
+    max-height: calc(100vh - 140px);
+    object-fit: contain;
+    border-radius: 4px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(216, 181, 107, 0.2);
+    user-select: none;
+  }
+
+  .coven-lightbox-caption {
+    margin-top: 14px;
+    max-width: 800px;
+    text-align: center;
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 13px;
+    line-height: 1.5;
+    color: #cdc3b6;
+    font-style: italic;
+    background: rgba(16, 13, 22, 0.75);
+    border: 1px solid rgba(216, 181, 107, 0.15);
+    border-radius: 4px;
+    padding: 6px 16px;
+  }
+
+  @media (max-width: 600px) {
+    .coven-article-lightbox {
+      padding: 12px;
+    }
+    .coven-lightbox-close-btn {
+      top: 12px;
+      right: 12px;
+      width: 34px;
+      height: 34px;
+      font-size: 14px;
+    }
+    .coven-lightbox-active-img {
+      max-width: calc(100vw - 24px);
+      max-height: calc(100vh - 110px);
+    }
+    .coven-lightbox-caption {
+      font-size: 11px;
+      padding: 4px 10px;
+    }
+  }
+</style>
+
+<script is:inline>
+  (function() {
+    var lightbox = document.getElementById('article-lightbox');
+    if (!lightbox) return;
+
+    var activeImg = document.getElementById('coven-lightbox-active-img');
+    var captionEl = document.getElementById('coven-lightbox-caption');
+    var closeBtn = lightbox.querySelector('.coven-lightbox-close-btn');
+    var lastFocusedEl = null;
+    var scrollPosition = 0;
+
+    function openLightbox(img) {
+      if (!img || !img.src) return;
+      var src = img.getAttribute('data-lightbox-src') || img.src;
+      if (!src) return;
+
+      lastFocusedEl = img;
+      scrollPosition = window.scrollY || document.documentElement.scrollTop;
+
+      activeImg.src = src;
+      activeImg.alt = img.getAttribute('data-lightbox-alt') || img.alt || '';
+
+      var captionHtml = img.getAttribute('data-lightbox-caption');
+      if (captionHtml && captionHtml.trim()) {
+        captionEl.innerHTML = captionHtml;
+        captionEl.style.display = 'block';
+      } else {
+        captionEl.innerHTML = '';
+        captionEl.style.display = 'none';
+      }
+
+      lightbox.style.display = 'flex';
+      document.body.style.overflow = 'hidden';
+
+      if (closeBtn) {
+        closeBtn.focus();
+      }
+    }
+
+    function closeLightbox() {
+      if (lightbox.style.display === 'none') return;
+      lightbox.style.display = 'none';
+      activeImg.src = '';
+      activeImg.alt = '';
+      captionEl.innerHTML = '';
+      captionEl.style.display = 'none';
+
+      document.body.style.overflow = '';
+      window.scrollTo(0, scrollPosition);
+
+      if (lastFocusedEl && typeof lastFocusedEl.focus === 'function') {
+        lastFocusedEl.focus();
+      }
+    }
+
+    // Delegate click on editorial article images
+    document.addEventListener('click', function(e) {
+      var trigger = e.target.closest('[data-article-lightbox="true"], .editorial-lightbox-img, .article-template figure img, .article-template .gallery-card img, .article-template .layout-media img, .article-template .img-card img');
+      if (trigger) {
+        var fig = trigger.closest('figure') || trigger.closest('.gallery-card') || trigger.closest('.img-card');
+        var cap = fig ? fig.querySelector('figcaption, .card-caption, .img-caption') : null;
+        if (cap && !trigger.getAttribute('data-lightbox-caption')) {
+          trigger.setAttribute('data-lightbox-caption', cap.innerHTML);
+        }
+        e.preventDefault();
+        e.stopPropagation();
+        openLightbox(trigger);
+        return;
+      }
+
+      // Close on backdrop or close button
+      if (e.target.closest('[data-lightbox-close]')) {
+        e.preventDefault();
+        closeLightbox();
+      }
+    });
+
+    // Close on Escape key
+    window.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && lightbox.style.display !== 'none') {
+        e.preventDefault();
+        closeLightbox();
+      }
+    });
+  })();
+</script>

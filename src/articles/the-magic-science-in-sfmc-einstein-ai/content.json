@@ -1,0 +1,2625 @@
+{
+  "version": 1,
+  "studioId": "draft_mvve3lcd_szdos",
+  "slug": "the-magic-science-in-sfmc-einstein-ai",
+  "meta": {
+    "title": "The Magic Science in SFMC’s Einstein AI",
+    "description": "",
+    "author": "Oracle of Orgs",
+    "category": "Salesforce",
+    "difficulty": "Lv. 2 - Scroll",
+    "tags": [],
+    "rank": "Mechanic",
+    "readingTime": "9 min",
+    "aetherReward": 120,
+    "status": "published",
+    "featured": false,
+    "wide": true,
+    "coverImageSrc": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793390001663_SFMC-Einstein-AI.webp",
+    "coverImageAlt": "",
+    "showCoverImageOnArticle": false,
+    "cover": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793390001663_SFMC-Einstein-AI.webp"
+  },
+  "sections": [
+    {
+      "id": "sec_mvr3f6u3_kotid",
+      "title": "What is Salesforce’s Einstein AI?",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvr3fkuc_55pol",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Living in the AI era, where autonomous agents have revolutionized the activities we can perform, it is only normal for it to also be part of the #1 CRM in the world. <span class=\"article-text-bg-red\"><span class=\"article-text-purple\"><u>Einstein</u></span></span> in SFMC is capable of providing better Journey management, distributing communications at the most likely time a person would open their inbox, categorizing consumers, automatically tagging content, and much more. This is not just simple coding, but <span class=\"article-text-gold\">Digital Divination</span><span class=\"article-text-gold\"></span> —granting us the ability to peer into the void of engagement data and predict the future to be everywhere at once and create multilingual comms for every creature in this realm to understand.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvr3l2mr_abdl8",
+          "type": "callout",
+          "data": {
+            "calloutType": "info",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false,
+            "accentColor": "#52E8A5",
+            "blocks": [
+              {
+                "id": "blk_mvty47v0_1n186",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "To activate and later on configure the AI in the instance go to:<br><em>Setup » Platform Tools » Einstein</em>",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvr3nxoz_x1buh",
+          "type": "text-image",
+          "data": {
+            "text": {
+              "text": "<span class=\"article-text-bg-purple\"><u>Einstein</u></span> is a licensed product. It requires to be acquired with an Account Executive if it is not included by default in your instance.<br>When it isn’t licensed, a disclaimer is displayed in each functionality with next steps to learn more about provided features:",
+              "align": "left"
+            },
+            "imageSrc": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793130709172_im1.webp",
+            "alt": "Engagement Scoring",
+            "caption": {
+              "text": "",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "<span class=\"article-text-bg-purple\"><u>Einstein</u></span> is a licensed product. It requires to be acquired with an Account Executive if it is not included by default in your instance.<br>",
+                "align": "left"
+              },
+              {
+                "text": "When it isn’t licensed, a disclaimer is displayed in each functionality with next steps to learn more about provided features:",
+                "align": "left"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvr3s277_35ulr",
+      "title": "Opening the Gates to the Realm of Einstein AI",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvr3sa2z_5a5bb",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Within the <span class=\"article-text-bg-purple\"><u>Einstein</u></span> module there is a feature called '<span class=\"article-text-gold\"><span class=\"article-text-bg-green\">Overview</span></span>', which is a general central view of all the different offered modules. If any widget in that view is interacted with, a redirection to their detailed module occurs. Additionally, more information on each widget is displayed if you click on ‘Details’.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvr3t3y3_dnru4",
+          "type": "three-images",
+          "data": {
+            "img1Src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793135846284_img1.webp",
+            "img1Alt": "Engagement Scoring",
+            "img1Caption": {
+              "text": "",
+              "align": "left"
+            },
+            "img2Src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793130951465_img2.webp",
+            "img2Alt": "STO",
+            "img2Caption": {
+              "text": "",
+              "align": "left"
+            },
+            "img3Src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793135305045_img3.webp",
+            "img3Alt": "",
+            "img3Caption": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvr82lw5_8zed4",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvr82lw6_cmfze",
+                "units": [],
+                "blocks": [
+                  {
+                    "id": "blk_mvs6wsyp_4ocon",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "Available for Email",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvr82lw6_bex4x",
+                "units": [],
+                "blocks": [
+                  {
+                    "id": "blk_mvs6xndu_4oaz6",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "Available for Push",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvr83koj_zaa0h",
+                "units": [],
+                "blocks": []
+              }
+            ],
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvs6yfe4_wn4xi",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "Usable as a Split activity (Flow Control) within Journey Builder",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvs6ywga_ltgwm",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "This incredible <span class=\"article-text-bg-gold\">Scrutinizing Crystal Ball</span> peers into the souls of your mortal subscribers, and uses a science-bound magic ritual of machine learning to assign them <span class=\"article-text-bg-gold\">Personas</span> (engagement predictive scores), providing for each of your consumers the likelihood to engage with our email or push communications. These generated scores are stored in accessible Data Extensions an can be used for the below:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvs6ztnh_rf42q",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvs6ztnh_b766z",
+                "blocks": [
+                  {
+                    "id": "blk_mvs7007s_xartw",
+                    "type": "nested-bullets",
+                    "data": {
+                      "items": [
+                        {
+                          "id": "nb_item_1",
+                          "text": {
+                            "text": "Monitor engaged subscribers health",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvs70qdl_x9wcc",
+                          "text": {
+                            "text": "Filter to identify and target predicted likelihood to engage with email and push campaigns",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvs6ztnh_hkj60",
+                "blocks": [
+                  {
+                    "id": "blk_mvs717vh_onz26",
+                    "type": "nested-bullets",
+                    "data": {
+                      "items": [
+                        {
+                          "id": "nb_item_1",
+                          "text": {
+                            "text": "Segmentation or creation of best-performing lookalikes (Advertising)",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvs71ehd_dhzbo",
+                          "text": {
+                            "text": "Leverage analytics to gain insights on subscriber Persona changes on trends",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ],
+            "items": [
+              {
+                "id": "main_mvs70qdt_7n4ba",
+                "text": {
+                  "text": "",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvs70rcx_jusdh",
+                "text": {
+                  "text": "",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvs71ehn_ow52g",
+                "text": {
+                  "text": "",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvs75gqp_6a3zy",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "These generated scores Data Extensions are called:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvs75tbg_rd71d",
+          "type": "numbered-steps",
+          "data": {
+            "steps": [
+              {
+                "id": "step_1",
+                "badge": "01",
+                "title": {
+                  "text": "✉️ Einstein_MC_Predictive_Scores",
+                  "align": "left"
+                },
+                "text": {
+                  "text": "",
+                  "align": "left"
+                }
+              },
+              {
+                "id": "step_mvs75vib_tekzg",
+                "badge": "02",
+                "title": {
+                  "text": "📱 Einstein_MC_MobilePush_Scores",
+                  "align": "left"
+                },
+                "text": {
+                  "text": "",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvs76f1x_igpgx",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "When the activity is used in Journey Builder, we have the possibility to select how to manage the decisions —to split based on the channel we are using for the communication (email / push).",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvs77o9d_5cnmb",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvs77o9d_8ly1w",
+                "blocks": [
+                  {
+                    "id": "blk_mvs781k3_50i3f",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "✉️ For Email comms:",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "<br>",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": false
+                    }
+                  },
+                  {
+                    "id": "blk_mvsj5p7n_htac0",
+                    "type": "nested-bullets",
+                    "data": {
+                      "items": [
+                        {
+                          "id": "main_mvsj5p7n_mnnn5",
+                          "text": {
+                            "text": "Persona",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsj5p7n_2cek2",
+                          "text": {
+                            "text": "Open",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsj5p7n_u15x9",
+                          "text": {
+                            "text": "Click",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsj5p7n_9iyzd",
+                          "text": {
+                            "text": "Unsubscribe or",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsj5p7n_hy4v4",
+                          "text": {
+                            "text": "Web Conversion Likelihood",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ],
+                      "markerStyle": "roman"
+                    }
+                  },
+                  {
+                    "id": "blk_mvsj78eq_zpbdm",
+                    "type": "single-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793217183142_email.webp",
+                      "alt": "Einstein",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvs77o9d_lzs3y",
+                "blocks": [
+                  {
+                    "id": "blk_mvs789sc_imuku",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "📲 For Push notifications:",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": false
+                    }
+                  },
+                  {
+                    "id": "blk_mvsa7smb_h4r6n",
+                    "type": "nested-bullets",
+                    "data": {
+                      "items": [
+                        {
+                          "id": "nb_item_1",
+                          "text": {
+                            "text": "Mobile Engagement",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsa82iy_35oan",
+                          "text": {
+                            "text": "Time in App",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsa8c8e_waked",
+                          "text": {
+                            "text": "App Sessions",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsa8isj_5kkqg",
+                          "text": {
+                            "text": "Push Direct Open Likelihood",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvsa8krv_cvgf2",
+                          "text": {
+                            "text": "Push Indirect Open Likelihood",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ],
+                      "markerStyle": "roman"
+                    }
+                  },
+                  {
+                    "id": "blk_mvsj7ako_7rdk5",
+                    "type": "single-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793217197831_push.webp",
+                      "alt": "Einstein",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              }
+            ],
+            "showText": true
+          }
+        },
+        {
+          "id": "blk_mvsj90ye_4ew50",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Even though the Persona split allows for options with different names, all available options operate under the same likelihood conditions —Most, More, Less and Least:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvsjbkqc_08jtj",
+          "type": "nested-bullets",
+          "data": {
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "<strong>Most</strong> Likely/Engaged…",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvsjblrv_1xd1s",
+                "text": {
+                  "text": "<strong>More</strong> Likely/Engaged…",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvsjbmwj_trtl6",
+                "text": {
+                  "text": "<strong>Less</strong> Likely/Engaged…",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvsjbnrg_57fjd",
+                "text": {
+                  "text": "<strong>Least</strong> Likely/Engaged…",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvsjcwpm_qy9xl",
+          "type": "callout",
+          "data": {
+            "calloutType": "info",
+            "text": {
+              "text": "For the site to be tracked, deploy a “Collect Tracking Script”",
+              "align": "left"
+            },
+            "title": {
+              "text": "Web Conversion Likelihood is only available if the Web channel is enabled.",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": true
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvsjez6g_l4psl",
+      "title": "The Mirror of Anomalies for Messaging Insights",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvsjfxs7_b5tnv",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvsjfxs7_bb9sz",
+                "blocks": [
+                  {
+                    "id": "blk_mvsjgn81_ysmxh",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "Available for Email",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvsjfxs7_3oot4",
+                "blocks": [
+                  {
+                    "id": "blk_mvsjgp06_0f28k",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "Available for Push",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvsjhdwt_mjoph",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "As we will see with other <u><span class=\"article-text-bg-red\">Einstein</span></u> features, these are highly focused to be used in or accompanying Journey Builder. Messaging Insights is not the exception, as it generates alerts that warn you of any <span class=\"article-text-bg-purple\">abnormal changes</span> in the performance of your sent emails. It may also recommend specific adjustments to improve Journeys.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvsji99x_60kjc",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "40-60",
+            "columns": [
+              {
+                "id": "fcol_mvsji99x_mb61l",
+                "blocks": [
+                  {
+                    "id": "blk_mvsjihg7_bd0oc",
+                    "type": "single-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793217710620_feedback.webp",
+                      "alt": "Feedback",
+                      "caption": {
+                        "text": "<strong>Messaging Insights is located on the top-right section, next to your BU name</strong>",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvsji99x_lpbs2",
+                "blocks": [
+                  {
+                    "id": "blk_mvsjkbpn_n671z",
+                    "type": "solo-text",
+                    "data": {
+                      "paragraphs": [
+                        {
+                          "text": "<span class=\"article-text-purple\"><u>Einstein</u></span> supervises the below email engagement rates:",
+                          "align": "left"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "blk_mvsjkea1_792cf",
+                    "type": "nested-bullets",
+                    "data": {
+                      "items": [
+                        {
+                          "id": "nb_item_1",
+                          "text": {
+                            "text": "Open",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvslsnsn_70vrk",
+                          "text": {
+                            "text": "Click",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvslss0f_878th",
+                          "text": {
+                            "text": "Unsubscribe",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ],
+                      "markerStyle": "alpha",
+                      "layout": "vertical"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvsm8tdu_oxu72",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "Abnormal changes can vary. e.g., a Journey had a lower or higher open or click rate is considered for the notifications; as well as .",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvsma8rm_cqwtm",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvsma8rm_1rwmy",
+                "blocks": [
+                  {
+                    "id": "blk_mvsmk0lt_erk7e",
+                    "type": "text-image",
+                    "data": {
+                      "paragraphs": [
+                        {
+                          "text": "",
+                          "align": "left"
+                        }
+                      ],
+                      "text": {
+                        "text": "Sample messages:",
+                        "align": "left"
+                      },
+                      "imageSrc": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793222805583_sample_message.webp",
+                      "alt": "Einstein Messaging Insights",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvsma8rm_cyi26",
+                "blocks": [
+                  {
+                    "id": "blk_mvsmkr5d_y9ae8",
+                    "type": "solo-text",
+                    "data": {
+                      "paragraphs": [
+                        {
+                          "text": "<strong>High Click Rate for Email ‘New Season’</strong><span class=\"article-text-bg-green\">➚</span> 28.34% higher than expectedOctober 31, 2024",
+                          "align": "left"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "blk_mvsmktnl_diom3",
+                    "type": "solo-text",
+                    "data": {
+                      "paragraphs": [
+                        {
+                          "text": "<strong>Open Rate Anomaly of Push ‘{User}’</strong><span class=\"article-text-bg-red\">➘</span> 70.52% lower than expectedNovember 3, 2025&nbsp;",
+                          "align": "left"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtnunmr_8zizv",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Even though these insights are helpful for guidance, they do not always reflect the current reality of practices as they are still provided by an <span class=\"article-text-bg-red\">AI</span>.",
+                "align": "left"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvtnv68p_j05sn",
+      "title": "Chronomancy for the Inbox with Send Time Optimization",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvto09te_g2af0",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvto09te_2i36s",
+                "blocks": [
+                  {
+                    "id": "blk_mvto4gff_3vxw4",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "📧Available for Email",
+                        "align": "left"
+                      },
+                      "title": {
+                        "text": "Grimoire Note",
+                        "align": "left"
+                      },
+                      "titleMode": "custom",
+                      "showTitle": false
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvto09te_o5vnh",
+                "blocks": [
+                  {
+                    "id": "blk_mvto4hpm_3giqh",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "📲Available for Push",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtobmug_61a4u",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "Usable as an <strong>Optimization</strong> activity (Flow Control) within <strong>Journey</strong> <strong>Builder</strong>",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtociyv_g8klv",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "The most commonly known and used <span class=\"article-text-bg-red\">Einstein</span> feature. Also referred to as “STO” (due to its acronym), this <span class=\"article-text-gold\">Time Magic</span> is your best friend to deliver emails or push notifications when it is most likely human souls will engage with our communications.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtodq6z_2k9gx",
+          "type": "pullquote",
+          "data": {
+            "quote": {
+              "text": "e.g., Miss Hahn wakes up, has breakfast and she may open it before or after her cup of tea, but she religiously <u>checks her inbox in the morning before commuting to work</u>.",
+              "align": "left"
+            },
+            "author": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtof1ps_o0t69",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "With this <span class=\"article-text-gold\">Time Magic</span>, <span class=\"article-text-bg-red\">Einstein</span> analyzes in a Business Unit the past <span class=\"article-text-bg-gold\">90 days of engagement data</span> SFMC retrieves about subscribers’ interactions, and due to their engagement with the comm it is predicted with a science-bound magic ritual of machine learning the exact hour when the platform sends the messages, boosting key performance indicators (KPIs)..",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtog81l_z1lyw",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "Transactional / Test Sends are excluded from the analysis.",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtok1b7_lwt35",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "As with all of the above-and-below-mentioned features, data is organized and displayed within the <span class=\"article-text-bg-red\">Einstein</span> module in SFMC. For STO there are several helpful ones, such as:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtou9o7_ymq8t",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtou9o7_166b0",
+                "blocks": [
+                  {
+                    "id": "blk_mvtoufam_3k15u",
+                    "type": "nested-bullets",
+                    "data": {
+                      "layout": "vertical",
+                      "items": [
+                        {
+                          "id": "nb_item_1",
+                          "text": {
+                            "text": "Data Quality",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "blk_mvtoum1a_fi2bz",
+                    "type": "single-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793287208930_data_c.webp",
+                      "alt": "goood",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtou9o7_180qc",
+                "blocks": [
+                  {
+                    "id": "blk_mvtougae_0kd78",
+                    "type": "nested-bullets",
+                    "data": {
+                      "layout": "vertical",
+                      "items": [
+                        {
+                          "id": "nb_item_1",
+                          "text": {
+                            "text": "When Are Your Customers Most Likely To Engage?",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "blk_mvtounh2_47xoz",
+                    "type": "single-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793287212111_when_are.webp",
+                      "alt": "When Are Your customers",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtpgck8_xdk9u",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "When Would <span class=\"article-text-bg-red\">Einstein</span> Send?",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtpgota_wcvfp",
+          "type": "single-image",
+          "data": {
+            "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793288163728_send.webp",
+            "alt": "When Would Einstein Send?",
+            "caption": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtphjmp_jjpt8",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtphjmp_kngyz",
+                "blocks": [
+                  {
+                    "id": "blk_mvtphnmp_6sil8",
+                    "type": "solo-text",
+                    "data": {
+                      "paragraphs": [
+                        {
+                          "text": "Additionally, there is a minimum and a maximum window for <span class=\"article-text-bg-red\">Einstein</span> to do its magic, ranging from 4 to 168 hours (7 days).",
+                          "align": "left"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "blk_mvtpidgb_l0zwl",
+                    "type": "single-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793288251165_image.webp",
+                      "alt": "STO",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtphjmp_xeky8",
+                "blocks": [
+                  {
+                    "id": "blk_mvtphomy_tu22e",
+                    "type": "solo-text",
+                    "data": {
+                      "paragraphs": [
+                        {
+                          "text": "If the historical information for a consumer is not sufficient, there is a configuration in the platform setup to decide what is done in those cases.",
+                          "align": "left"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "blk_mvtpjgok_p5iy2",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "warning",
+                      "text": {
+                        "text": "Setup » Platform Tools » Einstein",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvtpkh52_aa1lr",
+      "title": "The Scales of Balance for Engagement Frequency",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvtpl752_ehsy3",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtpl752_uy95q",
+                "blocks": [
+                  {
+                    "id": "blk_mvtpl752_bjfuw",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "📧Available for Email",
+                        "align": "left"
+                      },
+                      "title": {
+                        "text": "Grimoire Note",
+                        "align": "left"
+                      },
+                      "titleMode": "custom",
+                      "showTitle": false
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtpl752_h38rg",
+                "blocks": [
+                  {
+                    "id": "blk_mvtpl752_ygdvt",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "📲Available for Push",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtplq8m_83dlx",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "Usable as a Split activity (Flow Control) within Journey Builder",
+              "align": "left"
+            },
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            },
+            "titleMode": "custom",
+            "showTitle": false
+          }
+        },
+        {
+          "id": "blk_mvtpm8mw_wwf88",
+          "type": "text-image",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "text": {
+              "text": "The great Scales of Balance categorize souls by their tolerance for volume, identifying who is over or under saturated with messages, or who can be sent more communications, preventing saturation <u>before</u> they receive too many.",
+              "align": "left"
+            },
+            "imageSrc": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793288527974_how_saturated.webp",
+            "alt": "How Saturated Are Contacts in this BU?",
+            "caption": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtpp0p0_qqyw7",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtpp0p0_t1joz",
+                "blocks": [
+                  {
+                    "id": "blk_mvtpplbg_ud0sm",
+                    "type": "full-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793288585479_frequ.webp",
+                      "alt": "Einstein",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtpp0p0_1d59h",
+                "blocks": [
+                  {
+                    "id": "blk_mvtpq7ju_kb3sc",
+                    "type": "solo-text",
+                    "data": {
+                      "paragraphs": [
+                        {
+                          "text": "As with other <span class=\"article-text-bg-red\">Einstein</span> incantations, this one uses a real-time Frequency Split in Journey Builder to route souls based on their saturation status, maintaining harmony in the realm.",
+                          "align": "left"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "blk_mvtpqdof_ahh2n",
+                    "type": "single-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793288631323_how_many_emails.webp",
+                      "alt": "Einstein",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtr3ebi_4s8us",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "The mythical <span class=\"article-text-gold\">S</span><span class=\"article-text-gold\">cales of Balance</span> only weigh volume and not intent or desire, in other words: how frequent you’re broadcasting communications to your subscribers’ souls.",
+              "align": "left"
+            },
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtr4ldr_5eqaj",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Based on available insights, Einstein Frequency data (Over and Under saturation only) can be channeled to create Data Extensions",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtr6d4e_p2z1s",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtr6d4e_dvews",
+                "blocks": [
+                  {
+                    "id": "blk_mvtr79ws_5t6oj",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "showTitle": false,
+                      "titleMode": "default",
+                      "blocks": [
+                        {
+                          "id": "blk_mvtthvie_wdrdv",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "These generated Data Extensions are called:",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "id": "blk_mvttfrmu_nw1g5",
+                          "type": "nested-bullets",
+                          "data": {
+                            "layout": "vertical",
+                            "items": [
+                              {
+                                "id": "main_mvttfwke_s22oy",
+                                "text": {
+                                  "text": "Einstein_MC_Email_Frequency_Undersaturation",
+                                  "align": "left"
+                                },
+                                "children": []
+                              },
+                              {
+                                "id": "main_mvttfydp_4uoxs",
+                                "text": {
+                                  "text": "Einstein_MC_Email_Frequency_Oversaturation",
+                                  "align": "left"
+                                },
+                                "children": []
+                              }
+                            ]
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtr6d4e_krat4",
+                "blocks": [
+                  {
+                    "id": "blk_mvttitwp_vg4gb",
+                    "type": "full-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793294984704_create_filtered.webp",
+                      "alt": "Filtered DE",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvttntdc_a49tv",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "The <u><span class=\"article-text-gold\">Scales of Balance</span></u> require you to initially broadcast to your subscribers at least <span class=\"article-text-gold\"><u>5 communications over a 28-day period</u></span> [using a Commercial Send Classification] to properly model for engagement frequency.",
+                "align": "left"
+              },
+              {
+                "text": "<span class=\"article-text-bg-neutral\">Open</span> metrics may be less reliable due to subscribers’ <span class=\"article-text-bg-neutral\">mail auto-open privacy settings</span>.",
+                "align": "left"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvttrhpd_1pyp4",
+      "title": "The Lexicon of Enchantment on Copy Insights",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvttsqq9_taum7",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvttsqq9_6hk8d",
+                "blocks": [
+                  {
+                    "id": "blk_mvttulj3_bb4ic",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvttulj3_4wgql",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "📧Available for Email",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvttsqq9_slztn",
+                "blocks": [
+                  {
+                    "id": "blk_mvttubww_964by",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "note",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvttubww_k36pd",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "📲Available for Push",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvttvn2q_u78lb",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "This linguistic analysis artifact dissects the spells layered on your Subject lines to reveal which emotional tones, words, phrases and symbols truly compel your audience, predicting performance against your past sent messages.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvttw0de_gc3wk",
+          "type": "two-images",
+          "data": {
+            "img1Src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793295635872_language.webp",
+            "img1Alt": "language Factor Insights",
+            "img1Caption": {
+              "text": "",
+              "align": "left"
+            },
+            "img2Src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793295643525_emotional.webp",
+            "img2Alt": "Einstein Tone",
+            "img2Caption": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvttxgyp_7v0tr",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "The <span class=\"article-text-gold\">Lexicon of Enchantment</span> reviews up to <u><span class=\"article-text-gold\">90 days of email engagement data</span></u> [excluding Test and Transactional sends] and returns insights on how to enchant with more impact your Subject lines to increase interactions.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvttym6s_96i2m",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvttym6s_p7nt6",
+                "blocks": [
+                  {
+                    "id": "blk_mvttyxhc_b6nxp",
+                    "type": "nested-bullets",
+                    "data": {
+                      "layout": "horizontal",
+                      "items": [
+                        {
+                          "id": "main_mvttyxhc_6lwmz",
+                          "text": {
+                            "text": "DE",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvttzb01_v0p9e",
+                          "text": {
+                            "text": "ENG",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvttzck0_y003g",
+                          "text": {
+                            "text": "FR",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvttzdeo_lvnvn",
+                          "text": {
+                            "text": "JP",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvttzecn_5cw07",
+                          "text": {
+                            "text": "PT",
+                            "align": "left"
+                          },
+                          "children": []
+                        },
+                        {
+                          "id": "main_mvttzf69_9zrz6",
+                          "text": {
+                            "text": "ES",
+                            "align": "left"
+                          },
+                          "children": []
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvttym6s_jt24z",
+                "blocks": [
+                  {
+                    "id": "blk_mvtu227d_eggoq",
+                    "type": "full-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793295881085_lin.webp",
+                      "alt": "Predict Subject",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtu2ywh_f9xeo",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvtu2ywh_9xya6",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Test a Subject line before sending (<span class=\"article-text-muted\">Interpret Test Results</span>)",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtu5sjm_064he",
+          "type": "image-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "imageSrc": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793296056250_draft.webp",
+            "alt": "Draft",
+            "caption": {
+              "text": "",
+              "align": "left"
+            },
+            "text": {
+              "text": "If you thought that was it, <span class=\"article-text-purple\"><u>Einstein</u></span> is such an achievement in the science of magic world, that it also has the capability to <span class=\"article-text-bg-green\">generate content!</span> Subject Lines and Body text can be crafted by providing initial prompts on what would be the expected result.",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtu8cgr_xgss1",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Even though these insights are helpful for guidance, they do not always reflect the current reality of practices as they are still provided by an <span class=\"article-text-bg-red\">AI</span>.",
+                "align": "left"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvtu8so5_611om",
+      "title": "Real-Time Shapeshifting with Content Selection",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvtu99f6_i2r3v",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtu99f6_k3xoa",
+                "blocks": [
+                  {
+                    "id": "blk_mvtu9eho_9kyyj",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "tip",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvtu9eho_xob3i",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "📧Available for Email",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": false,
+                      "titleMode": "custom",
+                      "title": {
+                        "text": "Craft Mastery Tip",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtu99f6_e7p2g",
+                "blocks": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtua2z7_bn4gr",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Could you imagine if an incantation could work automatically and shapeshift according to the user’s soul? The <span class=\"article-text-gold\">Shapeshifting Grimoire</span> allows <span class=\"article-text-bg-red\">Einstein</span> to choose the most alluring content or offer (from a catalogue of images) for a subscriber at the precise millisecond the email is opened.",
+                "align": "left"
+              },
+              {
+                "text": "To cast a ritual from the <span class=\"article-text-gold\">Shapeshifting Grimoire</span>, there are a diverse variety of assets that must be meticulously organized:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtubv9h_1w7dh",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtubv9h_a60j3",
+                "blocks": [
+                  {
+                    "id": "blk_mvtuby5j_d90wj",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "📚 Asset Classes",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "These define different pools of content for <span class=\"article-text-bg-red\">Einstein</span> to select.",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": true
+                    }
+                  },
+                  {
+                    "id": "blk_mvtuc5qb_n34fw",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "📑 Asset Attributes",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "Manage asset fields and values that are valid for creating or uploading assets.",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": true
+                    }
+                  },
+                  {
+                    "id": "blk_mvtuc4wz_spdns",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "📑 Profile Attributes",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "Manage profile fields and values that are valid when syncing profiles from a Data Extension.",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": true
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtubv9h_7hbuf",
+                "blocks": [
+                  {
+                    "id": "blk_mvtubzh7_vz36i",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "👪 Existing Consumer Profile",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "<span class=\"article-text-bg-red\">Einstein</span> will learn more about your subscriber by syncing Data Extensions.",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": true
+                    }
+                  },
+                  {
+                    "id": "blk_mvtuc90i_i3p3j",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "⚖️ Content Selection Rules",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "Define custom rules regarding displaying time of assets and exclusion rules.",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": true
+                    }
+                  },
+                  {
+                    "id": "blk_mvtuc7he_ad35g",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "📁 Fallback Assets",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "Select an alternate image for each pool of content to display when no matching content is found for a subscriber.",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": true
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtue2ek_oerq2",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvtue2ek_3yzur",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "If a subscriber ignores chosen images three times (a.k.a. Content Fatigue), <span class=\"article-text-bg-red\">Einstein</span> will seamlessly drop that illusion and try new content from the related pool.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtue6po_j4y6k",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvtue6pp_ml25i",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "This functionality has incredible potential, and limited use however. Due to the dynamic nature of marketing teams, it is very difficult to configure and maintain elements and rules that last over time.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": false,
+            "titleMode": "custom",
+            "title": {
+              "text": "Grimoire Note",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtuezjn_jrf7c",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtuezjn_16izx",
+                "blocks": [
+                  {
+                    "id": "blk_mvtuf2g0_afy2i",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "📩 Email Recommendations",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": false
+                    }
+                  },
+                  {
+                    "id": "blk_mvtug7fn_p10w0",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "warning",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvtug7fn_5vxz2",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "📧Available for Email",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtuezjn_q5evb",
+                "blocks": [
+                  {
+                    "id": "blk_mvtuf3hf_enmhu",
+                    "type": "title-text",
+                    "data": {
+                      "heading": {
+                        "text": "🌐 Web Recommendations",
+                        "align": "left"
+                      },
+                      "paragraphs": [
+                        {
+                          "text": "",
+                          "align": "left"
+                        }
+                      ],
+                      "showText": false
+                    }
+                  },
+                  {
+                    "id": "blk_mvtufnj8_gdjvp",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "warning",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvtufnj8_2a2ff",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "📬Available for Web",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": false,
+                      "titleMode": "default"
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtui1wl_8ntw8",
+          "type": "text-image",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "text": {
+              "text": "Analogous to the previous legendary artifacts, these two cousin <span class=\"article-text-gold\">Suggestion Relics</span> deliver the next best content or product in either an email or the business’ webpage. Very much alike the previously mentioned <span class=\"article-text-gold\">Shapeshifting</span> <span class=\"article-text-gold\">Grimoire</span>, these relics use a pool of images from Einstein Content Selection. When a comm is sent to your subscribers’ souls, the emails are delivered as a pre-built image-and-link pair, and are activated when a user engages with the message.",
+              "align": "left"
+            },
+            "imageSrc": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793296633134_analo.webp",
+            "alt": "Einstein Email Recomendations",
+            "caption": {
+              "text": "",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtuj95g_86whd",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvtuj95g_xt5pw",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "The logic, content and scenarios are <span class=\"article-text-gold\">generated/stored in advance</span> (to ensure the content is instantly available without sacrificing performance when a message is opened), <span class=\"article-text-gold\">and triggered immediately before</span> consumers see the recommendation.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtuken8_8557i",
+          "type": "two-columns",
+          "data": {
+            "col1Title": {
+              "text": "",
+              "align": "left"
+            },
+            "col1Text": {
+              "text": "<span class=\"article-text-gold\"><u>Each recommendation is an individual image</u></span>. If you want to send four (4) recommendations to users, four (4) HTML/Einstein blocks are required in your email communication.",
+              "align": "left"
+            },
+            "col2Title": {
+              "text": "",
+              "align": "left"
+            },
+            "col2Text": {
+              "text": "<span class=\"article-text-gold\"><u>Thumbnails</u></span> are activated when a <span class=\"article-text-gold\"><u>user engages with the website</u></span>. The best practice is to leverage a JSON file for delivering web recommendations due to its flexibility for transforming data as it is needed.",
+              "align": "left"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvtum7nx_axpd9",
+      "title": "The All-Seeing Eye for Content Tagging",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvtumpmc_7ck48",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtumpmc_1qau3",
+                "blocks": [
+                  {
+                    "id": "blk_mvtumuek_u9chx",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "tip",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvtumuek_zd494",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "📧Available for Email",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": false,
+                      "titleMode": "custom",
+                      "title": {
+                        "text": "Craft Mastery Tip",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtumpmc_77zsw",
+                "blocks": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtunak4_l6pet",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Channeling through Einstein the powers of Google Vision AI, this feature automatically identifies and tags imagery within Content Builder, sort of an All-Seeing Eye. These searchable tags contain a prefix that you can define, as well as the maximum tags an image can contain, and the confidence level that Einstein assigns.",
+                "align": "left"
+              },
+              {
+                "text": "<strong>⛔ Artifact Limits</strong>",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtuo6es_xunlm",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "A maximum of 25 tags can be applied per image. These are tagged on existing JPG, JPEG and PNG &lt;10MB files.",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvtuocjn_62r95",
+                "text": {
+                  "text": "The mythical <span class=\"article-text-purple\">Scales of All-Seeing Eye</span> analyzes and tags images every 24 hours. Assigned Tags can be deleted/disabled/modified only after turning-off Content Tagging.",
+                  "align": "left"
+                },
+                "children": [
+                  {
+                    "id": "sub_mvtuodyj_5f6xz",
+                    "text": {
+                      "text": "If Deleting Tags, these can take up to 24 hours to be removed.",
+                      "align": "left"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtuppic_f09ti",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvtuppic_n7htd",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "If Tags are deleted and the functionality is re-enabled before 24 hours have passed, all images are retagged using the defined settings.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": false,
+            "titleMode": "default"
+          }
+        },
+        {
+          "id": "blk_mvtury2k_kw4j5",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvtury2k_2flu3",
+                "blocks": [
+                  {
+                    "id": "blk_mvtus32d_zgsys",
+                    "type": "full-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793297086044_mc.webp",
+                      "alt": "MCECT Flag",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvtury2k_pjs8i",
+                "blocks": [
+                  {
+                    "id": "blk_mvtus4ot_396lq",
+                    "type": "full-image",
+                    "data": {
+                      "src": "/articles/the-magic-science-in-sfmc-einstein-ai/images/1793297089919_configure.webp",
+                      "alt": "Configure Einstein",
+                      "caption": {
+                        "text": "",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtuuevg_twsem",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Even though these insights are helpful for guidance, they do not always reflect the current reality of assets as they are still provided by an AI.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtuuqhp_o41ow",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "e.g., the image used in the example displays the flag for Chile 🇨🇱, but Google’s Vision AI misinterpreted it as the flag of the United States of America 🇺🇸.",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ],
+            "markerStyle": "hyphen"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvtuvs3i_5bwxi",
+      "title": "Use Case Exercise",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvtuwcnx_phaxj",
+          "type": "exercise",
+          "data": {
+            "badge": "Use Case #1",
+            "scenario": {
+              "text": "Your Headmaster is looking to send one of the most important events to all members of the council, and would like to use predicted behavior on which time suits best for sending these messages. What feature would you recommend to use?",
+              "align": "left"
+            },
+            "buttonText": "✦ Reveal Answer",
+            "solutionTitle": {
+              "text": "Send Time Optimization.&nbsp;",
+              "align": "left"
+            },
+            "solutionText": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtuwuoc_m80s8",
+          "type": "exercise",
+          "data": {
+            "badge": "Use Case #2",
+            "scenario": {
+              "text": "The Supreme Witch requires to maintain a standard send of owl-messages to all professors and distinguished alumni, however, she doesn’t want to overcommunicate and saturate them through this method. What feature would you recommend to use?",
+              "align": "left"
+            },
+            "buttonText": "✦ Reveal Answer",
+            "solutionTitle": {
+              "text": "Engagement Frequency.",
+              "align": "left"
+            },
+            "solutionText": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtuyjba_gppx7",
+          "type": "exercise",
+          "data": {
+            "badge": "Use Case #3",
+            "scenario": {
+              "text": "Samuel, your potion expert is writing a new newspaper article to share a few insights on a research he’s carrying out, but the titles used in these publications are not catchy nor impactful to his audience. What feature would you recommend Samuel to use?",
+              "align": "left"
+            },
+            "buttonText": "✦ Reveal Answer",
+            "solutionTitle": {
+              "text": "Copy Insights.",
+              "align": "left"
+            },
+            "solutionText": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvtuyv9w_wjky0",
+          "type": "exercise",
+          "data": {
+            "badge": "Use Case #4",
+            "scenario": {
+              "text": "Irene, the expert enchantress, wants to know how long a user has spent reading her recent newsletter. She would like to have this information shown in a magical dashboard that updates automatically every hour. What feature would you recommend to use?",
+              "align": "left"
+            },
+            "buttonText": "✦ Reveal Answer",
+            "solutionTitle": {
+              "text": "Not an Einstein feature.",
+              "align": "left"
+            },
+            "solutionText": {
+              "text": "What is being requested is not an out-of-the-box functionality. A custom development must be built to achieve this inquiry.",
+              "align": "left"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvtuzo90_wo2xc",
+      "title": "To Sum-Up",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvtuzzu1_d2i5a",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "<span class=\"article-text-bg-red\">Einstein</span> in SFMC is a licensed AI suite designed to optimize engagement and help marketers make smarter decisions. If you have the tool available in your SFMC org., give it a try and start adding it to your campaigns to improve your overall delivery strategy. There are certainly more than a few features you can use in every of your processes!",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvtv0fwd_jme9d",
+          "type": "related-docs",
+          "data": {
+            "items": [
+              {
+                "id": "rd_1",
+                "type": "external",
+                "title": {
+                  "text": "Using Einstein in Marketing Cloud",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.marketing_cloud_einstein.htm&type=5",
+                "ctaText": "Using Einstein in Marketing Cloud"
+              },
+              {
+                "id": "rd_mvtv11lh_ustie",
+                "type": "external",
+                "title": {
+                  "text": "Artificial Intelligence for Marketing",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://trailhead.salesforce.com/content/learn/modules/artificial-intelligence-for-marketing",
+                "ctaText": "Artificial Intelligence for Marketing"
+              },
+              {
+                "id": "rd_mvtv1gth_9dp87",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Engagement Scoring",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_anb_einstein_engagement_scoring.htm&type=5",
+                "ctaText": "Einstein Engagement Scoring"
+              },
+              {
+                "id": "rd_mvtv1qyd_rcrkw",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Messaging Insights",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_anb_get_started_with_einstein_messaging_insights.htm&type=5",
+                "ctaText": "Einstein Messaging Insights"
+              },
+              {
+                "id": "rd_mvtv247p_nh8op",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Send Time Optimization",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_anb_einstein_sto_app.htm&type=5",
+                "ctaText": "Einstein Send Time Optimization"
+              },
+              {
+                "id": "rd_mvtv2fq7_jc0u4",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Engagement Frequency",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_anb_eef.htm&type=5",
+                "ctaText": "Einstein Engagement Frequency"
+              },
+              {
+                "id": "rd_mvtv2rah_wz7un",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Copy Insights",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_anb_einstein_copy_insights.htm&type=5",
+                "ctaText": "Einstein Copy Insights"
+              },
+              {
+                "id": "rd_mvtv3221_zrp26",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Content Selection",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_pb_einstein_content_selection.htm&type=5",
+                "ctaText": "Einstein Content Selection"
+              },
+              {
+                "id": "rd_mvtv3c4l_tep0d",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Email Recommendations",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_pb_einstein_email_recommendations.htm&type=5",
+                "ctaText": "Einstein Email Recommendations"
+              },
+              {
+                "id": "rd_mvtv3oqs_etg52",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Web Recommendations",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_pb_einstein_web_recommendation.htm&type=5",
+                "ctaText": "Einstein Web Recommendations"
+              },
+              {
+                "id": "rd_mvtv3vxj_rbow8",
+                "type": "external",
+                "title": {
+                  "text": "Einstein Content Tagging",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_ceb_einstein_content_tagging.htm&type=5",
+                "ctaText": "Einstein Content Tagging"
+              },
+              {
+                "id": "rd_mvtv48w5_suv2q",
+                "type": "external",
+                "title": {
+                  "text": "Einstein and Analytics in Salesforce Marketing Cloud",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_data_management_and_analytics.htm&type=5",
+                "ctaText": "Einstein and Analytics in Salesforce Marketing Cloud"
+              },
+              {
+                "id": "rd_mvtv4foc_brtr8",
+                "type": "external",
+                "title": {
+                  "text": "Learn More About Google Vision",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://cloud.google.com/vision/",
+                "ctaText": "Learn More About Google Vision"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

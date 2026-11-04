@@ -1,0 +1,4 @@
+# Las imágenes de este artículo deben colocarse en esta carpeta.
+# Ejemplo de uso en index.astro:
+# import coverImg from './images/cover.webp';
+# <img src={coverImg.src} alt="Cover" />

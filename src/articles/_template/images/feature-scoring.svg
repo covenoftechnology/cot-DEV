@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 420" width="600" height="420">
+  <defs>
+    <radialGradient id="scBg" cx="50%" cy="50%" r="70%">
+      <stop offset="0%" stop-color="#1e1430" />
+      <stop offset="100%" stop-color="#0e0a17" />
+    </radialGradient>
+  </defs>
+  <rect width="600" height="420" fill="url(#scBg)" rx="6" />
+  <rect width="598" height="418" x="1" y="1" fill="none" stroke="rgba(216,181,107,0.18)" stroke-width="1" rx="6" />
+
+  <!-- Quadrant Axes -->
+  <line x1="300" y1="40" x2="300" y2="380" stroke="rgba(216,181,107,0.2)" stroke-width="1.5" />
+  <line x1="40" y1="210" x2="560" y2="210" stroke="rgba(216,181,107,0.2)" stroke-width="1.5" />
+
+  <text x="300" y="28" font-family="'IBM Plex Mono', monospace" font-size="11" fill="#b98fd8" text-anchor="middle" letter-spacing="1">HIGH OPEN PROPENSITY ↑</text>
+  <text x="560" y="202" font-family="'IBM Plex Mono', monospace" font-size="11" fill="#b98fd8" text-anchor="end" letter-spacing="1">HIGH CLICK →</text>
+
+  <!-- Quadrant 1 (Top Right): Loyalists -->
+  <rect x="315" y="55" width="230" height="140" rx="4" fill="rgba(216,181,107,0.06)" stroke="rgba(216,181,107,0.3)" />
+  <text x="330" y="85" font-family="'Cinzel', serif" font-size="16" font-weight="600" fill="#e8cf95">LOYALISTS</text>
+  <text x="330" y="110" font-family="'EB Garamond', serif" font-size="13" fill="#cdc3b6">High open &amp; high click rates.</text>
+  <text x="330" y="130" font-family="'EB Garamond', serif" font-size="13" fill="#8f857a">Target: VIP offers, early access.</text>
+  <circle cx="510" cy="85" r="16" fill="rgba(216,181,107,0.15)" stroke="#d8b56b" />
+  <text x="510" y="90" font-family="'EB Garamond', serif" font-size="13" fill="#e8cf95" text-anchor="middle">✦</text>
+
+  <!-- Quadrant 2 (Top Left): Window Shoppers -->
+  <rect x="55" y="55" width="230" height="140" rx="4" fill="rgba(185,143,216,0.06)" stroke="rgba(185,143,216,0.3)" />
+  <text x="70" y="85" font-family="'Cinzel', serif" font-size="16" font-weight="600" fill="#b98fd8">WINDOW SHOPPERS</text>
+  <text x="70" y="110" font-family="'EB Garamond', serif" font-size="13" fill="#cdc3b6">High open &amp; low click rates.</text>
+  <text x="70" y="130" font-family="'EB Garamond', serif" font-size="13" fill="#8f857a">Target: Compelling CTAs, curated links.</text>
+  <circle cx="250" cy="85" r="16" fill="rgba(185,143,216,0.15)" stroke="#b98fd8" />
+  <text x="250" y="90" font-family="'EB Garamond', serif" font-size="13" fill="#b98fd8" text-anchor="middle">◈</text>
+
+  <!-- Quadrant 3 (Bottom Right): Selective Subscribers -->
+  <rect x="315" y="225" width="230" height="140" rx="4" fill="rgba(124,77,196,0.06)" stroke="rgba(124,77,196,0.3)" />
+  <text x="330" y="255" font-family="'Cinzel', serif" font-size="16" font-weight="600" fill="#d8b56b">SELECTIVE</text>
+  <text x="330" y="280" font-family="'EB Garamond', serif" font-size="13" fill="#cdc3b6">Low open &amp; high click rates.</text>
+  <text x="330" y="300" font-family="'EB Garamond', serif" font-size="13" fill="#8f857a">Target: High-intent subject lines.</text>
+  <circle cx="510" cy="255" r="16" fill="rgba(124,77,196,0.15)" stroke="#a980e0" />
+  <text x="510" y="260" font-family="'EB Garamond', serif" font-size="13" fill="#a980e0" text-anchor="middle">⚙</text>
+
+  <!-- Quadrant 4 (Bottom Left): Dormant -->
+  <rect x="55" y="225" width="230" height="140" rx="4" fill="rgba(255,255,255,0.02)" stroke="rgba(216,181,107,0.12)" />
+  <text x="70" y="255" font-family="'Cinzel', serif" font-size="16" font-weight="600" fill="#8f857a">DORMANT</text>
+  <text x="70" y="280" font-family="'EB Garamond', serif" font-size="13" fill="#8f857a">Low open &amp; low click rates.</text>
+  <text x="70" y="300" font-family="'EB Garamond', serif" font-size="13" fill="#6f6558">Target: Re-engagement rites or winback.</text>
+  <circle cx="250" cy="255" r="16" fill="rgba(255,255,255,0.04)" stroke="#6f6558" />
+  <text x="250" y="260" font-family="'EB Garamond', serif" font-size="13" fill="#8f857a" text-anchor="middle">☽</text>
+</svg>

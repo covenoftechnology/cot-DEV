@@ -21,3 +21,6 @@ pnpm-debug.log*
 
 # macOS-specific files
 .DS_Store
+
+# Coven Article Studio local authoring storage
+.article-studio/

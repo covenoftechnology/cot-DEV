@@ -19,7 +19,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     var path = (segments.pop() || '').toLowerCase();
     if (!path || path === 'index.html' || path === '') return 'landing';
     var name = path.replace('.html', '');
-    var known = ['landing', 'library', 'article', 'quiz', 'result', 'leaderboard', 'signup', 'profile', 'terms', 'memes'];
+    var known = ['landing', 'library', 'article', 'quiz', 'result', 'leaderboard', 'signup', 'profile', 'terms', 'memes', 'about'];
     return known.indexOf(name) !== -1 ? name : 'landing';
   }
 
@@ -96,10 +96,16 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     this.go('profile');
   }
 
+  triggerComingSoon() {
+    if (typeof window !== 'undefined' && typeof window.showCovenComingSoonToast === 'function') {
+      window.showCovenComingSoonToast('This ritual is still being prepared.');
+    }
+  }
+
   openProfile() {
     var isLogged = this.state.loggedIn || getStoredLoggedIn();
     if (isLogged) this.go('profile');
-    else this.go('signup');
+    else this.triggerComingSoon();
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -293,7 +299,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
     });
 
     // ── Memes ────────────────────────────────────────────────────
-    var memes = C.memes.map(function(m) {
+    var memes = (C.memes || []).map(function(m) {
       return Object.assign({}, m, {
         thumbStyle: 'height:170px;background:' + m.thumbBg + ';display:flex;align-items:center;justify-content:center;font-family:\'IBM Plex Mono\',monospace;font-size:11px;color:#8a7f70;border-bottom:1px solid rgba(185,143,216,.14)',
       });
@@ -388,6 +394,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
       isProfile:     st.screen === 'profile',
       isTerms:       st.screen === 'terms',
       isMemes:       st.screen === 'memes',
+      isAbout:       st.screen === 'about',
       loggedIn:      st.loggedIn,
 
       // Navigation
@@ -395,10 +402,11 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
       toLibrary:     function() { this.go('library'); }.bind(this),
       toArticle:     function() { this.go('article'); }.bind(this),
       toLeaderboard: function() { this.go('leaderboard'); }.bind(this),
-      toSignup:      function() { this.go('signup'); }.bind(this),
+      toSignup:      function() { this.triggerComingSoon(); }.bind(this),
       toProfile:     function() { this.openProfile(); }.bind(this),
       toTerms:       function() { this.go('terms'); }.bind(this),
       toMemes:       function() { this.go('memes'); }.bind(this),
+      toAbout:       function() { this.go('about'); }.bind(this),
       login:         function() { this.login(); }.bind(this),
       startTrial:    function() { this.startTrial(); }.bind(this),
 
@@ -423,7 +431,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
       // Content (dotted paths used in template)
       brand:               C.brand,
       hero:                C.hero,
-      heroStats:           C.stats,
+      heroStats:           (typeof window !== 'undefined' && Array.isArray(window.COVEN_HOME_STATS)) ? window.COVEN_HOME_STATS : (C.stats || []),
       ranks,
       featuredScrolls,
       activeScrolls,

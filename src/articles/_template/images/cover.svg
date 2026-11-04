@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 560" width="1200" height="560">
+  <defs>
+    <radialGradient id="covBg" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#2d1c47" />
+      <stop offset="45%" stop-color="#150f24" />
+      <stop offset="100%" stop-color="#0a0712" />
+    </radialGradient>
+    <linearGradient id="covGold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5e2b3" />
+      <stop offset="50%" stop-color="#d8b56b" />
+      <stop offset="100%" stop-color="#9a7a35" />
+    </linearGradient>
+    <linearGradient id="covPurple" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#b98fd8" stop-opacity="0.8" />
+      <stop offset="50%" stop-color="#e8cf95" stop-opacity="0.9" />
+      <stop offset="100%" stop-color="#8b5cc4" stop-opacity="0.8" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="14" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <rect width="1200" height="560" fill="url(#covBg)" />
+  <rect width="1198" height="558" x="1" y="1" fill="none" stroke="rgba(216,181,107,0.2)" stroke-width="1" rx="8" />
+
+  <!-- Constellation grid -->
+  <g opacity="0.18" stroke="#d8b56b" stroke-width="0.8" stroke-dasharray="3,6">
+    <line x1="80" y1="100" x2="1120" y2="100" />
+    <line x1="80" y1="280" x2="1120" y2="280" />
+    <line x1="80" y1="460" x2="1120" y2="460" />
+    <line x1="240" y1="50" x2="240" y2="510" />
+    <line x1="600" y1="50" x2="600" y2="510" />
+    <line x1="960" y1="50" x2="960" y2="510" />
+  </g>
+
+  <!-- Sacred Astral Rings -->
+  <circle cx="600" cy="270" r="190" fill="none" stroke="url(#covGold)" stroke-width="1.2" opacity="0.35" />
+  <circle cx="600" cy="270" r="140" fill="none" stroke="#b98fd8" stroke-width="1" stroke-dasharray="4,8" opacity="0.45" />
+  <circle cx="600" cy="270" r="85" fill="rgba(30,19,48,0.6)" stroke="url(#covGold)" stroke-width="1.6" filter="url(#glow)" />
+
+  <!-- Glyphs and Nodes -->
+  <g fill="#e8cf95" opacity="0.85">
+    <circle cx="600" cy="80" r="4" />
+    <circle cx="600" cy="460" r="4" />
+    <circle cx="410" cy="270" r="4" />
+    <circle cx="790" cy="270" r="4" />
+    <circle cx="465" cy="135" r="3" />
+    <circle cx="735" cy="135" r="3" />
+    <circle cx="465" cy="405" r="3" />
+    <circle cx="735" cy="405" r="3" />
+  </g>
+
+  <!-- Central Sigil -->
+  <text x="600" y="286" font-family="'EB Garamond', serif" font-size="48" fill="url(#covGold)" text-anchor="middle" font-weight="bold">✶</text>
+
+  <!-- Orbiting Lines -->
+  <ellipse cx="600" cy="270" rx="360" ry="110" fill="none" stroke="url(#covPurple)" stroke-width="1.2" opacity="0.4" transform="rotate(-15 600 270)" />
+  <ellipse cx="600" cy="270" rx="360" ry="110" fill="none" stroke="url(#covPurple)" stroke-width="1" stroke-dasharray="6,12" opacity="0.3" transform="rotate(18 600 270)" />
+
+  <!-- Editorial typography in cover -->
+  <text x="600" y="475" font-family="'Cinzel', serif" font-size="14" fill="#b98fd8" letter-spacing="5" text-anchor="middle" opacity="0.9">✦ THE MAGIC SCIENCE IN SFMC'S EINSTEIN AI ✦</text>
+  <text x="600" y="505" font-family="'IBM Plex Mono', monospace" font-size="11" fill="#8f857a" letter-spacing="2" text-anchor="middle">SACRED INTELLIGENCE · ENGAGEMENT MATRIX · PREDICTIVE PROPENSITY</text>
+</svg>

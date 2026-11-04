@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luna de Coven - Transmutación Perfecta</title>
+    <style>
+        :root {
+            --gold: #dcb358;
+            --gold-bright: #ffe55c;
+            --purple-dark: #4a00e0;
+            --purple-light: #8e2de2;
+            --bg-dark: #07030d;
+            --bg-light_moon: #51515128;
+        }
+
+        body {
+            margin: 0;
+            height: 100vh;
+            background-color: var(--bg-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        /* Contenedor interactivo */
+        .ritual-container {
+            position: relative;
+            width: 450px;
+            height: 450px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: crosshair; 
+        }
+
+        /* === 1. AURA DE LA NEBULOSA === */
+        .nebula-aura {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: radial-gradient(circle, var(--purple-light) 0%, transparent 70%);
+            box-shadow: 0 0 100px 30px var(--purple-dark);
+            opacity: 0.3;
+            transition: all 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            animation: breatheAura 4s ease-in-out infinite alternate;
+        }
+
+        /* === 2. GEOMETRÍA SAGRADA === */
+        .sacred-geometry {
+            position: absolute;
+            width: 210px;
+            height: 210px;
+            border: 1px solid rgba(220, 179, 88, 0.15);
+            box-shadow: 0 0 15px rgba(220, 179, 88, 0.05);
+            transition: all 0.8s ease;
+            animation: spinSlow 40s linear infinite;
+        }
+        .sacred-geometry::before {
+            content: '';
+            position: absolute;
+            top: -1px; left: -1px; right: -1px; bottom: -1px;
+            border: 1px solid rgba(220, 179, 88, 0.15);
+            transform: rotate(45deg);
+        }
+
+        /* === 3. ANILLO DE RUNAS === */
+        .rune-ring {
+            position: absolute;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: repeating-conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                transparent 10deg,
+                rgba(220, 179, 88, 0.2) 10deg,
+                rgba(220, 179, 88, 0.2) 10.5deg
+            );
+            -webkit-mask-image: radial-gradient(transparent 68%, black 69%);
+            mask-image: radial-gradient(transparent 68%, black 69%);
+            animation: spinSlowReverse 35s linear infinite;
+            transition: all 0.6s ease;
+        }
+
+        /* === 4. ANILLO EXTERIOR DE INVOCACIÓN === */
+        .summoning-ring {
+            position: absolute;
+            width: 380px;
+            height: 380px;
+            border-radius: 50%;
+            border: 2px solid transparent;
+            border-top: 2px solid rgba(142, 45, 226, 0.5);
+            border-bottom: 2px solid rgba(220, 179, 88, 0.5);
+            box-shadow: 0 0 30px rgba(142, 45, 226, 0.1), inset 0 0 20px rgba(142, 45, 226, 0.1);
+            animation: spinSlow 20s linear infinite;
+            transition: all 0.6s ease;
+        }
+
+        /* === 5. LA LUNA PLANA EN EL CENTRO (ESTADO NORMAL) === */
+        .moon {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background-color: #6d6e6e; 
+            border-radius: 50%;
+            transform: scale(0.3); /* Escala perfecta para encajar a 150px */
+            box-shadow: inset -20px -20px 0 0 #4e4e4e;
+            overflow: hidden;
+            z-index: 10;
+            transition: background-color 0.8s ease, box-shadow 0.8s ease;
+        }
+
+        .maria { position: absolute; background-color: #a8a8a8; opacity: 0.9; transition: opacity 0.8s ease; }
+        .patch-1 { width: 200px; height: 250px; top: 15%; left: 30%; border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(15deg); }
+        .patch-2 { width: 160px; height: 140px; top: 60%; left: 45%; border-radius: 60% 40% 30% 70% / 50% 60% 40% 50%; transform: rotate(-10deg); }
+        .patch-3 { width: 120px; height: 100px; top: 35%; left: 15%; border-radius: 50% 50% 40% 60% / 60% 40% 50% 50%; }
+        .patch-4 { width: 80px; height: 120px; top: 25%; left: 65%; border-radius: 30% 70% 50% 50% / 40% 40% 60% 60%; transform: rotate(30deg); }
+
+        .crater { position: absolute; background-color: #BCBCBC; border-radius: 50%; box-shadow: inset 4px 4px 0 var(--bg-light_moon); transition: opacity 0.8s ease; }
+        .c1 { width: 85px; height: 85px; top: 40%; left: 5%; box-shadow: inset 6px 6px 0 var(--bg-light_moon); }
+        .c2 { width: 30px; height: 30px; top: 28%; left: 12%; }
+        .c3 { width: 20px; height: 20px; top: 58%; left: 14%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
+        .c4 { width: 15px; height: 15px; top: 64%; left: 8%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
+        .c5 { width: 45px; height: 45px; top: 12%; left: 25%; box-shadow: inset 5px 5px 0 var(--bg-light_moon); }
+        .c6 { width: 20px; height: 20px; top: 8%; left: 40%; box-shadow: inset 3px 3px 0 var(--bg-light_moon); }
+        .c7 { width: 12px; height: 12px; top: 16%; left: 50%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
+        .c8 { width: 50px; height: 50px; top: 72%; left: 22%; box-shadow: inset 5px 5px 0 var(--bg-light_moon); }
+        .c9 { width: 40px; height: 40px; top: 80%; left: 45%; }
+        .c10 { width: 25px; height: 25px; top: 68%; left: 55%; box-shadow: inset 3px 3px 0 var(--bg-light_moon); }
+        .c11 { width: 60px; height: 60px; top: 35%; left: 78%; box-shadow: inset 5px 5px 0 var(--bg-light_moon); }
+        .c12 { width: 25px; height: 25px; top: 48%; left: 82%; }
+        .c13 { width: 18px; height: 18px; top: 28%; left: 70%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
+        .c14 { width: 35px; height: 35px; top: 65%; left: 75%; }
+        .c15 { width: 15px; height: 15px; top: 45%; left: 40%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
+        .c16 { width: 10px; height: 10px; top: 52%; left: 35%; box-shadow: inset 1px 1px 0 var(--bg-light_moon); }
+
+        /* === 6. LA LUNA AMARILLA CRECIENTE (CORREGIDA HACIA ADENTRO) === */
+        .crescent-moon {
+            position: absolute;
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            z-index: 11;
+            /* La sombra INSET dibuja la silueta perfectamente por dentro del círculo negro */
+            box-shadow: inset 20px -10px 0 -2px var(--gold);
+            transform: rotate(-15deg);
+            opacity: 0; 
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
+
+        /* ======================================================== */
+        /* ✨ MAGIA INTERACTIVA (HOVER) ✨ */
+        /* ======================================================== */
+
+        /* 1. La Luna plana se oscurece */
+        .ritual-container:hover .moon {
+            background-color: #030105;
+            box-shadow: inset -60px 60px 120px rgba(0,0,0,1), inset 0 0 50px rgba(142, 45, 226, 0.4);
+        }
+
+        /* 2. Los cráteres desaparecen */
+        .ritual-container:hover .maria, 
+        .ritual-container:hover .crater {
+            opacity: 0;
+        }
+
+        /* 3. Aparece la luz amarilla (Fusión de sombra interna + resplandor externo) */
+        .ritual-container:hover .crescent-moon {
+            opacity: 1; 
+            animation: pulseCrescent 3s ease-in-out infinite alternate;
+        }
+
+        /* 4. Los anillos mágicos reaccionan */
+        .ritual-container:hover .nebula-aura {
+            transform: scale(1.4);
+            opacity: 0.6;
+            background: radial-gradient(circle, var(--gold) 0%, transparent 70%);
+            box-shadow: 0 0 150px 60px rgba(220, 179, 88, 0.2);
+        }
+
+        .ritual-container:hover .summoning-ring {
+            animation-duration: 4s; 
+            border-top: 2px solid var(--gold-bright);
+            border-bottom: 2px solid var(--purple-light);
+            box-shadow: 0 0 60px rgba(142, 45, 226, 0.6), inset 0 0 40px rgba(220, 179, 88, 0.3);
+        }
+
+        .ritual-container:hover .rune-ring {
+            animation-duration: 6s;
+            background: repeating-conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                transparent 10deg,
+                var(--gold-bright) 10deg,
+                var(--gold-bright) 11.5deg
+            );
+        }
+
+        .ritual-container:hover .sacred-geometry {
+            animation-duration: 10s;
+            border: 1px solid rgba(255, 229, 92, 0.4);
+            box-shadow: 0 0 30px rgba(255, 229, 92, 0.3);
+        }
+        .ritual-container:hover .sacred-geometry::before {
+            border: 1px solid rgba(255, 229, 92, 0.4);
+        }
+
+        /* === ANIMACIONES === */
+        @keyframes breatheAura { 0% { transform: scale(0.9); } 100% { transform: scale(1.1); } }
+        @keyframes spinSlow { 100% { transform: rotate(360deg); } }
+        @keyframes spinSlowReverse { 100% { transform: rotate(-360deg); } }
+        
+        /* Animación de latido para la luna creciente DENTRO de los límites */
+        @keyframes pulseCrescent {
+            0% {
+                box-shadow: 
+                    inset 24px -14px 0 -2px var(--gold-bright), /* Filo interno */
+                    -10px 5px 15px -2px var(--gold-bright),     /* Glow externo */
+                    -15px 8px 30px -5px rgba(142, 45, 226, 0.4);
+            }
+            100% {
+                box-shadow: 
+                    inset 26px -16px 0 -2px #fff5a3,           /* Filo brillante máximo */
+                    -15px 8px 25px 2px var(--gold-bright),      /* Expansión del glow externo */
+                    -25px 12px 45px 0px rgba(142, 45, 226, 0.6);
+            }
+        }
+    </style>
+</head>
+<body>
+    
+    <div class="ritual-container">
+        <!-- Elementos del fondo mágico -->
+        <div class="nebula-aura"></div>
+        <div class="sacred-geometry"></div>
+        <div class="rune-ring"></div>
+        <div class="summoning-ring"></div>
+        
+        <!-- Tu Luna Plana (Se oscurece al hacer Hover) -->
+        <div class="moon">
+            <div class="maria patch-1"></div>
+            <div class="maria patch-2"></div>
+            <div class="maria patch-3"></div>
+            <div class="maria patch-4"></div>
+            <div class="crater c1"></div>
+            <div class="crater c2"></div>
+            <div class="crater c3"></div>
+            <div class="crater c4"></div>
+            <div class="crater c5"></div>
+            <div class="crater c6"></div>
+            <div class="crater c7"></div>
+            <div class="crater c8"></div>
+            <div class="crater c9"></div>
+            <div class="crater c10"></div>
+            <div class="crater c11"></div>
+            <div class="crater c12"></div>
+            <div class="crater c13"></div>
+            <div class="crater c14"></div>
+            <div class="crater c15"></div>
+            <div class="crater c16"></div>
+        </div>
+        
+        <!-- La luz amarilla creciente (Con INSET para dibujar por dentro del límite) -->
+        <div class="crescent-moon"></div>
+    </div>
+
+    <script>
+        (function () {
+            var container = document.querySelector('.ritual-container');
+            if (!container) return;
+
+            var AudioCtor = window.Audio || (window.top && window.top.Audio);
+            if (!AudioCtor) return;
+
+            var TARGET_VOLUME = 0.35;
+            var sound = new AudioCtor('/assets/about/audio/sonido de fondo.mp3');
+            sound.preload = 'auto';
+            sound.loop = false;
+            sound.volume = TARGET_VOLUME;
+            try { sound.load(); } catch (_) {}
+
+            var isHovering = false;
+            var audioUnlocked = false;
+            var triggerCount = 0;
+            var playSuccessCount = 0;
+            var lastError = null;
+
+            function markStageUnlocked() {
+                try {
+                    if (window.frameElement && window.frameElement.parentElement) {
+                        window.frameElement.parentElement.setAttribute('data-audio-unlocked', 'true');
+                    }
+                } catch (_) {}
+            }
+
+            function playSoundFromStart() {
+                try {
+                    sound.pause();
+                    if (sound.readyState > 0) {
+                        try { sound.currentTime = 0; } catch (_) {}
+                    }
+                    sound.muted = false;
+                    sound.volume = TARGET_VOLUME;
+                    var playPromise = sound.play();
+                    if (playPromise && typeof playPromise.then === 'function') {
+                        playPromise.then(function () {
+                            playSuccessCount += 1;
+                            lastError = null;
+                        }).catch(function (err) {
+                            var name = (err && err.name) ? err.name : 'Error';
+                            var message = (err && err.message) ? err.message : String(err);
+                            lastError = { name: name, message: message };
+                            if (name !== 'NotAllowedError' && name !== 'AbortError') {
+                                console.warn('[Coven Luna Audio]', name, message);
+                            }
+                        });
+                    } else {
+                        playSuccessCount += 1;
+                        lastError = null;
+                    }
+                } catch (err) {
+                    var name = (err && err.name) ? err.name : 'Error';
+                    var message = (err && err.message) ? err.message : String(err);
+                    lastError = { name: name, message: message };
+                    if (name !== 'NotAllowedError' && name !== 'AbortError') {
+                        console.warn('[Coven Luna Audio]', name, message);
+                    }
+                }
+            }
+
+            function activateMoonAudio() {
+                if (audioUnlocked) return;
+                audioUnlocked = true;
+                isHovering = true;
+                triggerCount += 1;
+                markStageUnlocked();
+                container.removeEventListener('pointerdown', activateMoonAudio);
+                container.removeEventListener('click', activateMoonAudio);
+                playSoundFromStart();
+            }
+
+            container.addEventListener('pointerdown', activateMoonAudio);
+            container.addEventListener('click', activateMoonAudio);
+
+            container.addEventListener('pointerenter', function () {
+                if (isHovering) return;
+                isHovering = true;
+                if (!audioUnlocked) return;
+                triggerCount += 1;
+                playSoundFromStart();
+            });
+
+            container.addEventListener('pointerleave', function () {
+                isHovering = false;
+            });
+
+            window.__lunaAudio = {
+                sound: sound,
+                isHovering: function () { return isHovering; },
+                isUnlocked: function () { return audioUnlocked; },
+                getTriggerCount: function () { return triggerCount; },
+                getPlaySuccessCount: function () { return playSuccessCount; },
+                getLastError: function () { return lastError; }
+            };
+        })();
+    </script>
+</body>
+</html>

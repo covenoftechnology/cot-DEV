@@ -1,0 +1,63 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import ArticleLayout from '../../layouts/ArticleLayout.astro';
+import ArticleRenderer from '../../components/article/ArticleRenderer.astro';
+import templateMeta from '../../articles/_template/meta';
+import type { ArticleDocument } from '../../types/article-document';
+
+const previewFilePath = path.join(process.cwd(), '.article-studio', 'preview.json');
+let previewDoc: ArticleDocument | null = null;
+
+if (fs.existsSync(previewFilePath)) {
+  try {
+    previewDoc = JSON.parse(fs.readFileSync(previewFilePath, 'utf-8'));
+  } catch (e) {
+    console.error('Failed to parse preview.json', e);
+  }
+}
+
+const doc: ArticleDocument = previewDoc || {
+  version: 1,
+  studioId: 'preview-default',
+  slug: 'preview-article',
+  meta: {
+    ...templateMeta,
+    title: 'Preview Scroll · Coven Article Studio',
+    description: 'No preview document loaded yet. Open Article Studio and click Preview to view your work here.',
+    status: 'draft',
+  },
+  sections: [
+    {
+      id: 'welcome-to-preview',
+      title: 'Welcome to Preview',
+      kicker: '01 · ARTICLE STUDIO',
+      heading: 'Live Render Preview',
+      blocks: [
+        {
+          id: 'welcome-block',
+          type: 'title-text',
+          data: {
+            kicker: 'PREVIEW READY',
+            heading: 'Your article will appear here',
+            paragraphs: [
+              'Return to the Article Studio editor, click "Preview", and your article will be rendered here with the exact Coven design system and interactive components.',
+            ],
+          },
+        },
+      ],
+    },
+  ],
+};
+---
+
+<ArticleLayout
+  article={{ slug: doc.slug || 'preview', meta: doc.meta }}
+  previousArticle={null}
+  nextArticle={null}
+  relatedArticles={[]}
+  wide={doc.meta.wide !== false}
+  isPreview={true}
+>
+  <ArticleRenderer document={doc} />
+</ArticleLayout>
