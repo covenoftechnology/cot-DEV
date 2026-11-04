@@ -1,0 +1,409 @@
+{
+  "version": 1,
+  "studioId": "draft_mvylaojo_qinuf",
+  "slug": "scroll-of-secure-socket-layer-certificates",
+  "meta": {
+    "title": "Scroll of Secure Socket Layer Certificates",
+    "description": "",
+    "author": "Mich Alvarez",
+    "category": "Salesforce",
+    "difficulty": "Lv. 2 - Scroll",
+    "tags": [
+      "Salesforce",
+      "SFMC",
+      "Administration",
+      "Setup",
+      "Email"
+    ],
+    "rank": "Mechanic",
+    "readingTime": "1 min",
+    "aetherReward": 120,
+    "status": "draft",
+    "featured": false,
+    "wide": true,
+    "coverImageSrc": "/__article-studio/uploads/1793583557592_Scroll_of_Secure_Socket_Layer_Certificates.png",
+    "coverImageAlt": "",
+    "showCoverImageOnArticle": false
+  },
+  "sections": [
+    {
+      "id": "sec_mvyleao5_7yf4e",
+      "title": "🤔 Why Do I Need These?",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvylvt2e_bcwzi",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvylvt2e_dug87",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "If you are here, I assume you’ve just read &amp; are familiar with the Scroll of Sender Authentication Package. Otherwise, feel free to check said knowledge and then come back to this one 😎.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvylzjej_kcyfu",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvylzjej_vr4kl",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "<span class=\"article-text-purple\">SSL</span><span class=\"article-text-purple\"></span> certificates keep online interactions private and they give visitors the confidence to transact with your website. SSL validates site identity and encrypt data in transit.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "When a website is secured by an <span class=\"article-text-purple\">SSL</span> certificate, the <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#EE2098\">HTTPS</span><span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#EE2098\"></span> (Hypertext Transfer Protocol Secure) is displayed in the URL.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "What are Secure Sockets Layer (SSL)?",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvym28pj_1lbez",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "More than a recommendation, it is a mandatory requirement to enable SSLs after the SAP has been implemented. These security layers wrap around the following subdomains in SFMC: click, cloud, image and view. To illustrate:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvym5qxl_ue8sm",
+          "type": "card-grid-2",
+          "data": {
+            "card1Icon": "◈",
+            "card1Title": {
+              "text": "<strong><u><span class=\"article-text-purple\">click</span></u></strong>.email.covenoftechnology.cloud",
+              "align": "left"
+            },
+            "card1Desc": {
+              "text": "Secures and tracks hyperlinks on <span class=\"article-text-bg-purple\">click engagement</span>",
+              "align": "left"
+            },
+            "card2Icon": "◈",
+            "card2Title": {
+              "text": "<strong><u><span class=\"article-text-purple\">cloud</span></u></strong>.email.covenoftechnology.cloud",
+              "align": "left"
+            },
+            "card2Desc": {
+              "text": "Secures <span class=\"article-text-bg-purple\">CloudPage</span> (landing pages) hyperlinks built in SFMC",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvym6abk_9qzn0",
+          "type": "card-grid-2",
+          "data": {
+            "card1Icon": "◈",
+            "card1Title": {
+              "text": "<strong><u><span class=\"article-text-purple\">image</span></u></strong>.email.covenoftechnology.cloud",
+              "align": "left"
+            },
+            "card1Desc": {
+              "text": "Secures hyperlinks on <span class=\"article-text-bg-purple\">content</span> stored in SFMC (Content Builder)",
+              "align": "left"
+            },
+            "card2Icon": "◈",
+            "card2Title": {
+              "text": "<strong><u><span class=\"article-text-purple\">view</span></u></strong>.email.covenoftechnology.cloud",
+              "align": "left"
+            },
+            "card2Desc": {
+              "text": "Secures the <span class=\"article-text-bg-purple\">View as a webpage</span> hyperlink used in email communications",
+              "align": "left"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvylem21_gajlv",
+      "title": "💡 Implementation Considerations",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvyp2ju7_cl15i",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Similarly to the <span class=\"article-text-purple\">SAP</span>&nbsp;(and based on your SAP setup),&nbsp;<span class=\"article-text-purple\">SSL</span> certificates can be either:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvyp967x_mdglt",
+          "type": "two-columns",
+          "data": {
+            "col1Title": {
+              "text": "☁️ Delegated to Salesforce",
+              "align": "left"
+            },
+            "col1Text": {
+              "text": "If the business approves Salesforce to own &amp; manage the <u><span class=\"article-text-gold\">DNS</span></u> entries.",
+              "align": "left"
+            },
+            "col2Title": {
+              "text": "💻 Self-Hosted",
+              "align": "left"
+            },
+            "col2Text": {
+              "text": "If the business will own and manage themselves the&nbsp;<u><span class=\"article-text-gold\">DNS</span></u> entries.",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvypms14_25qjr",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvypms14_2qa8o",
+                "blocks": [
+                  {
+                    "id": "blk_mvypn9h2_iyqoq",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "tip",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvypn9h2_cwjtc",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "Your SSLs will be too!",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": true,
+                      "titleMode": "custom",
+                      "title": {
+                        "text": "If your SAP is delegated...",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvypms14_mp6ce",
+                "blocks": [
+                  {
+                    "id": "blk_mvypkymr_kl0wy",
+                    "type": "callout",
+                    "data": {
+                      "calloutType": "tip",
+                      "text": {
+                        "text": "",
+                        "align": "left"
+                      },
+                      "blocks": [
+                        {
+                          "id": "blk_mvypkymr_nsv9g",
+                          "type": "solo-text",
+                          "data": {
+                            "paragraphs": [
+                              {
+                                "text": "Your SSLs will be too!",
+                                "align": "left"
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "showTitle": true,
+                      "titleMode": "custom",
+                      "title": {
+                        "text": "If your SAP is self-managed...",
+                        "align": "left"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvylf0co_u5dod",
+      "title": "🔧 Enablement",
+      "kicker": "",
+      "heading": "",
+      "blocks": []
+    },
+    {
+      "id": "sec_mvylf6wi_w2pot",
+      "title": "💎 To Sum-Up",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mw2ba8ln_pqkp1",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mw2ba8ln_p6loj",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "asdsd",
+                      "align": "left"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "blk_mw2baieu_6x56c",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "asds",
+                      "align": "left"
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "blk_mw2bayss_b8p8c",
+                "type": "single-image",
+                "data": {
+                  "src": "/__article-studio/uploads/1793808615604_WhatsApp_Image_2026-10-10_at_4.36.38_PM.jpeg",
+                  "alt": "",
+                  "caption": {
+                    "text": "",
+                    "align": "left"
+                  }
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "default"
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mw2bcuej_hvonl",
+      "title": "Section 5",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mw2bd33m_gos2a",
+          "type": "numbered-steps",
+          "data": {
+            "steps": [
+              {
+                "id": "step_1",
+                "badge": "01",
+                "title": {
+                  "text": "sasdas",
+                  "align": "left"
+                },
+                "text": {
+                  "text": "sdasdasd",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mw2bd6h6_hdtf6",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mw2bd6h6_e447q",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "default"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,1246 @@
+{
+  "version": 1,
+  "studioId": "draft_mvwomnac_qmzwr",
+  "slug": "scroll-of-sender-authentication-package",
+  "meta": {
+    "title": "Scroll of Sender Authentication Package",
+    "description": "",
+    "author": "Mich Alvarez",
+    "category": "Salesforce",
+    "difficulty": "Lv. 2 - Scroll",
+    "tags": [
+      "Salesforce",
+      "SFMC",
+      "Administration",
+      "Setup",
+      "Email"
+    ],
+    "rank": "Mechanic",
+    "readingTime": "5 min",
+    "aetherReward": 120,
+    "status": "draft",
+    "featured": false,
+    "wide": true,
+    "coverImageSrc": "/__article-studio/uploads/1793468383350_Scroll_of_Sender_Authentication_Package.png",
+    "coverImageAlt": "",
+    "showCoverImageOnArticle": false
+  },
+  "sections": [
+    {
+      "id": "sec_mvwoumzk_ozsr9",
+      "title": "What is a SAP?",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvwouwcf_unsk5",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "📚 Deep Dive",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "We don’t need an Intro for the most crucial component to enable in our SFMC account, so we are going at max speed from the start 🛸💨.",
+                "align": "left"
+              }
+            ],
+            "showText": true
+          }
+        },
+        {
+          "id": "blk_mvwovq0l_6x1qt",
+          "type": "callout",
+          "data": {
+            "calloutType": "info",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvwovq0l_v2dhq",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "The Sender Authentication Package (<u><strong><span class=\"article-text-purple\">SAP</span></strong><span class=\"article-text-purple\"></span></u>) is a branding feature that allows you to customize an authenticated domain, distinctively labeling links and images for the SFMC org you’re sending emails from.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvwp0j88_iiyjk",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "<u><strong><span class=\"article-text-purple\">SAP</span></strong><span class=\"article-text-purple\"></span></u>&nbsp;features include:",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvwp169m_rb15i",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "📧 Private Domain&nbsp;for email sending",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "showText": false
+          }
+        },
+        {
+          "id": "blk_mvwp5nue_ue5b8",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "Represents the <span class=\"article-text-bg-purple\">From Address</span> in your emails",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvwp6kyy_9tywi",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvwp6kyy_530e9",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "hello@<span class=\"article-text-purple\"><u>covenoftechnology.cloud</u></span><br>mkt@<span class=\"article-text-purple\"><u>covenoftechnology.cloud</u></span>",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "e.g.,",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvy9ioxs_iz10r",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvy9ioxs_1na0r",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Salesforce provides and promotes the use of security measures such as <a href=\"https://support.google.com/a/answer/33786?hl=en\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link article-rich-link--gold\">SPF</a>, <a href=\"https://support.google.com/a/answer/174124?hl=en&amp;ref_topic=9061731&amp;sjid=17042629836607995288-NC\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link article-rich-link--gold\">DKIM</a> and <a href=\"https://learn.microsoft.com/en-us/exchange/antispam-and-antimalware/antispam-protection/sender-id?view=exchserver-2019\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link\">Sender ID</a> to guarantee the legitimacy of your emails and protect against phishing attempts.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvwp1ekf_tkwxd",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "🔗 Account&nbsp;branding",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "showText": false
+          }
+        },
+        {
+          "id": "blk_mvwpw50y_4gdiv",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "Goes truly by the hand with the previous feature as this one refers to the actual naming representation of your brand",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvwpwpjc_ugdwh",
+          "type": "card-grid-2",
+          "data": {
+            "card1Icon": "✧",
+            "card1Title": {
+              "text": "Before <u><span class=\"article-text-purple\">SAP</span><span class=\"article-text-purple\"></span></u> application:",
+              "align": "left"
+            },
+            "card1Desc": {
+              "text": "genericSFMCdomain.com",
+              "align": "left"
+            },
+            "card2Icon": "✦",
+            "card2Title": {
+              "text": "After&nbsp;<u><span class=\"article-text-purple\"><strong>SAP</strong></span><span class=\"article-text-purple\"></span></u> application:",
+              "align": "left"
+            },
+            "card2Desc": {
+              "text": "mkt.covenoftechnology.cloud",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvy9sfzh_ssxzj",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "&nbsp; Carefully consider what the domain will be as it is also reflected in URLs &amp; assets:&nbsp;&nbsp;",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvya69tz_59i59",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvya69tz_d966v",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "https://<span class=\"article-text-purple\"><u>mkt.covenoftechnology.cloud</u></span>/IMG.jpg<span class=\"article-text-gold\"></span><span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#C61010\"></span>",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "&nbsp; e.g.,&nbsp;&nbsp;",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvybqiah_0drv8",
+          "type": "callout",
+          "data": {
+            "calloutType": "info",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvybqiah_squ2l",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "A custom domain reinforces brand awareness to your subscribers as all references to Salesforce Marketing Cloud are replaced with the chosen branding.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvwp1k5d_4f74c",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "🌐 Custom&nbsp;Domain&nbsp;for&nbsp;<span class=\"article-text-purple\">CloudPages</span> / View-as-a-webpage hyperlink",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "showText": false
+          }
+        },
+        {
+          "id": "blk_mvwp47nq_b7pzs",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "CloudPages using your <span class=\"article-text-purple\"><u>SAP</u></span> are hosted on your Private Domain",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvyc8a2j_9p860",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvyc8a2j_fqhj1",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "<strong><u>cloud</u></strong>.covenoftechnology.cloud/registration-form",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "e.g.,",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvye4yms_wwmrj",
+          "type": "callout",
+          "data": {
+            "calloutType": "info",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvye4yms_h1kyg",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "<span class=\"article-text-purple\">CloudPages</span> is the name Salesforce uses for referring to <span class=\"article-text-muted\">Landing Pages</span>.Additionally, the <strong><u>cloud</u></strong> domain is enabled via the SSL Certificates.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "<br>",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvyep2nm_y18j0",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "📍 Dedicated IP&nbsp;Address",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "showText": false
+          }
+        },
+        {
+          "id": "blk_mvyetm0w_lc93z",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "A unique IP is assigned to your account",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvyeu2a7_eeohp",
+                "text": {
+                  "text": "All email communications triggered from SFMC will be deployed using this <u><span class=\"article-text-purple\">SAP</span></u> <strong><span class=\"article-text-gold\">IP</span></strong><span class=\"article-text-gold\"></span>",
+                  "align": "left"
+                },
+                "children": []
+              }
+            ],
+            "markerStyle": "coven"
+          }
+        },
+        {
+          "id": "blk_mvyew36h_sahe8",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvyew36h_4w7mg",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "An <span class=\"article-text-gold\">IP</span> stands for ‘<span class=\"article-text-gold\">Internet Protocol</span>’ and is a unique string of numbers that identifies a device on the internet as it contains location data. The <span class=\"article-text-gold\">IP</span> digits are mathematically produced and allocated by a non-profit organization, the <a href=\"https://www.iana.org/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link\">Internet Assigned Numbers Authority</a> (IANA).",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "What is an <span class=\"article-text-gold\">IP</span>?",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvyfbufn_owidv",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvyfbufn_pvjgj",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Craft an <span class=\"article-text-bg-purple\">IP Warming</span> if your IP is new to properly build up your sender reputation.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "This informs Email Service Providers [ESPs] (Gmail, Yahoo!, Outlook) you are a genuine sender and not spam.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "Warm-Up Your IP!",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvyfik00_zlnjx",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "📨 Reply Mail&nbsp;Management (RMM)",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "",
+                "align": "left"
+              }
+            ],
+            "showText": false
+          }
+        },
+        {
+          "id": "blk_mvyfiyvv_twhw6",
+          "type": "nested-bullets",
+          "data": {
+            "layout": "vertical",
+            "items": [
+              {
+                "id": "nb_item_1",
+                "text": {
+                  "text": "This functionality is most times overviewed as initially businesses do not own a <span class=\"article-text-muted\">reply system/inbox</span> for subscribers to communicate with them—or they are skeptical about it 😆",
+                  "align": "left"
+                },
+                "children": []
+              },
+              {
+                "id": "main_mvyfju50_cmxp4",
+                "text": {
+                  "text": "RMM automatically:",
+                  "align": "left"
+                },
+                "children": [
+                  {
+                    "id": "sub_l2_mvyfjyxq_r9b3w",
+                    "text": {
+                      "text": "<span class=\"article-text-purple\">Manages subscriber replies</span>, including auto-responder replies, and unsubscribe requests received in response to your emails",
+                      "align": "left"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "sub_l2_mvyfk8v2_11j7y",
+                    "text": {
+                      "text": "<span class=\"article-text-gold\">Forwards an email to different users</span> depending on criteria",
+                      "align": "left"
+                    },
+                    "children": []
+                  },
+                  {
+                    "id": "sub_l2_mvyfka29_7vxgw",
+                    "text": {
+                      "text": "<span class=\"article-text-gold\">Controls the content</span> of your auto-reply messages",
+                      "align": "left"
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            ],
+            "markerStyle": "coven"
+          }
+        },
+        {
+          "id": "blk_mvyfo0dc_37nrd",
+          "type": "callout",
+          "data": {
+            "calloutType": "warning",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvyfo0dc_pmfuc",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "While these features can be purchased <u><span class=\"article-text-muted\">individually</span><span class=\"article-text-muted\"></span></u>, the <span class=\"article-text-bg-gold\">view-as-a-webpage link</span> and <span class=\"article-text-bg-gold\">image wrapping</span> exclusively come with the <span class=\"article-text-purple\"><u>SAP</u></span>.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "SKUs!",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvyfqlx3_hkmpz",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvyfqlx3_t5w6d",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Once the <span class=\"article-text-purple\"><u>SAP</u></span> has been configured in the account, you <span class=\"article-text-bg-red\">cannot</span> change it.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "If the business absolutely requires to update it, consider that another one <span class=\"article-text-bg-green\">must be purchased 💰</span>",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "Once configured...",
+              "align": "left"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvyfyp1s_epgy7",
+      "title": "💡 Implementation Considerations",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvyfyylw_alatb",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "There is a turning point when explaining the implementation of the SAP to the client. To provide a bit of context, we need to briefly mention records known as DNS, which can be either 1) self-hosted by the business, or for everyone's convenience, 2 ) delegated to Salesforce.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvyfz71a_47mrz",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvyfz71a_35x3s",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Are instructions that provide information about a domain—including the associated IP Address, and how to handle its requests.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "You could imagine <span class=\"article-text-gold\"><u>DNS</u></span> records being the <span class=\"article-text-bg-gold\">business address book of the internet</span>. They tell your device where to find websites and they provision useful business information, e.g., their location, hours and services offered.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "<span class=\"article-text-gold\"><u>DNS</u></span> records (a.k.a. <span class=\"article-text-gold\"><u>Zone Files</u></span>)...",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvygmftn_gatue",
+          "type": "callout",
+          "data": {
+            "calloutType": "tip",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvygmftn_ubk60",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "Are required to have at least a few essential <u><span class=\"article-text-gold\">DNS</span></u> records to ensure their correct functionality, also for users to be able to access our sites.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "<u>All domains</u>...",
+              "align": "left"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvygtl78_sqjx4",
+      "title": "🔧 Enablement",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvygtvkt_ax0ay",
+          "type": "solo-text",
+          "data": {
+            "paragraphs": [
+              {
+                "text": "Embrace the road the business ultimately decides on, and adhere to the steps detailed below for a smooth implementation of your <span class=\"article-text-gold\"><u>Sender Authentication Package</u></span>.",
+                "align": "left"
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvygurig_pz7bl",
+          "type": "two-columns",
+          "data": {
+            "col1Title": {
+              "text": "☁️ Delegated to Salesforce",
+              "align": "left"
+            },
+            "col1Text": {
+              "text": "If the business approves Salesforce to own &amp; manage the <u><span class=\"article-text-gold\">DNS</span></u> entries.",
+              "align": "left"
+            },
+            "col2Title": {
+              "text": "💻 Self-Hosted",
+              "align": "left"
+            },
+            "col2Text": {
+              "text": "If the business will own and manage themselves the&nbsp;<u><span class=\"article-text-gold\">DNS</span></u> entries.",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvyh07ih_iwuzp",
+          "type": "numbered-steps",
+          "data": {
+            "steps": [
+              {
+                "id": "step_1",
+                "badge": "01",
+                "title": {
+                  "text": "Domain Definition",
+                  "align": "left"
+                },
+                "text": {
+                  "text": "Business to define the domain to enable",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvygztsu_qhid3",
+          "type": "callout",
+          "data": {
+            "calloutType": "note",
+            "text": {
+              "text": "",
+              "align": "left"
+            },
+            "blocks": [
+              {
+                "id": "blk_mvygztsu_oee8b",
+                "type": "solo-text",
+                "data": {
+                  "paragraphs": [
+                    {
+                      "text": "The domain must be unique and never previously used.",
+                      "align": "left"
+                    },
+                    {
+                      "text": "Use <a href=\"https://mxtoolbox.com/\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link\">MX Toolbox</a> to verify if <u><span class=\"article-text-gold\">DNS</span></u> records have already been associated to the domain or not.",
+                      "align": "left"
+                    }
+                  ]
+                }
+              }
+            ],
+            "showTitle": true,
+            "titleMode": "custom",
+            "title": {
+              "text": "New Domain!",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvyhf7ke_3arsu",
+          "type": "numbered-steps",
+          "data": {
+            "steps": [
+              {
+                "id": "step_mvyhfhqa_sik22",
+                "badge": "01",
+                "title": {
+                  "text": "SFMC Setup",
+                  "align": "left"
+                },
+                "text": {
+                  "text": "Log into Salesforce Marketing Cloud and open the Setup<br><em><span class=\"article-text-bg-neutral\">Setup » Settings » Security » Domain SSL Certificates</span></em>",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvyiyjuo_cbg7h",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvyiyjuo_yyqzd",
+                "blocks": [
+                  {
+                    "id": "blk_mvyiyqcl_47o0z",
+                    "type": "numbered-steps",
+                    "data": {
+                      "steps": [
+                        {
+                          "id": "step_1",
+                          "badge": "01",
+                          "title": {
+                            "text": "",
+                            "align": "left"
+                          },
+                          "text": {
+                            "text": "Click on the New Domain button and follow the domain wizard to provide the following details:☽ Domain Information—the new process also verifies if your domain is available to use!☽ IP Address detailsReply Mail Management details☽ DNS Configuration—this is where you select either Delegated or Self- Hosted (<a href=\"https://help.salesforce.com/s/articleView?id=mktg.mc_es_domain_delegation_or_self_hosting.htm&amp;type=5\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link\">see comparison</a>)☽ Request Summary☽ Confirmation &amp; DNS Instructions",
+                            "align": "left"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvyiyjuo_a80rb",
+                "blocks": [
+                  {
+                    "id": "blk_mvyiysap_mx1u1",
+                    "type": "numbered-steps",
+                    "data": {
+                      "steps": [
+                        {
+                          "id": "step_1",
+                          "badge": "01",
+                          "title": {
+                            "text": "",
+                            "align": "left"
+                          },
+                          "text": {
+                            "text": "Click on the New Domain button and follow the domain wizard to provide the following details:☽ Domain Information—the new process also verifies if your domain is available to use!☽ IP Address details☽ Reply Mail Management details☽&nbsp;DNS Configuration—this is where you select either Delegated or Self- Hosted (<a href=\"https://help.salesforce.com/s/articleView?id=mktg.mc_es_domain_delegation_or_self_hosting.htm&amp;type=5\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link\">see comparison</a>)☽ Request Summary☽&nbsp; Confirmation &amp; DNS Instructions",
+                            "align": "left"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvyjf90x_wa6qd",
+          "type": "numbered-steps",
+          "data": {
+            "steps": [
+              {
+                "id": "step_1",
+                "badge": "01",
+                "title": {
+                  "text": "SFMC Deliverability Team",
+                  "align": "left"
+                },
+                "text": {
+                  "text": "Once submitted, a Support Case is automatically created with the SFMC’s Deliverability Team to follow up on the <span class=\"article-text-purple\">SAP</span> and <span class=\"article-text-purple\">IP</span><span class=\"article-text-purple\"></span> enablement in the account",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvyjqr0e_zwond",
+          "type": "two-columns",
+          "data": {
+            "col1Title": {
+              "text": "☁️ Delegated to Salesforce",
+              "align": "left"
+            },
+            "col1Text": {
+              "text": "The business’ contact for the SFMC instance will receive an email for <span class=\"article-text-purple\">SAP</span><span class=\"article-text-purple\"></span> follow up.",
+              "align": "left"
+            },
+            "col2Title": {
+              "text": "💻 Self-Hosted",
+              "align": "left"
+            },
+            "col2Text": {
+              "text": "For Self-Hosting, via the Support Case you will be sent a <span class=\"article-text-bg-red\">Zone File.txt</span> (contains the settings for the <span class=\"article-text-purple\">DNS</span><span class=\"article-text-purple\"></span> entries).",
+              "align": "left"
+            }
+          }
+        },
+        {
+          "id": "blk_mvyjx2tl_8har6",
+          "type": "flex-layout",
+          "data": {
+            "columnCount": 2,
+            "ratio": "50-50",
+            "columns": [
+              {
+                "id": "fcol_mvyjx2tl_5bfd9",
+                "blocks": [
+                  {
+                    "id": "blk_mvyjxc9c_7m9yo",
+                    "type": "numbered-steps",
+                    "data": {
+                      "steps": [
+                        {
+                          "id": "step_1",
+                          "badge": "01",
+                          "title": {
+                            "text": "",
+                            "align": "left"
+                          },
+                          "text": {
+                            "text": "You will be provided the needed Name Servers to adjust in your DNS records. Typically the client’s IT team is in charge of performing said modification. Either you or your stakeholder submit the internal request for DNS adjustments.It should take around 1-3 business days for the IT team to modify the <span class=\"article-text-purple\">DNS</span> settings on their end.",
+                            "align": "left"
+                          }
+                        },
+                        {
+                          "id": "step_mvykder2_6tzca",
+                          "badge": "02",
+                          "title": {
+                            "text": "",
+                            "align": "left"
+                          },
+                          "text": {
+                            "text": "Once IT corroborates the DNS adjustments, you can reply back to the Deliverability Team. They will review the domain’s DNS settings and if delegated, they confirm the domain in SFMC’s backend and communicates via the Support Case when successfully finished.",
+                            "align": "left"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "fcol_mvyjx2tl_lqiwx",
+                "blocks": [
+                  {
+                    "id": "blk_mvyjxdeo_2tvxq",
+                    "type": "numbered-steps",
+                    "data": {
+                      "steps": [
+                        {
+                          "id": "step_1",
+                          "badge": "01",
+                          "title": {
+                            "text": "",
+                            "align": "left"
+                          },
+                          "text": {
+                            "text": "Forward the Zone File to the business for either you or them to submit a ticket with their internal IT team to configure the <span class=\"article-text-purple\">DNS</span> settings using the <span class=\"article-text-muted\">.txt</span> provided.It should take around 1-3 business days for the IT team to modify the <span class=\"article-text-purple\">DNS</span> settings on their end.",
+                            "align": "left"
+                          }
+                        },
+                        {
+                          "id": "step_mvykdfru_4wyl9",
+                          "badge": "02",
+                          "title": {
+                            "text": "",
+                            "align": "left"
+                          },
+                          "text": {
+                            "text": "Once the IT configuration is successful, update the Salesforce Support Case stating the client’s set up is completed. The Support team verifies the <span class=\"article-text-purple\">DNS</span> entries and enables domain in SFMC’s backend.",
+                            "align": "left"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvykjfbt_ss6qc",
+          "type": "numbered-steps",
+          "data": {
+            "steps": [
+              {
+                "id": "step_1",
+                "badge": "01",
+                "title": {
+                  "text": "C'est fini !",
+                  "align": "left"
+                },
+                "text": {
+                  "text": "Verify the <span class=\"article-text-purple\">SAP</span> domain is implemented in your instance.<em><span class=\"article-text-bg-neutral\">Setup » Settings » Security » Domain SSL Certificates</span></em>",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mvyknrgv_lf1qr",
+          "type": "key-takeaways",
+          "data": {
+            "title": {
+              "text": "Key Takeaways for the Initiate",
+              "align": "left"
+            },
+            "items": [
+              {
+                "id": "takeaway_1",
+                "term": {
+                  "text": "Sample <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#CF1717\">Legacy</span> SAP Form",
+                  "align": "left"
+                },
+                "desc": {
+                  "text": "https://senderauth.marketingcloud.com/?a=1234567&amp;c=87654321",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvykpwus_6enmn",
+      "title": "💎 To Sum-Up",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvykpxw2_40w0k",
+          "type": "title-text",
+          "data": {
+            "heading": {
+              "text": "",
+              "align": "left"
+            },
+            "paragraphs": [
+              {
+                "text": "When you are assigned to a new project to implement Salesforce Marketing Cloud Engagement from the ground —or you know the business would like to trigger email campaigns, the first functionality to enable in the instance would be the <span class=\"article-text-purple\">SAP</span> domain, followed by the SSL certificates. You need to request both to be able to securely send email communications to subscribers, where they will engage with your brand in the digital world.",
+                "align": "left"
+              }
+            ],
+            "showText": true
+          }
+        },
+        {
+          "id": "blk_mvyksbjy_lwez1",
+          "type": "faq",
+          "data": {
+            "items": [
+              {
+                "id": "faq_1",
+                "question": {
+                  "text": "Can I reuse a SAP in other Business Units (BUs)?",
+                  "align": "left"
+                },
+                "answer": {
+                  "text": "YES! It is FREE to copy/replicate/move a SAP to other BUs.Submit a ticket to <a href=\"https://help.salesforce.com/s/cases\" target=\"_blank\" rel=\"noopener noreferrer\" class=\"article-rich-link\">Salesforce Support</a> and explicitly request a replication of, for instance, the SAP on BU #2 to BU #5",
+                  "align": "left"
+                }
+              },
+              {
+                "id": "faq_mvykw0oh_y85h2",
+                "question": {
+                  "text": "What's next?",
+                  "align": "left"
+                },
+                "answer": {
+                  "text": "After setting up the <span class=\"article-text-purple\">Sender Authentication Package</span>, you must enable the <span class=\"article-text-gold\"><u>Scroll of Secure Socket Layer Certificates</u></span> prior to sending out any email communication.",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "sec_mvykzmd4_iucz6",
+      "title": "Resources",
+      "kicker": "",
+      "heading": "",
+      "blocks": [
+        {
+          "id": "blk_mvykx4x8_y5kz5",
+          "type": "related-docs",
+          "data": {
+            "items": [
+              {
+                "id": "rd_1",
+                "type": "external",
+                "title": {
+                  "text": "Sender Authentication Package for Marketing Cloud Email",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=sf.mc_es_sender_authentication_package.htm&type=5",
+                "ctaText": "Salesforce Help"
+              },
+              {
+                "id": "rd_mvykxez1_ta9s0",
+                "type": "external",
+                "title": {
+                  "text": "Custom Domain Delegation (DNS Settings)",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=sf.mc_es_subdomain_delegation_guide.htm&type=5",
+                "ctaText": "Salesforce Help"
+              },
+              {
+                "id": "rd_mvyl254b_j0224",
+                "type": "external",
+                "title": {
+                  "text": "Domain Delegation vs. Self-Hosting",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "https://help.salesforce.com/s/articleView?id=mktg.mc_es_domain_delegation_or_self_hosting.htm&type=5",
+                "ctaText": "Salesforce Help"
+              },
+              {
+                "id": "rd_mvyl2673_zop6k",
+                "type": "internal",
+                "title": {
+                  "text": "Scroll of Secure Socket Layer Certificates",
+                  "align": "left"
+                },
+                "slug": "",
+                "url": "",
+                "ctaText": ""
+              }
+            ]
+          }
+        },
+        {
+          "id": "blk_mw2bv8m8_tvpr3",
+          "type": "comparison",
+          "data": {
+            "col1Icon": "✉",
+            "col1Header": {
+              "text": "SIDE A",
+              "align": "left"
+            },
+            "col1Items": [
+              {
+                "id": "cmp_1",
+                "text": {
+                  "text": "sdsd",
+                  "align": "left"
+                }
+              }
+            ],
+            "col2Icon": "◈",
+            "col2Header": {
+              "text": "SIDE B",
+              "align": "left"
+            },
+            "col2Items": [
+              {
+                "id": "cmp_2",
+                "text": {
+                  "text": "asdasd",
+                  "align": "left"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
