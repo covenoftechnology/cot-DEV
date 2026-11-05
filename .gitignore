@@ -24,3 +24,7 @@ pnpm-debug.log*
 
 # Coven Article Studio local authoring storage
 .article-studio/
+
+# Temporary local QA / browser artifacts
+scratch/
+.temp_25pct_profile/
