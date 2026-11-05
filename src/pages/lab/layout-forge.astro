@@ -1,0 +1,2708 @@
+---
+/**
+ * COVEN LAYOUT FORGE — PHASE 2.1
+ * Visual CSS Grid Builder & Layout Experimentation Studio
+ * Route: /lab/layout-forge
+ * Features: Visual Drag, Resize Handles (SE Grip + Cardinals), Snap to Grid, Collision Detection, Undo/Redo, Keyboard Navigation
+ * Isolated tool — No dependencies on Article Studio, ArticleDocument, or public runtime.
+ */
+---
+
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coven Layout Forge — Visual Grid Designer</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+  <link href="https://fonts.googleapis.com/css2?family=Metamorphous&family=EB+Garamond:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:wght@400;500;600&family=Cinzel:wght@600;700&display=swap" rel="stylesheet" />
+  <style is:global>
+    :root {
+      --forge-bg: #07050a;
+      --forge-surface: #0e0b14;
+      --forge-surface-2: #14101c;
+      --forge-surface-3: #1a1525;
+      --forge-border: rgba(216, 181, 107, 0.16);
+      --forge-border-focus: rgba(216, 181, 107, 0.55);
+      --forge-border-purple: rgba(185, 143, 216, 0.25);
+      --forge-gold: #d8b56b;
+      --forge-gold-bright: #f2d492;
+      --forge-gold-dim: rgba(216, 181, 107, 0.12);
+      --forge-purple: #b98fd8;
+      --forge-purple-dim: rgba(185, 143, 216, 0.14);
+      --forge-purple-glow: rgba(162, 89, 255, 0.28);
+      --forge-text: #ece6dd;
+      --forge-text-muted: #9f968d;
+      --forge-text-dim: #6d665f;
+      --forge-danger: #e06c75;
+      --forge-danger-bg: rgba(224, 108, 117, 0.15);
+      --forge-success: #6bc48d;
+      --font-display: 'Metamorphous', 'Cinzel', serif;
+      --font-cinzel: 'Cinzel', serif;
+      --font-serif: 'EB Garamond', Georgia, serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      background: var(--forge-bg);
+      color: var(--forge-text);
+      font-family: var(--font-serif);
+      overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+      user-select: none;
+    }
+
+    /* Full-screen Shell */
+    .forge-shell {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      width: 100vw;
+      background: radial-gradient(circle at 50% 0%, rgba(55, 30, 80, 0.18) 0%, transparent 60%),
+                  radial-gradient(circle at 100% 100%, rgba(216, 181, 107, 0.04) 0%, transparent 50%),
+                  var(--forge-bg);
+    }
+
+    /* Top Navigation Toolbar */
+    .forge-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 56px;
+      padding: 0 20px;
+      background: var(--forge-surface);
+      border-bottom: 1px solid var(--forge-border);
+      flex-shrink: 0;
+      z-index: 100;
+    }
+
+    .forge-brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+    }
+
+    .forge-brand-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 1px solid var(--forge-gold);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--forge-gold);
+      font-size: 15px;
+      background: rgba(11, 9, 14, 0.9);
+      box-shadow: inset 0 0 10px rgba(216, 181, 107, 0.2), 0 0 12px rgba(216, 181, 107, 0.15);
+    }
+
+    .forge-brand-title {
+      font-family: var(--font-display);
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: #f7f3eb;
+      font-weight: 600;
+    }
+
+    .forge-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      padding: 3px 8px;
+      border-radius: 4px;
+      background: rgba(185, 143, 216, 0.14);
+      border: 1px solid var(--forge-border-purple);
+      color: var(--forge-purple);
+    }
+
+    .forge-topbar-stats {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--forge-text-muted);
+    }
+
+    .forge-stat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 12px;
+      background: var(--forge-surface-2);
+      border: 1px solid rgba(216, 181, 107, 0.1);
+      color: var(--forge-gold-bright);
+    }
+
+    .forge-topbar-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Buttons */
+    .forge-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-family: var(--font-cinzel);
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+      outline: none;
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .forge-btn:disabled {
+      opacity: 0.35 !important;
+      cursor: not-allowed !important;
+      pointer-events: none;
+      box-shadow: none !important;
+    }
+
+    .forge-btn--gold {
+      background: linear-gradient(180deg, #e3c47e 0%, #c49a4e 100%);
+      color: #1a1205;
+      border-color: rgba(242, 212, 146, 0.5);
+      box-shadow: 0 0 14px rgba(216, 181, 107, 0.25);
+    }
+
+    .forge-btn--gold:hover:not(:disabled) {
+      box-shadow: 0 0 20px rgba(216, 181, 107, 0.45);
+      transform: translateY(-1px);
+    }
+
+    .forge-btn--secondary {
+      background: var(--forge-surface-2);
+      border-color: var(--forge-border);
+      color: var(--forge-text);
+    }
+
+    .forge-btn--secondary:hover:not(:disabled) {
+      background: var(--forge-surface-3);
+      border-color: var(--forge-gold);
+      color: var(--forge-gold-bright);
+    }
+
+    .forge-btn--ghost {
+      background: transparent;
+      border-color: rgba(216, 181, 107, 0.12);
+      color: var(--forge-text-muted);
+    }
+
+    .forge-btn--ghost:hover:not(:disabled) {
+      background: rgba(216, 181, 107, 0.08);
+      color: var(--forge-text);
+      border-color: var(--forge-border);
+    }
+
+    .forge-btn--danger {
+      background: var(--forge-danger-bg);
+      border-color: rgba(224, 108, 117, 0.3);
+      color: var(--forge-danger);
+    }
+
+    .forge-btn--danger:hover:not(:disabled) {
+      background: rgba(224, 108, 117, 0.25);
+      border-color: var(--forge-danger);
+    }
+
+    .forge-btn--sm {
+      padding: 5px 10px;
+      font-size: 10px;
+      letter-spacing: 1px;
+    }
+
+    /* Workspace: 3 Columns */
+    .forge-workspace {
+      display: grid;
+      grid-template-columns: 280px 1fr 300px;
+      height: calc(100vh - 56px);
+      width: 100vw;
+      overflow: hidden;
+    }
+
+    /* Panels */
+    .forge-panel {
+      display: flex;
+      flex-direction: column;
+      background: var(--forge-surface);
+      border-right: 1px solid var(--forge-border);
+      overflow-y: auto;
+      overflow-x: hidden;
+      height: 100%;
+    }
+
+    .forge-panel--right {
+      border-right: none;
+      border-left: 1px solid var(--forge-border);
+    }
+
+    .forge-panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid rgba(216, 181, 107, 0.12);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+      background: rgba(14, 11, 20, 0.7);
+    }
+
+    .forge-panel-title {
+      font-family: var(--font-cinzel);
+      font-size: 12px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--forge-gold);
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .forge-panel-body {
+      padding: 16px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    /* Form Sections & Controls */
+    .forge-section {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .forge-section-title {
+      font-family: var(--font-cinzel);
+      font-size: 11px;
+      letter-spacing: 1.2px;
+      text-transform: uppercase;
+      color: var(--forge-text-muted);
+      font-weight: 600;
+      border-bottom: 1px dashed rgba(216, 181, 107, 0.12);
+      padding-bottom: 5px;
+    }
+
+    .forge-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .forge-field-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .forge-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--forge-text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .forge-val-badge {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--forge-gold-bright);
+    }
+
+    .forge-input-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .forge-stepper {
+      display: flex;
+      align-items: center;
+      background: var(--forge-surface-2);
+      border: 1px solid var(--forge-border);
+      border-radius: 4px;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .forge-stepper-btn {
+      width: 34px;
+      height: 32px;
+      background: transparent;
+      border: none;
+      color: var(--forge-text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      transition: all 0.15s ease;
+      user-select: none;
+    }
+
+    .forge-stepper-btn:hover {
+      background: rgba(216, 181, 107, 0.12);
+      color: var(--forge-gold);
+    }
+
+    .forge-stepper-val {
+      flex: 1;
+      height: 32px;
+      background: transparent;
+      border: none;
+      border-left: 1px solid rgba(216, 181, 107, 0.1);
+      border-right: 1px solid rgba(216, 181, 107, 0.1);
+      color: var(--forge-text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-align: center;
+      outline: none;
+      width: 48px;
+    }
+
+    .forge-range {
+      width: 100%;
+      height: 4px;
+      accent-color: var(--forge-gold);
+      background: var(--forge-surface-3);
+      outline: none;
+      border-radius: 2px;
+      cursor: pointer;
+    }
+
+    .forge-input-text {
+      width: 100%;
+      height: 34px;
+      background: var(--forge-surface-2);
+      border: 1px solid var(--forge-border);
+      border-radius: 4px;
+      color: var(--forge-text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 0 10px;
+      outline: none;
+      transition: border-color 0.2s ease;
+    }
+
+    .forge-input-text:focus {
+      border-color: var(--forge-gold);
+      box-shadow: 0 0 10px rgba(216, 181, 107, 0.2);
+    }
+
+    /* Preset Chips */
+    .forge-preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+
+    .forge-preset-btn {
+      padding: 7px 10px;
+      background: var(--forge-surface-2);
+      border: 1px solid rgba(216, 181, 107, 0.1);
+      border-radius: 4px;
+      color: var(--forge-text-muted);
+      font-family: var(--font-mono);
+      font-size: 10px;
+      cursor: pointer;
+      text-align: left;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .forge-preset-btn:hover {
+      background: var(--forge-surface-3);
+      border-color: var(--forge-gold);
+      color: var(--forge-gold-bright);
+    }
+
+    /* Center: Interactive Canvas Region */
+    .forge-center {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      background: radial-gradient(circle at 50% 50%, rgba(35, 20, 52, 0.25) 0%, transparent 80%),
+                  #07050a;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .forge-canvas-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 20px;
+      background: rgba(14, 11, 20, 0.6);
+      border-bottom: 1px solid var(--forge-border);
+      flex-shrink: 0;
+    }
+
+    .forge-toolbar-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .forge-tip {
+      font-family: var(--font-serif);
+      font-size: 13px;
+      color: var(--forge-text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-style: italic;
+    }
+
+    .forge-tip strong {
+      color: var(--forge-gold);
+      font-style: normal;
+      font-family: var(--font-mono);
+      font-size: 11px;
+    }
+
+    .forge-canvas-viewport {
+      flex: 1;
+      overflow: auto;
+      padding: 36px 40px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: center;
+      position: relative;
+    }
+
+    /* Layout Container Wrapper on Canvas */
+    .forge-canvas-container {
+      width: 100%;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      position: relative;
+    }
+
+    /* Top and Left Track Numbers */
+    .forge-col-rulers {
+      display: grid;
+      gap: var(--col-gap, 16px);
+      margin-bottom: 4px;
+      padding: 0;
+    }
+
+    .forge-col-ruler-cell {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--forge-text-dim);
+      text-align: center;
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(216, 181, 107, 0.15);
+      user-select: none;
+    }
+
+    .forge-canvas-grid-wrap {
+      display: flex;
+      position: relative;
+      width: 100%;
+    }
+
+    .forge-row-rulers {
+      display: grid;
+      gap: var(--row-gap, 16px);
+      margin-right: 8px;
+      flex-shrink: 0;
+      width: 24px;
+    }
+
+    .forge-row-ruler-cell {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--forge-text-dim);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding-right: 4px;
+      user-select: none;
+    }
+
+    /* The Main CSS Grid Canvas */
+    .forge-grid-canvas {
+      flex: 1;
+      display: grid;
+      gap: 16px;
+      background: rgba(14, 11, 20, 0.5);
+      border: 1px solid rgba(216, 181, 107, 0.15);
+      border-radius: 6px;
+      padding: 16px;
+      position: relative;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), inset 0 0 24px rgba(216, 181, 107, 0.03);
+      user-select: none;
+    }
+
+    /* Empty Grid Cell */
+    .forge-cell {
+      min-height: 120px;
+      background: rgba(22, 17, 33, 0.35);
+      border: 1px dashed rgba(216, 181, 107, 0.15);
+      border-radius: 4px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: crosshair;
+      transition: background 0.12s ease, border-color 0.12s ease;
+      position: relative;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .forge-cell:hover {
+      background: rgba(185, 143, 216, 0.1);
+      border-color: rgba(216, 181, 107, 0.4);
+    }
+
+    .forge-cell.is-drag-target {
+      background: rgba(216, 181, 107, 0.22) !important;
+      border: 1px solid var(--forge-gold) !important;
+      box-shadow: 0 0 16px rgba(216, 181, 107, 0.35);
+    }
+
+    .forge-cell.is-drag-collision {
+      background: rgba(224, 108, 117, 0.25) !important;
+      border: 1px solid var(--forge-danger) !important;
+      box-shadow: 0 0 16px rgba(224, 108, 117, 0.35);
+    }
+
+    .forge-cell-coord {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--forge-text-dim);
+      opacity: 0.6;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+    }
+
+    .forge-cell:hover .forge-cell-coord {
+      color: var(--forge-gold-bright);
+      opacity: 1;
+    }
+
+    .forge-cell-plus {
+      font-size: 14px;
+      color: var(--forge-gold);
+      opacity: 0;
+      transform: scale(0.8);
+      transition: all 0.15s ease;
+      pointer-events: none;
+    }
+
+    .forge-cell:hover .forge-cell-plus {
+      opacity: 0.8;
+      transform: scale(1);
+    }
+
+    /* Placed Grid Item — Solid, Obvious, Real Bounded Editable Region */
+    .forge-item {
+      border-radius: 6px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 12px 14px;
+      position: relative;
+      cursor: grab;
+      z-index: 5;
+      transition: box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease;
+      background: #171224;
+      background: linear-gradient(135deg, rgba(38, 28, 58, 0.98) 0%, rgba(22, 16, 35, 0.98) 100%);
+      border: 1.5px solid rgba(185, 143, 216, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(4px);
+      touch-action: none;
+    }
+
+    .forge-item:active {
+      cursor: grabbing;
+    }
+
+    .forge-item:hover {
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.6), 0 0 14px rgba(185, 143, 216, 0.25);
+      border-color: rgba(216, 181, 107, 0.6);
+    }
+
+    .forge-item.is-selected {
+      border: 2px solid var(--forge-gold);
+      box-shadow: 0 0 24px rgba(216, 181, 107, 0.35), inset 0 0 16px rgba(216, 181, 107, 0.08);
+      z-index: 10;
+    }
+
+    .forge-item.is-moving {
+      opacity: 0.35 !important;
+      cursor: grabbing !important;
+      filter: grayscale(0.5);
+    }
+
+    .forge-item.is-resizing {
+      opacity: 0.45 !important;
+    }
+
+    .forge-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 4px;
+      pointer-events: none;
+    }
+
+    .forge-item-title {
+      font-family: var(--font-cinzel);
+      font-size: 13px;
+      font-weight: 700;
+      color: #f7f3eb;
+      letter-spacing: 0.8px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      pointer-events: none;
+    }
+
+    .forge-item-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 2px 6px;
+      border-radius: 3px;
+      background: rgba(216, 181, 107, 0.12);
+      color: var(--forge-gold-bright);
+      border: 1px solid rgba(216, 181, 107, 0.25);
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    .forge-item-body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: auto;
+      pointer-events: none;
+    }
+
+    .forge-item-span {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      color: var(--forge-text-muted);
+      letter-spacing: 0.4px;
+      pointer-events: none;
+      background: rgba(14, 11, 20, 0.6);
+      padding: 2px 6px;
+      border-radius: 3px;
+      border: 1px solid rgba(216, 181, 107, 0.08);
+    }
+
+    /* Resize Handles (8 directions) */
+    .forge-handle {
+      position: absolute;
+      z-index: 20;
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    .forge-handle:not(.forge-handle--se)::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: var(--forge-gold);
+      border: 1px solid #14101c;
+      box-shadow: 0 0 8px rgba(216, 181, 107, 0.7);
+      border-radius: 2px;
+      transition: transform 0.1s ease;
+    }
+
+    .forge-handle:not(.forge-handle--se):hover::after {
+      transform: translate(-50%, -50%) scale(1.3);
+      background: var(--forge-gold-bright);
+    }
+
+    .forge-handle--e {
+      top: 6px; bottom: 6px; right: -5px; width: 10px; cursor: ew-resize;
+    }
+    .forge-handle--e::after {
+      width: 4px; height: 16px; border-radius: 2px;
+    }
+
+    .forge-handle--w {
+      top: 6px; bottom: 6px; left: -5px; width: 10px; cursor: ew-resize;
+    }
+    .forge-handle--w::after {
+      width: 4px; height: 16px; border-radius: 2px;
+    }
+
+    .forge-handle--s {
+      left: 6px; right: 6px; bottom: -5px; height: 10px; cursor: ns-resize;
+    }
+    .forge-handle--s::after {
+      width: 16px; height: 4px; border-radius: 2px;
+    }
+
+    .forge-handle--n {
+      left: 6px; right: 6px; top: -5px; height: 10px; cursor: ns-resize;
+    }
+    .forge-handle--n::after {
+      width: 16px; height: 4px; border-radius: 2px;
+    }
+
+    /* Bottom-Right Permanent Grip */
+    .forge-handle--se {
+      bottom: -4px;
+      right: -4px;
+      width: 18px;
+      height: 18px;
+      cursor: nwse-resize;
+      z-index: 22;
+    }
+
+    .forge-handle--se::after {
+      content: '';
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+      width: 9px;
+      height: 9px;
+      border-right: 2px solid var(--forge-gold);
+      border-bottom: 2px solid var(--forge-gold);
+      box-shadow: 1px 1px 4px rgba(0, 0, 0, 0.6);
+      opacity: 0.65;
+      transition: all 0.15s ease;
+    }
+
+    .forge-handle--se::before {
+      content: '';
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      width: 5px;
+      height: 5px;
+      border-right: 1.5px solid var(--forge-gold);
+      border-bottom: 1.5px solid var(--forge-gold);
+      opacity: 0.45;
+      transition: all 0.15s ease;
+    }
+
+    .forge-item:hover .forge-handle--se::after,
+    .forge-item.is-selected .forge-handle--se::after {
+      opacity: 1;
+      border-color: var(--forge-gold-bright);
+      box-shadow: 0 0 8px rgba(216, 181, 107, 0.8);
+    }
+
+    .forge-item:hover .forge-handle--se::before,
+    .forge-item.is-selected .forge-handle--se::before {
+      opacity: 0.9;
+      border-color: var(--forge-gold-bright);
+    }
+
+    .forge-handle--sw {
+      bottom: -6px; left: -6px; width: 14px; height: 14px; cursor: nesw-resize;
+    }
+    .forge-handle--sw::after {
+      width: 8px; height: 8px;
+    }
+
+    .forge-handle--ne {
+      top: -6px; right: -6px; width: 14px; height: 14px; cursor: nesw-resize;
+    }
+    .forge-handle--ne::after {
+      width: 8px; height: 8px;
+    }
+
+    .forge-handle--nw {
+      top: -6px; left: -6px; width: 14px; height: 14px; cursor: nwse-resize;
+    }
+    .forge-handle--nw::after {
+      width: 8px; height: 8px;
+    }
+
+    /* Interaction Preview Ghost */
+    .forge-preview-ghost {
+      position: relative;
+      border-radius: 5px;
+      pointer-events: none;
+      z-index: 25;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 10px 12px;
+      backdrop-filter: blur(2px);
+      transition: border-color 0.12s ease, background-color 0.12s ease, box-shadow 0.12s ease;
+    }
+
+    .forge-preview-ghost.is-valid {
+      background: rgba(216, 181, 107, 0.16);
+      border: 2px dashed var(--forge-gold);
+      box-shadow: 0 0 24px rgba(216, 181, 107, 0.35);
+    }
+
+    .forge-preview-ghost.is-collision {
+      background: rgba(224, 108, 117, 0.22);
+      border: 2px dashed var(--forge-danger);
+      box-shadow: 0 0 24px rgba(224, 108, 117, 0.45);
+    }
+
+    .forge-preview-ghost .ghost-badge {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 3px;
+      align-self: flex-start;
+      font-weight: 600;
+    }
+
+    .forge-preview-ghost.is-valid .ghost-badge {
+      background: rgba(216, 181, 107, 0.28);
+      color: var(--forge-gold-bright);
+      border: 1px solid rgba(216, 181, 107, 0.4);
+    }
+
+    .forge-preview-ghost.is-collision .ghost-badge {
+      background: rgba(224, 108, 117, 0.35);
+      color: #ffb3b8;
+      border: 1px solid rgba(224, 108, 117, 0.5);
+    }
+
+    /* Right Panel: Properties & Placed Items */
+    .forge-item-empty-state {
+      padding: 40px 10px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      color: var(--forge-text-muted);
+    }
+
+    .forge-empty-icon {
+      font-size: 32px;
+      color: var(--forge-gold);
+      opacity: 0.6;
+    }
+
+    .forge-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-height: 320px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .forge-item-list-entry {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 7px 10px;
+      border-radius: 4px;
+      background: var(--forge-surface-2);
+      border: 1px solid rgba(216, 181, 107, 0.1);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      transition: all 0.15s ease;
+    }
+
+    .forge-item-list-entry:hover {
+      background: var(--forge-surface-3);
+      border-color: rgba(216, 181, 107, 0.3);
+    }
+
+    .forge-item-list-entry.is-selected {
+      border-color: var(--forge-gold);
+      background: rgba(216, 181, 107, 0.12);
+      color: var(--forge-gold-bright);
+    }
+
+    /* Toast Notification */
+    .forge-toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      padding: 10px 18px;
+      background: rgba(14, 11, 20, 0.95);
+      border: 1px solid var(--forge-gold);
+      border-radius: 4px;
+      color: var(--forge-gold-bright);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(216, 181, 107, 0.25);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 1000;
+      pointer-events: none;
+    }
+
+    .forge-toast.is-active {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    .forge-toast.is-warning {
+      border-color: var(--forge-danger);
+      color: #ffb3b8;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6), 0 0 16px rgba(224, 108, 117, 0.3);
+    }
+
+    /* Scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--forge-surface);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(216, 181, 107, 0.2);
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(216, 181, 107, 0.4);
+    }
+  </style>
+</head>
+<body>
+
+  <div class="forge-shell">
+
+    <!-- Top Toolbar -->
+    <header class="forge-topbar">
+      <div style="display:flex;align-items:center;gap:14px">
+        <div class="forge-brand">
+          <div class="forge-brand-icon">✶</div>
+          <div class="forge-brand-title">COVEN · LAYOUT FORGE</div>
+          <span class="forge-badge">Lab / Phase 2.1</span>
+        </div>
+
+        <div class="forge-topbar-stats">
+          <span class="forge-stat-pill" id="stat-grid-size">3 cols × 3 rows</span>
+          <span class="forge-stat-pill" id="stat-items-count">0 items placed</span>
+        </div>
+      </div>
+
+      <div class="forge-topbar-actions">
+        <!-- Undo / Redo -->
+        <button type="button" class="forge-btn forge-btn--ghost forge-btn--sm" id="btn-undo" title="Undo (Ctrl+Z)" disabled>
+          <span>↩</span>
+          <span>Undo</span>
+        </button>
+
+        <button type="button" class="forge-btn forge-btn--ghost forge-btn--sm" id="btn-redo" title="Redo (Ctrl+Shift+Z / Ctrl+Y)" disabled>
+          <span>↪</span>
+          <span>Redo</span>
+        </button>
+
+        <div style="width:1px;height:22px;background:rgba(216,181,107,0.18);margin:0 4px;"></div>
+
+        <!-- Add Item -->
+        <button type="button" class="forge-btn forge-btn--gold forge-btn--sm" id="btn-add-item">
+          <span>+</span>
+          <span>Add Item</span>
+        </button>
+
+        <!-- Load Example -->
+        <button type="button" class="forge-btn forge-btn--secondary forge-btn--sm" id="btn-load-example">
+          <span>✧</span>
+          <span>Load Example</span>
+        </button>
+
+        <!-- Reset Layout -->
+        <button type="button" class="forge-btn forge-btn--ghost forge-btn--sm" id="btn-reset-layout">
+          <span>↺</span>
+          <span>Reset</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 3-Panel Workspace -->
+    <div class="forge-workspace">
+
+      <!-- LEFT PANEL: GRID CONFIGURATION -->
+      <aside class="forge-panel forge-panel--left">
+        <div class="forge-panel-header">
+          <div class="forge-panel-title">
+            <span>⚙</span>
+            <span>Grid Matrix</span>
+          </div>
+        </div>
+
+        <div class="forge-panel-body">
+
+          <!-- Section: Grid Dimensions -->
+          <div class="forge-section">
+            <div class="forge-section-title">Dimensions</div>
+
+            <!-- Columns -->
+            <div class="forge-field">
+              <div class="forge-field-header">
+                <label class="forge-label" for="input-cols">Columns</label>
+                <span class="forge-val-badge" id="val-cols">3</span>
+              </div>
+              <div class="forge-input-row">
+                <div class="forge-stepper">
+                  <button type="button" class="forge-stepper-btn" id="btn-cols-dec">−</button>
+                  <input type="number" class="forge-stepper-val" id="input-cols" min="1" max="12" value="3" />
+                  <button type="button" class="forge-stepper-btn" id="btn-cols-inc">+</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Rows -->
+            <div class="forge-field">
+              <div class="forge-field-header">
+                <label class="forge-label" for="input-rows">Rows</label>
+                <span class="forge-val-badge" id="val-rows">3</span>
+              </div>
+              <div class="forge-input-row">
+                <div class="forge-stepper">
+                  <button type="button" class="forge-stepper-btn" id="btn-rows-dec">−</button>
+                  <input type="number" class="forge-stepper-val" id="input-rows" min="1" max="12" value="3" />
+                  <button type="button" class="forge-stepper-btn" id="btn-rows-inc">+</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section: Gaps & Geometry -->
+          <div class="forge-section">
+            <div class="forge-section-title">Spacing & Sizing</div>
+
+            <!-- Column Gap -->
+            <div class="forge-field">
+              <div class="forge-field-header">
+                <label class="forge-label" for="range-col-gap">Column Gap</label>
+                <span class="forge-val-badge" id="val-col-gap">16px</span>
+              </div>
+              <input type="range" class="forge-range" id="range-col-gap" min="0" max="64" value="16" step="2" />
+            </div>
+
+            <!-- Row Gap -->
+            <div class="forge-field">
+              <div class="forge-field-header">
+                <label class="forge-label" for="range-row-gap">Row Gap</label>
+                <span class="forge-val-badge" id="val-row-gap">16px</span>
+              </div>
+              <input type="range" class="forge-range" id="range-row-gap" min="0" max="64" value="16" step="2" />
+            </div>
+
+            <!-- Min Row Height -->
+            <div class="forge-field">
+              <div class="forge-field-header">
+                <label class="forge-label" for="range-min-row-h">Min Row Height</label>
+                <span class="forge-val-badge" id="val-min-row-h">120px</span>
+              </div>
+              <input type="range" class="forge-range" id="range-min-row-h" min="60" max="260" value="120" step="10" />
+            </div>
+          </div>
+
+          <!-- Section: Grid Presets -->
+          <div class="forge-section">
+            <div class="forge-section-title">Quick Presets</div>
+            <div class="forge-preset-grid">
+              <button type="button" class="forge-preset-btn" data-preset="3x3">3×3 Standard</button>
+              <button type="button" class="forge-preset-btn" data-preset="12col">12-Col Editorial</button>
+              <button type="button" class="forge-preset-btn" data-preset="2x2">2×2 Split</button>
+              <button type="button" class="forge-preset-btn" data-preset="4x2">4×2 Gallery</button>
+            </div>
+          </div>
+
+        </div>
+      </aside>
+
+      <!-- CENTER: INTERACTIVE CANVAS -->
+      <main class="forge-center">
+        <!-- Canvas Toolbar -->
+        <div class="forge-canvas-toolbar">
+          <div class="forge-tip">
+            <span>💡</span>
+            <span>Drag items to <strong>move</strong>, use handles to <strong>resize</strong>, or drag empty cells to <strong>create</strong></span>
+          </div>
+
+          <div class="forge-toolbar-group">
+            <label style="display:flex;align-items:center;gap:6px;font-family:var(--font-mono);font-size:11px;color:var(--forge-text-muted);cursor:pointer">
+              <input type="checkbox" id="chk-show-coords" checked style="accent-color:var(--forge-gold)" />
+              <span>Show Coordinates</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Viewport -->
+        <div class="forge-canvas-viewport" id="canvas-viewport">
+          <div class="forge-canvas-container" id="canvas-container">
+
+            <!-- Top Column Track Headers (1, 2, 3...) -->
+            <div class="forge-col-rulers" id="col-rulers"></div>
+
+            <div class="forge-canvas-grid-wrap">
+              <!-- Left Row Track Headers (1, 2, 3...) -->
+              <div class="forge-row-rulers" id="row-rulers"></div>
+
+              <!-- The CSS Grid Canvas (Container for empty cells, placed items & ghost preview) -->
+              <div class="forge-grid-canvas" id="grid-canvas">
+                <!-- Dynamically populated via JS -->
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </main>
+
+      <!-- RIGHT PANEL: ITEM PROPERTIES & PLACED ITEMS -->
+      <aside class="forge-panel forge-panel--right">
+
+        <!-- Selected Item Properties -->
+        <div class="forge-panel-header">
+          <div class="forge-panel-title">
+            <span>◈</span>
+            <span>Item Properties</span>
+          </div>
+          <span class="forge-badge" id="selected-badge" style="display:none">Selected</span>
+        </div>
+
+        <div class="forge-panel-body">
+
+          <!-- Empty Selection State -->
+          <div class="forge-item-empty-state" id="empty-selection-state">
+            <div class="forge-empty-icon">✧</div>
+            <p style="font-size:14px;color:var(--forge-text-muted);max-width:220px;line-height:1.4">
+              No item selected.<br />Click any placed block on the canvas or click <strong>+ Add Item</strong>.
+            </p>
+          </div>
+
+          <!-- Active Selection Form -->
+          <div class="forge-section" id="active-selection-form" style="display:none">
+
+            <!-- ID & Label -->
+            <div class="forge-field">
+              <div class="forge-field-header">
+                <label class="forge-label">Item Identifier</label>
+                <span class="forge-val-badge" id="prop-item-id">item-1</span>
+              </div>
+            </div>
+
+            <div class="forge-field">
+              <label class="forge-label" for="prop-item-label">Label</label>
+              <input type="text" class="forge-input-text" id="prop-item-label" placeholder="Item Label" />
+            </div>
+
+            <!-- Column Placement (Start / End) -->
+            <div class="forge-section">
+              <div class="forge-section-title">Column Span</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="forge-field">
+                  <label class="forge-label">Col Start</label>
+                  <div class="forge-stepper">
+                    <button type="button" class="forge-stepper-btn" id="btn-col-start-dec">−</button>
+                    <input type="number" class="forge-stepper-val" id="prop-col-start" min="1" value="1" />
+                    <button type="button" class="forge-stepper-btn" id="btn-col-start-inc">+</button>
+                  </div>
+                </div>
+
+                <div class="forge-field">
+                  <label class="forge-label">Col End</label>
+                  <div class="forge-stepper">
+                    <button type="button" class="forge-stepper-btn" id="btn-col-end-dec">−</button>
+                    <input type="number" class="forge-stepper-val" id="prop-col-end" min="2" value="2" />
+                    <button type="button" class="forge-stepper-btn" id="btn-col-end-inc">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Row Placement (Start / End) -->
+            <div class="forge-section">
+              <div class="forge-section-title">Row Span</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div class="forge-field">
+                  <label class="forge-label">Row Start</label>
+                  <div class="forge-stepper">
+                    <button type="button" class="forge-stepper-btn" id="btn-row-start-dec">−</button>
+                    <input type="number" class="forge-stepper-val" id="prop-row-start" min="1" value="1" />
+                    <button type="button" class="forge-stepper-btn" id="btn-row-start-inc">+</button>
+                  </div>
+                </div>
+
+                <div class="forge-field">
+                  <label class="forge-label">Row End</label>
+                  <div class="forge-stepper">
+                    <button type="button" class="forge-stepper-btn" id="btn-row-end-dec">−</button>
+                    <input type="number" class="forge-stepper-val" id="prop-row-end" min="2" value="2" />
+                    <button type="button" class="forge-stepper-btn" id="btn-row-end-inc">+</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Item Action Buttons -->
+            <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+              <button type="button" class="forge-btn forge-btn--secondary forge-btn--sm" id="btn-dup-item" style="flex:1">
+                <span>⧉</span>
+                <span>Duplicate</span>
+              </button>
+              <button type="button" class="forge-btn forge-btn--danger forge-btn--sm" id="btn-del-item" style="flex:1">
+                <span>✕</span>
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- All Placed Items List -->
+          <div class="forge-section" id="placed-items-section" style="margin-top:10px">
+            <div class="forge-section-title">Placed Items</div>
+            <div class="forge-item-list" id="placed-items-list">
+              <!-- Populated via JS -->
+            </div>
+          </div>
+
+        </div>
+
+      </aside>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div class="forge-toast" id="forge-toast">
+      <span id="toast-icon">✦</span>
+      <span id="toast-text">Notification</span>
+    </div>
+
+  </div>
+
+  <!-- Client-side Logic -->
+  <script is:inline>
+    (function () {
+      'use strict';
+
+      // --- 1. STATE MODEL ---
+      var state = {
+        columns: 3,
+        rows: 3,
+        columnGap: 16,
+        rowGap: 16,
+        minRowHeight: 120,
+        showCoordinates: true,
+        items: [],
+        selectedItemId: null,
+        itemCounter: 1,
+
+        // Phase 2 Interaction State
+        interaction: {
+          mode: 'idle', // 'idle' | 'creating' | 'moving' | 'resizing'
+          itemId: null,
+          originRect: null,   // { columnStart, columnEnd, rowStart, rowEnd }
+          previewRect: null,  // { columnStart, columnEnd, rowStart, rowEnd }
+          resizeHandle: null, // 'e' | 's' | 'se' | 'w' | 'n' | 'ne' | 'sw' | 'nw'
+          startCell: null,    // { col, row }
+          hasCollision: false,
+          createStart: null,
+          createCurrent: null
+        }
+      };
+
+      // --- 2. UNDO / REDO HISTORY ---
+      var history = {
+        past: [],
+        future: [],
+        limit: 50
+      };
+
+      function createSnapshot() {
+        return {
+          columns: state.columns,
+          rows: state.rows,
+          columnGap: state.columnGap,
+          rowGap: state.rowGap,
+          minRowHeight: state.minRowHeight,
+          items: JSON.parse(JSON.stringify(state.items)),
+          selectedItemId: state.selectedItemId,
+          itemCounter: state.itemCounter
+        };
+      }
+
+      function pushHistory() {
+        history.past.push(createSnapshot());
+        if (history.past.length > history.limit) {
+          history.past.shift();
+        }
+        history.future = [];
+        updateUndoRedoButtons();
+      }
+
+      function applySnapshot(snap) {
+        state.columns = snap.columns;
+        state.rows = snap.rows;
+        state.columnGap = snap.columnGap;
+        state.rowGap = snap.rowGap;
+        state.minRowHeight = snap.minRowHeight;
+        state.items = JSON.parse(JSON.stringify(snap.items));
+        state.selectedItemId = snap.selectedItemId;
+        state.itemCounter = snap.itemCounter;
+      }
+
+      function undo() {
+        if (history.past.length === 0) return;
+        history.future.push(createSnapshot());
+        var prev = history.past.pop();
+        applySnapshot(prev);
+        updateUndoRedoButtons();
+        render();
+        showToast('Undo performed');
+      }
+
+      function redo() {
+        if (history.future.length === 0) return;
+        history.past.push(createSnapshot());
+        var next = history.future.pop();
+        applySnapshot(next);
+        updateUndoRedoButtons();
+        render();
+        showToast('Redo performed');
+      }
+
+      function updateUndoRedoButtons() {
+        if (dom.btnUndo) dom.btnUndo.disabled = history.past.length === 0;
+        if (dom.btnRedo) dom.btnRedo.disabled = history.future.length === 0;
+      }
+
+      // --- 3. DOM REFERENCES ---
+      var dom = {
+        // Stats
+        statGridSize: document.getElementById('stat-grid-size'),
+        statItemsCount: document.getElementById('stat-items-count'),
+
+        // Top actions
+        btnUndo: document.getElementById('btn-undo'),
+        btnRedo: document.getElementById('btn-redo'),
+        btnAddItem: document.getElementById('btn-add-item'),
+        btnLoadExample: document.getElementById('btn-load-example'),
+        btnResetLayout: document.getElementById('btn-reset-layout'),
+
+        // Grid controls
+        inputCols: document.getElementById('input-cols'),
+        valCols: document.getElementById('val-cols'),
+        btnColsDec: document.getElementById('btn-cols-dec'),
+        btnColsInc: document.getElementById('btn-cols-inc'),
+
+        inputRows: document.getElementById('input-rows'),
+        valRows: document.getElementById('val-rows'),
+        btnRowsDec: document.getElementById('btn-rows-dec'),
+        btnRowsInc: document.getElementById('btn-rows-inc'),
+
+        rangeColGap: document.getElementById('range-col-gap'),
+        valColGap: document.getElementById('val-col-gap'),
+
+        rangeRowGap: document.getElementById('range-row-gap'),
+        valRowGap: document.getElementById('val-row-gap'),
+
+        rangeMinRowH: document.getElementById('range-min-row-h'),
+        valMinRowH: document.getElementById('val-min-row-h'),
+
+        chkShowCoords: document.getElementById('chk-show-coords'),
+
+        // Canvas
+        canvasContainer: document.getElementById('canvas-container'),
+        colRulers: document.getElementById('col-rulers'),
+        rowRulers: document.getElementById('row-rulers'),
+        gridCanvas: document.getElementById('grid-canvas'),
+
+        // Selection & properties
+        selectedBadge: document.getElementById('selected-badge'),
+        emptySelectionState: document.getElementById('empty-selection-state'),
+        activeSelectionForm: document.getElementById('active-selection-form'),
+        propItemId: document.getElementById('prop-item-id'),
+        propItemLabel: document.getElementById('prop-item-label'),
+
+        propColStart: document.getElementById('prop-col-start'),
+        btnColStartDec: document.getElementById('btn-col-start-dec'),
+        btnColStartInc: document.getElementById('btn-col-start-inc'),
+
+        propColEnd: document.getElementById('prop-col-end'),
+        btnColEndDec: document.getElementById('btn-col-end-dec'),
+        btnColEndInc: document.getElementById('btn-col-end-inc'),
+
+        propRowStart: document.getElementById('prop-row-start'),
+        btnRowStartDec: document.getElementById('btn-row-start-dec'),
+        btnRowStartInc: document.getElementById('btn-row-start-inc'),
+
+        propRowEnd: document.getElementById('prop-row-end'),
+        btnRowEndDec: document.getElementById('btn-row-end-dec'),
+        btnRowEndInc: document.getElementById('btn-row-end-inc'),
+
+        btnDupItem: document.getElementById('btn-dup-item'),
+        btnDelItem: document.getElementById('btn-del-item'),
+
+        // Placed items list
+        placedItemsSection: document.getElementById('placed-items-section'),
+        placedItemsList: document.getElementById('placed-items-list'),
+
+        // Toast
+        toast: document.getElementById('forge-toast'),
+        toastIcon: document.getElementById('toast-icon'),
+        toastText: document.getElementById('toast-text')
+      };
+
+      // Toast feedback helper
+      var toastTimer = null;
+      function showToast(msg, isWarning) {
+        if (!dom.toast) return;
+        dom.toastText.textContent = msg;
+        if (isWarning) {
+          dom.toast.classList.add('is-warning');
+          dom.toastIcon.textContent = '⚠';
+        } else {
+          dom.toast.classList.remove('is-warning');
+          dom.toastIcon.textContent = '✦';
+        }
+        dom.toast.classList.add('is-active');
+        clearTimeout(toastTimer);
+        toastTimer = setTimeout(function () {
+          dom.toast.classList.remove('is-active');
+        }, 2400);
+      }
+
+      // --- 4. COLLISION DETECTION & GEOMETRY HELPERS ---
+      function clamp(val, min, max) {
+        return Math.max(min, Math.min(max, val));
+      }
+
+      function rectsOverlap(r1, r2) {
+        var colOverlap = Math.max(r1.columnStart, r2.columnStart) < Math.min(r1.columnEnd, r2.columnEnd);
+        var rowOverlap = Math.max(r1.rowStart, r2.rowStart) < Math.min(r1.rowEnd, r2.rowEnd);
+        return colOverlap && rowOverlap;
+      }
+
+      function checkCollision(excludeItemId, rect) {
+        for (var i = 0; i < state.items.length; i++) {
+          var it = state.items[i];
+          if (it.id === excludeItemId) continue;
+          if (rectsOverlap(it, rect)) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      function getSelectedItem() {
+        if (!state.selectedItemId) return null;
+        for (var i = 0; i < state.items.length; i++) {
+          if (state.items[i].id === state.selectedItemId) {
+            return state.items[i];
+          }
+        }
+        return null;
+      }
+
+      // Mathematical & DOM-assisted grid cell resolver from pointer
+      function getCellFromPointer(clientX, clientY) {
+        var canvasRect = dom.gridCanvas.getBoundingClientRect();
+        var padding = 16;
+        var innerW = Math.max(1, canvasRect.width - (2 * padding));
+        var innerH = Math.max(1, canvasRect.height - (2 * padding));
+
+        var colWidth = (innerW - ((state.columns - 1) * state.columnGap)) / state.columns;
+        var rowHeight = (innerH - ((state.rows - 1) * state.rowGap)) / state.rows;
+
+        var relX = clientX - (canvasRect.left + padding);
+        var relY = clientY - (canvasRect.top + padding);
+
+        var col = Math.floor((relX + (state.columnGap / 2)) / (colWidth + state.columnGap)) + 1;
+        var row = Math.floor((relY + (state.rowGap / 2)) / (rowHeight + state.rowGap)) + 1;
+
+        return {
+          col: clamp(col, 1, state.columns),
+          row: clamp(row, 1, state.rows)
+        };
+      }
+
+      // Find an unoccupied 1x1 cell or null
+      function findAvailableCell() {
+        for (var r = 1; r <= state.rows; r++) {
+          for (var c = 1; c <= state.columns; c++) {
+            var candidate = { columnStart: c, columnEnd: c + 1, rowStart: r, rowEnd: r + 1 };
+            if (!checkCollision(null, candidate)) {
+              return { col: c, row: r };
+            }
+          }
+        }
+        return null;
+      }
+
+      // --- 5. ITEM MUTATIONS ---
+      function addItem(colStart, colEnd, rowStart, rowEnd, customLabel) {
+        var cStart = colStart != null ? colStart : 1;
+        var cEnd = colEnd != null ? colEnd : 2;
+        var rStart = rowStart != null ? rowStart : 1;
+        var rEnd = rowEnd != null ? rowEnd : 2;
+
+        cStart = clamp(cStart, 1, state.columns);
+        cEnd = clamp(cEnd, cStart + 1, state.columns + 1);
+        rStart = clamp(rStart, 1, state.rows);
+        rEnd = clamp(rEnd, rStart + 1, state.rows + 1);
+
+        var candidate = { columnStart: cStart, columnEnd: cEnd, rowStart: rStart, rowEnd: rEnd };
+        if (checkCollision(null, candidate)) {
+          showToast('Cell span occupied — cannot add item here', true);
+          return null;
+        }
+
+        pushHistory();
+
+        var id = 'item-' + state.itemCounter++;
+        var label = customLabel || ('Block ' + (state.items.length + 1));
+
+        var newItem = {
+          id: id,
+          label: label,
+          columnStart: cStart,
+          columnEnd: cEnd,
+          rowStart: rStart,
+          rowEnd: rEnd
+        };
+
+        state.items.push(newItem);
+        state.selectedItemId = id;
+        render();
+        return newItem;
+      }
+
+      function deleteItem(id) {
+        var it = state.items.find(function (item) { return item.id === id; });
+        if (!it) return;
+
+        pushHistory();
+        state.items = state.items.filter(function (item) { return item.id !== id; });
+        if (state.selectedItemId === id) {
+          state.selectedItemId = state.items.length > 0 ? state.items[state.items.length - 1].id : null;
+        }
+        render();
+        showToast('Deleted ' + it.label);
+      }
+
+      function duplicateItem(id) {
+        var it = getSelectedItem();
+        if (!it) return;
+
+        var spanCols = it.columnEnd - it.columnStart;
+        var spanRows = it.rowEnd - it.rowStart;
+
+        var attempts = [
+          { columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: it.rowEnd, rowEnd: it.rowEnd + spanRows },
+          { columnStart: it.columnEnd, columnEnd: it.columnEnd + spanCols, rowStart: it.rowStart, rowEnd: it.rowEnd }
+        ];
+
+        var targetRect = null;
+        for (var i = 0; i < attempts.length; i++) {
+          var att = attempts[i];
+          if (att.columnEnd <= state.columns + 1 && att.rowEnd <= state.rows + 1 && !checkCollision(null, att)) {
+            targetRect = att;
+            break;
+          }
+        }
+
+        if (!targetRect) {
+          var freeCell = findAvailableCell();
+          if (freeCell) {
+            targetRect = {
+              columnStart: freeCell.col,
+              columnEnd: Math.min(freeCell.col + spanCols, state.columns + 1),
+              rowStart: freeCell.row,
+              rowEnd: Math.min(freeCell.row + spanRows, state.rows + 1)
+            };
+            if (checkCollision(null, targetRect)) {
+              targetRect = {
+                columnStart: freeCell.col,
+                columnEnd: freeCell.col + 1,
+                rowStart: freeCell.row,
+                rowEnd: freeCell.row + 1
+              };
+            }
+          }
+        }
+
+        if (!targetRect) {
+          showToast('No free space to duplicate item', true);
+          return;
+        }
+
+        addItem(targetRect.columnStart, targetRect.columnEnd, targetRect.rowStart, targetRect.rowEnd, it.label + ' (Copy)');
+      }
+
+      // Safe Grid Dimension Shrink Checks
+      function canShrinkColumns() {
+        if (state.columns <= 1) return false;
+        var newCols = state.columns - 1;
+        var clamped = state.items.map(function (it) {
+          var cS = Math.min(it.columnStart, newCols);
+          var cE = Math.min(it.columnEnd, newCols + 1);
+          if (cE <= cS) cE = cS + 1;
+          return { id: it.id, columnStart: cS, columnEnd: cE, rowStart: it.rowStart, rowEnd: it.rowEnd };
+        });
+
+        for (var i = 0; i < clamped.length; i++) {
+          for (var j = i + 1; j < clamped.length; j++) {
+            if (rectsOverlap(clamped[i], clamped[j])) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+
+      function canShrinkRows() {
+        if (state.rows <= 1) return false;
+        var newRows = state.rows - 1;
+        var clamped = state.items.map(function (it) {
+          var rS = Math.min(it.rowStart, newRows);
+          var rE = Math.min(it.rowEnd, newRows + 1);
+          if (rE <= rS) rE = rS + 1;
+          return { id: it.id, columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: rS, rowEnd: rE };
+        });
+
+        for (var i = 0; i < clamped.length; i++) {
+          for (var j = i + 1; j < clamped.length; j++) {
+            if (rectsOverlap(clamped[i], clamped[j])) {
+              return false;
+            }
+          }
+        }
+        return true;
+      }
+
+      function clampItemBounds() {
+        for (var i = 0; i < state.items.length; i++) {
+          var it = state.items[i];
+          if (it.columnStart > state.columns) it.columnStart = state.columns;
+          if (it.columnEnd > state.columns + 1) it.columnEnd = state.columns + 1;
+          if (it.columnEnd <= it.columnStart) it.columnEnd = it.columnStart + 1;
+
+          if (it.rowStart > state.rows) it.rowStart = state.rows;
+          if (it.rowEnd > state.rows + 1) it.rowEnd = state.rows + 1;
+          if (it.rowEnd <= it.rowStart) it.rowEnd = it.rowStart + 1;
+        }
+      }
+
+      function escapeHtml(str) {
+        return (str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      }
+
+      // --- 6. RENDER LOGIC ---
+      function render() {
+        // 1. Stats
+        dom.statGridSize.textContent = state.columns + ' cols × ' + state.rows + ' rows';
+        dom.statItemsCount.textContent = state.items.length + (state.items.length === 1 ? ' item placed' : ' items placed');
+
+        // 2. Left controls sync
+        dom.valCols.textContent = state.columns;
+        dom.inputCols.value = state.columns;
+        dom.valRows.textContent = state.rows;
+        dom.inputRows.value = state.rows;
+
+        dom.valColGap.textContent = state.columnGap + 'px';
+        dom.rangeColGap.value = state.columnGap;
+        dom.valRowGap.textContent = state.rowGap + 'px';
+        dom.rangeRowGap.value = state.rowGap;
+
+        dom.valMinRowH.textContent = state.minRowHeight + 'px';
+        dom.rangeMinRowH.value = state.minRowHeight;
+
+        // 3. Rulers
+        renderRulers();
+
+        // 4. Grid Canvas
+        renderCanvas();
+
+        // 5. Selected item form
+        renderSelectionForm();
+
+        // 6. Placed items list
+        renderPlacedItemsList();
+
+        // 7. Undo / Redo buttons
+        updateUndoRedoButtons();
+      }
+
+      function renderRulers() {
+        // Top Col Rulers
+        dom.colRulers.style.gridTemplateColumns = 'repeat(' + state.columns + ', 1fr)';
+        dom.colRulers.style.gap = state.columnGap + 'px';
+
+        var colHtml = '';
+        for (var c = 1; c <= state.columns; c++) {
+          colHtml += '<div class="forge-col-ruler-cell">' + c + '</div>';
+        }
+        dom.colRulers.innerHTML = colHtml;
+
+        // Left Row Rulers
+        dom.rowRulers.style.gridTemplateRows = 'repeat(' + state.rows + ', minmax(' + state.minRowHeight + 'px, 1fr))';
+        dom.rowRulers.style.gap = state.rowGap + 'px';
+
+        var rowHtml = '';
+        for (var r = 1; r <= state.rows; r++) {
+          rowHtml += '<div class="forge-row-ruler-cell">' + r + '</div>';
+        }
+        dom.rowRulers.innerHTML = rowHtml;
+      }
+
+      function renderCanvas() {
+        dom.gridCanvas.style.gridTemplateColumns = 'repeat(' + state.columns + ', 1fr)';
+        dom.gridCanvas.style.gridTemplateRows = 'repeat(' + state.rows + ', minmax(' + state.minRowHeight + 'px, 1fr))';
+        dom.gridCanvas.style.gap = state.rowGap + 'px ' + state.columnGap + 'px';
+
+        var html = '';
+
+        // 1. Render Empty Background Cells
+        for (var r = 1; r <= state.rows; r++) {
+          for (var c = 1; c <= state.columns; c++) {
+            html += '<div class="forge-cell" data-col="' + c + '" data-row="' + r + '" style="grid-column: ' + c + '; grid-row: ' + r + ';">';
+            if (state.showCoordinates) {
+              html += '<span class="forge-cell-coord">[' + c + ', ' + r + ']</span>';
+            }
+            html += '<span class="forge-cell-plus">+</span>';
+            html += '</div>';
+          }
+        }
+
+        // 2. Render Placed Items (Real, solid, bounded editable regions)
+        for (var i = 0; i < state.items.length; i++) {
+          var it = state.items[i];
+          var isSel = it.id === state.selectedItemId;
+          var isMoving = state.interaction.mode === 'moving' && state.interaction.itemId === it.id;
+          var isResizing = state.interaction.mode === 'resizing' && state.interaction.itemId === it.id;
+          var spanCols = it.columnEnd - it.columnStart;
+          var spanRows = it.rowEnd - it.rowStart;
+
+          var itemClasses = ['forge-item'];
+          if (isSel) itemClasses.push('is-selected');
+          if (isMoving) itemClasses.push('is-moving');
+          if (isResizing) itemClasses.push('is-resizing');
+
+          html += '<div class="' + itemClasses.join(' ') + '" data-item-id="' + it.id + '" style="' +
+            'grid-column: ' + it.columnStart + ' / ' + it.columnEnd + ';' +
+            'grid-row: ' + it.rowStart + ' / ' + it.rowEnd + ';' +
+          '">';
+
+          // Prominent Title + Item Tag
+          html += '<div class="forge-item-header">';
+          html += '<span class="forge-item-title">' + escapeHtml(it.label) + '</span>';
+          html += '<span class="forge-item-tag">' + it.id + '</span>';
+          html += '</div>';
+
+          // Minimal Span Badge (e.g. "2 cols × 1 row")
+          html += '<div class="forge-item-body">';
+          html += '<span class="forge-item-span">' + spanCols + ' ' + (spanCols === 1 ? 'col' : 'cols') + ' × ' + spanRows + ' ' + (spanRows === 1 ? 'row' : 'rows') + '</span>';
+          html += '</div>';
+
+          // Bottom-Right Corner Resize Grip (Always rendered on every block)
+          html += '<div class="forge-handle forge-handle--se" data-handle="se" title="Resize"></div>';
+
+          // Additional Directional Resize Handles (Rendered on selected item when not actively moving)
+          if (isSel && !isMoving) {
+            html += '<div class="forge-handle forge-handle--e" data-handle="e" title="Resize East"></div>';
+            html += '<div class="forge-handle forge-handle--w" data-handle="w" title="Resize West"></div>';
+            html += '<div class="forge-handle forge-handle--s" data-handle="s" title="Resize South"></div>';
+            html += '<div class="forge-handle forge-handle--n" data-handle="n" title="Resize North"></div>';
+            html += '<div class="forge-handle forge-handle--sw" data-handle="sw" title="Resize South-West"></div>';
+            html += '<div class="forge-handle forge-handle--ne" data-handle="ne" title="Resize North-East"></div>';
+            html += '<div class="forge-handle forge-handle--nw" data-handle="nw" title="Resize North-West"></div>';
+          }
+
+          html += '</div>';
+        }
+
+        // 3. Render Interaction Ghost (During Move / Resize / Create)
+        if (state.interaction.mode !== 'idle' && state.interaction.previewRect) {
+          var pr = state.interaction.previewRect;
+          var isColl = state.interaction.hasCollision;
+          var ghostSpanCols = pr.columnEnd - pr.columnStart;
+          var ghostSpanRows = pr.rowEnd - pr.rowStart;
+
+          var badgeText = '';
+          if (isColl) {
+            badgeText = 'Occupied (Collision)';
+          } else if (state.interaction.mode === 'moving') {
+            badgeText = 'Move: Col ' + pr.columnStart + '–' + (pr.columnEnd - 1) + ' · Row ' + pr.rowStart + '–' + (pr.rowEnd - 1);
+          } else if (state.interaction.mode === 'resizing') {
+            badgeText = 'Size: ' + ghostSpanCols + ' cols × ' + ghostSpanRows + ' rows';
+          } else if (state.interaction.mode === 'creating') {
+            badgeText = 'New: ' + ghostSpanCols + ' cols × ' + ghostSpanRows + ' rows';
+          }
+
+          html += '<div class="forge-preview-ghost ' + (isColl ? 'is-collision' : 'is-valid') + '" style="' +
+            'grid-column: ' + pr.columnStart + ' / ' + pr.columnEnd + ';' +
+            'grid-row: ' + pr.rowStart + ' / ' + pr.rowEnd + ';' +
+          '">';
+          html += '<span class="ghost-badge">' + badgeText + '</span>';
+          html += '</div>';
+        }
+
+        dom.gridCanvas.innerHTML = html;
+        attachCanvasEvents();
+      }
+
+      // --- 7. INTERACTION HANDLERS (POINTER EVENTS) ---
+      function attachCanvasEvents() {
+        // Placed item interactions (Move or Select)
+        var itemEls = dom.gridCanvas.querySelectorAll('.forge-item');
+        itemEls.forEach(function (el) {
+          var id = el.getAttribute('data-item-id');
+
+          // Pointerdown for Move or Select
+          el.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0) return;
+            // Ignore if clicked directly on a resize handle
+            if (e.target.closest('.forge-handle')) return;
+
+            e.stopPropagation();
+
+            var it = state.items.find(function (item) { return item.id === id; });
+            if (!it) return;
+
+            // Select item
+            if (state.selectedItemId !== id) {
+              state.selectedItemId = id;
+              render();
+            }
+
+            // Start Move Interaction
+            startMoveInteraction(it, e);
+          });
+        });
+
+        // Resize handles interaction (SE corner grip + cardinals)
+        var handleEls = dom.gridCanvas.querySelectorAll('.forge-handle');
+        handleEls.forEach(function (handleEl) {
+          handleEl.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0) return;
+            e.stopPropagation();
+
+            var handleType = handleEl.getAttribute('data-handle');
+            var parentItem = handleEl.closest('.forge-item');
+            var itemId = parentItem ? parentItem.getAttribute('data-item-id') : null;
+            var it = state.items.find(function (item) { return item.id === itemId; });
+            if (!it) return;
+
+            if (state.selectedItemId !== it.id) {
+              state.selectedItemId = it.id;
+              renderSelectionForm();
+              renderPlacedItemsList();
+            }
+
+            startResizeInteraction(it, handleType, e);
+          });
+        });
+
+        // Cell pointerdown (Drag-to-Create)
+        var cellEls = dom.gridCanvas.querySelectorAll('.forge-cell');
+        cellEls.forEach(function (cell) {
+          var col = parseInt(cell.getAttribute('data-col'), 10);
+          var row = parseInt(cell.getAttribute('data-row'), 10);
+
+          cell.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0) return;
+            startCreateInteraction(col, row, e);
+          });
+        });
+      }
+
+      // --- MOVE INTERACTION ---
+      function startMoveInteraction(item, initialEvent) {
+        var startCell = getCellFromPointer(initialEvent.clientX, initialEvent.clientY);
+        var originRect = {
+          columnStart: item.columnStart,
+          columnEnd: item.columnEnd,
+          rowStart: item.rowStart,
+          rowEnd: item.rowEnd
+        };
+
+        state.interaction = {
+          mode: 'moving',
+          itemId: item.id,
+          originRect: originRect,
+          previewRect: {
+            columnStart: originRect.columnStart,
+            columnEnd: originRect.columnEnd,
+            rowStart: originRect.rowStart,
+            rowEnd: originRect.rowEnd
+          },
+          startCell: startCell,
+          hasCollision: false
+        };
+
+        renderCanvas();
+
+        function onPointerMove(e) {
+          if (state.interaction.mode !== 'moving') return;
+
+          var currentCell = getCellFromPointer(e.clientX, e.clientY);
+          var deltaCol = currentCell.col - state.interaction.startCell.col;
+          var deltaRow = currentCell.row - state.interaction.startCell.row;
+
+          var spanCols = state.interaction.originRect.columnEnd - state.interaction.originRect.columnStart;
+          var spanRows = state.interaction.originRect.rowEnd - state.interaction.originRect.rowStart;
+
+          // Snapped candidate coordinates
+          var candidateColStart = clamp(state.interaction.originRect.columnStart + deltaCol, 1, (state.columns - spanCols) + 1);
+          var candidateColEnd = candidateColStart + spanCols;
+
+          var candidateRowStart = clamp(state.interaction.originRect.rowStart + deltaRow, 1, (state.rows - spanRows) + 1);
+          var candidateRowEnd = candidateRowStart + spanRows;
+
+          var candRect = {
+            columnStart: candidateColStart,
+            columnEnd: candidateColEnd,
+            rowStart: candidateRowStart,
+            rowEnd: candidateRowEnd
+          };
+
+          var collision = checkCollision(state.interaction.itemId, candRect);
+
+          state.interaction.previewRect = candRect;
+          state.interaction.hasCollision = collision;
+
+          renderCanvas();
+        }
+
+        function onPointerUp(e) {
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('pointerup', onPointerUp);
+          window.removeEventListener('pointercancel', onPointerCancel);
+
+          if (state.interaction.mode !== 'moving') return;
+
+          var finalRect = state.interaction.previewRect;
+          var hasColl = state.interaction.hasCollision;
+          var orig = state.interaction.originRect;
+
+          if (hasColl) {
+            showToast('Cell span occupied — move reverted', true);
+          } else if (finalRect && (finalRect.columnStart !== orig.columnStart || finalRect.rowStart !== orig.rowStart)) {
+            pushHistory();
+            var targetItem = state.items.find(function (it) { return it.id === state.interaction.itemId; });
+            if (targetItem) {
+              targetItem.columnStart = finalRect.columnStart;
+              targetItem.columnEnd = finalRect.columnEnd;
+              targetItem.rowStart = finalRect.rowStart;
+              targetItem.rowEnd = finalRect.rowEnd;
+              showToast('Moved ' + targetItem.label);
+            }
+          }
+
+          state.interaction = { mode: 'idle', itemId: null, originRect: null, previewRect: null, hasCollision: false };
+          render();
+        }
+
+        function onPointerCancel() {
+          cancelActiveInteraction();
+        }
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerCancel);
+      }
+
+      // --- RESIZE INTERACTION ---
+      function startResizeInteraction(item, handleType, initialEvent) {
+        var startCell = getCellFromPointer(initialEvent.clientX, initialEvent.clientY);
+        var originRect = {
+          columnStart: item.columnStart,
+          columnEnd: item.columnEnd,
+          rowStart: item.rowStart,
+          rowEnd: item.rowEnd
+        };
+
+        state.interaction = {
+          mode: 'resizing',
+          itemId: item.id,
+          resizeHandle: handleType,
+          originRect: originRect,
+          previewRect: {
+            columnStart: originRect.columnStart,
+            columnEnd: originRect.columnEnd,
+            rowStart: originRect.rowStart,
+            rowEnd: originRect.rowEnd
+          },
+          startCell: startCell,
+          hasCollision: false
+        };
+
+        renderCanvas();
+
+        function onPointerMove(e) {
+          if (state.interaction.mode !== 'resizing') return;
+
+          var cell = getCellFromPointer(e.clientX, e.clientY);
+          var h = state.interaction.resizeHandle;
+          var orig = state.interaction.originRect;
+
+          var candColStart = orig.columnStart;
+          var candColEnd = orig.columnEnd;
+          var candRowStart = orig.rowStart;
+          var candRowEnd = orig.rowEnd;
+
+          // East / West
+          if (h.indexOf('e') !== -1) {
+            candColEnd = clamp(cell.col + 1, orig.columnStart + 1, state.columns + 1);
+          }
+          if (h.indexOf('w') !== -1) {
+            candColStart = clamp(cell.col, 1, orig.columnEnd - 1);
+          }
+
+          // South / North
+          if (h.indexOf('s') !== -1) {
+            candRowEnd = clamp(cell.row + 1, orig.rowStart + 1, state.rows + 1);
+          }
+          if (h.indexOf('n') !== -1) {
+            candRowStart = clamp(cell.row, 1, orig.rowEnd - 1);
+          }
+
+          // Guard against non-positive span
+          if (candColEnd <= candColStart) candColEnd = candColStart + 1;
+          if (candRowEnd <= candRowStart) candRowEnd = candRowStart + 1;
+
+          var candRect = {
+            columnStart: candColStart,
+            columnEnd: candColEnd,
+            rowStart: candRowStart,
+            rowEnd: candRowEnd
+          };
+
+          var collision = checkCollision(state.interaction.itemId, candRect);
+
+          state.interaction.previewRect = candRect;
+          state.interaction.hasCollision = collision;
+
+          renderCanvas();
+        }
+
+        function onPointerUp(e) {
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('pointerup', onPointerUp);
+          window.removeEventListener('pointercancel', onPointerCancel);
+
+          if (state.interaction.mode !== 'resizing') return;
+
+          var finalRect = state.interaction.previewRect;
+          var hasColl = state.interaction.hasCollision;
+          var orig = state.interaction.originRect;
+
+          if (hasColl) {
+            showToast('Cell span occupied — resize reverted', true);
+          } else if (finalRect && (
+            finalRect.columnStart !== orig.columnStart ||
+            finalRect.columnEnd !== orig.columnEnd ||
+            finalRect.rowStart !== orig.rowStart ||
+            finalRect.rowEnd !== orig.rowEnd
+          )) {
+            pushHistory();
+            var targetItem = state.items.find(function (it) { return it.id === state.interaction.itemId; });
+            if (targetItem) {
+              targetItem.columnStart = finalRect.columnStart;
+              targetItem.columnEnd = finalRect.columnEnd;
+              targetItem.rowStart = finalRect.rowStart;
+              targetItem.rowEnd = finalRect.rowEnd;
+              showToast('Resized ' + targetItem.label);
+            }
+          }
+
+          state.interaction = { mode: 'idle', itemId: null, originRect: null, previewRect: null, hasCollision: false };
+          render();
+        }
+
+        function onPointerCancel() {
+          cancelActiveInteraction();
+        }
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerCancel);
+      }
+
+      // --- DRAG TO CREATE (ON EMPTY CELLS) ---
+      function startCreateInteraction(startCol, startRow, initialEvent) {
+        var startCheck = { columnStart: startCol, columnEnd: startCol + 1, rowStart: startRow, rowEnd: startRow + 1 };
+        if (checkCollision(null, startCheck)) return;
+
+        state.interaction = {
+          mode: 'creating',
+          createStart: { col: startCol, row: startRow },
+          createCurrent: { col: startCol, row: startRow },
+          previewRect: startCheck,
+          hasCollision: false
+        };
+
+        renderCanvas();
+
+        function onPointerMove(e) {
+          if (state.interaction.mode !== 'creating') return;
+
+          var current = getCellFromPointer(e.clientX, e.clientY);
+          var s = state.interaction.createStart;
+
+          var cStart = Math.min(s.col, current.col);
+          var cEnd = Math.max(s.col, current.col) + 1;
+          var rStart = Math.min(s.row, current.row);
+          var rEnd = Math.max(s.row, current.row) + 1;
+
+          var candRect = { columnStart: cStart, columnEnd: cEnd, rowStart: rStart, rowEnd: rEnd };
+          var collision = checkCollision(null, candRect);
+
+          state.interaction.createCurrent = current;
+          state.interaction.previewRect = candRect;
+          state.interaction.hasCollision = collision;
+
+          renderCanvas();
+        }
+
+        function onPointerUp(e) {
+          window.removeEventListener('pointermove', onPointerMove);
+          window.removeEventListener('pointerup', onPointerUp);
+          window.removeEventListener('pointercancel', onPointerCancel);
+
+          if (state.interaction.mode !== 'creating') return;
+
+          var pr = state.interaction.previewRect;
+          var hasColl = state.interaction.hasCollision;
+
+          state.interaction = { mode: 'idle', itemId: null, previewRect: null, hasCollision: false };
+
+          if (hasColl) {
+            showToast('Cannot create item: overlap with existing item', true);
+            renderCanvas();
+          } else if (pr) {
+            addItem(pr.columnStart, pr.columnEnd, pr.rowStart, pr.rowEnd);
+          } else {
+            render();
+          }
+        }
+
+        function onPointerCancel() {
+          cancelActiveInteraction();
+        }
+
+        window.addEventListener('pointermove', onPointerMove);
+        window.addEventListener('pointerup', onPointerUp);
+        window.addEventListener('pointercancel', onPointerCancel);
+      }
+
+      // Cancel any active drag/resize/create cleanly
+      function cancelActiveInteraction() {
+        if (state.interaction.mode !== 'idle') {
+          state.interaction = { mode: 'idle', itemId: null, originRect: null, previewRect: null, hasCollision: false };
+          render();
+          showToast('Interaction cancelled');
+        }
+      }
+
+      // Render Selected Item Form
+      function renderSelectionForm() {
+        var it = getSelectedItem();
+        if (!it) {
+          dom.selectedBadge.style.display = 'none';
+          dom.emptySelectionState.style.display = 'flex';
+          dom.activeSelectionForm.style.display = 'none';
+          return;
+        }
+
+        dom.selectedBadge.style.display = 'inline-flex';
+        dom.emptySelectionState.style.display = 'none';
+        dom.activeSelectionForm.style.display = 'flex';
+
+        dom.propItemId.textContent = it.id;
+        dom.propItemLabel.value = it.label;
+
+        dom.propColStart.value = it.columnStart;
+        dom.propColStart.max = state.columns;
+        dom.propColEnd.value = it.columnEnd;
+        dom.propColEnd.max = state.columns + 1;
+
+        dom.propRowStart.value = it.rowStart;
+        dom.propRowStart.max = state.rows;
+        dom.propRowEnd.value = it.rowEnd;
+        dom.propRowEnd.max = state.rows + 1;
+      }
+
+      function renderPlacedItemsList() {
+        if (state.items.length === 0) {
+          dom.placedItemsSection.style.display = 'none';
+          return;
+        }
+
+        dom.placedItemsSection.style.display = 'flex';
+        var html = '';
+        for (var i = 0; i < state.items.length; i++) {
+          var it = state.items[i];
+          var isSel = it.id === state.selectedItemId;
+          var spanCols = it.columnEnd - it.columnStart;
+          var spanRows = it.rowEnd - it.rowStart;
+          html += '<div class="forge-item-list-entry ' + (isSel ? 'is-selected' : '') + '" data-list-id="' + it.id + '">';
+          html += '<span style="font-weight:600">' + escapeHtml(it.label) + '</span>';
+          html += '<span style="font-size:10px;opacity:0.75">' + spanCols + '×' + spanRows + ' (' + it.id + ')</span>';
+          html += '</div>';
+        }
+        dom.placedItemsList.innerHTML = html;
+
+        dom.placedItemsList.querySelectorAll('.forge-item-list-entry').forEach(function (entry) {
+          entry.addEventListener('click', function () {
+            var id = entry.getAttribute('data-list-id');
+            state.selectedItemId = id;
+            render();
+          });
+        });
+      }
+
+      // --- 8. EVENT LISTENERS & WIRING ---
+
+      // Undo / Redo Click Handlers
+      dom.btnUndo.addEventListener('click', undo);
+      dom.btnRedo.addEventListener('click', redo);
+
+      // Add Item
+      dom.btnAddItem.addEventListener('click', function () {
+        var cell = findAvailableCell();
+        if (cell) {
+          addItem(cell.col, cell.col + 1, cell.row, cell.row + 1);
+        } else {
+          showToast('Grid full — no available cells for new item', true);
+        }
+      });
+
+      // Load Example
+      dom.btnLoadExample.addEventListener('click', function () {
+        pushHistory();
+        state.columns = 3;
+        state.rows = 3;
+        state.columnGap = 16;
+        state.rowGap = 16;
+        state.minRowHeight = 120;
+        state.items = [
+          {
+            id: 'item-1',
+            label: 'Hero',
+            columnStart: 1,
+            columnEnd: 3,
+            rowStart: 1,
+            rowEnd: 2
+          },
+          {
+            id: 'item-2',
+            label: 'Sidebar',
+            columnStart: 3,
+            columnEnd: 4,
+            rowStart: 1,
+            rowEnd: 4
+          },
+          {
+            id: 'item-3',
+            label: 'Content',
+            columnStart: 1,
+            columnEnd: 3,
+            rowStart: 2,
+            rowEnd: 4
+          }
+        ];
+        state.itemCounter = 4;
+        state.selectedItemId = 'item-1';
+        render();
+        showToast('Loaded example 3-block grid');
+      });
+
+      // Reset Layout
+      dom.btnResetLayout.addEventListener('click', function () {
+        if (state.items.length > 0) {
+          var confirmed = window.confirm('Reset Layout? This will clear all placed items and restore default 3×3 grid.');
+          if (!confirmed) return;
+        }
+        pushHistory();
+        state.columns = 3;
+        state.rows = 3;
+        state.columnGap = 16;
+        state.rowGap = 16;
+        state.minRowHeight = 120;
+        state.items = [];
+        state.selectedItemId = null;
+        state.itemCounter = 1;
+        render();
+        showToast('Layout reset to default');
+      });
+
+      // Column Stepper & Input
+      dom.btnColsDec.addEventListener('click', function () {
+        if (!canShrinkColumns()) {
+          showToast('Cannot shrink columns: items would collide at boundary', true);
+          return;
+        }
+        pushHistory();
+        state.columns--;
+        clampItemBounds();
+        render();
+      });
+
+      dom.btnColsInc.addEventListener('click', function () {
+        if (state.columns < 12) {
+          pushHistory();
+          state.columns++;
+          render();
+        }
+      });
+
+      dom.inputCols.addEventListener('change', function () {
+        var v = parseInt(dom.inputCols.value, 10);
+        if (!isNaN(v)) {
+          var target = clamp(v, 1, 12);
+          if (target < state.columns) {
+            while (state.columns > target) {
+              if (!canShrinkColumns()) {
+                showToast('Cannot shrink columns to ' + target + ': collision detected', true);
+                dom.inputCols.value = state.columns;
+                return;
+              }
+              state.columns--;
+            }
+            pushHistory();
+            clampItemBounds();
+            render();
+          } else if (target > state.columns) {
+            pushHistory();
+            state.columns = target;
+            render();
+          }
+        }
+      });
+
+      // Row Stepper & Input
+      dom.btnRowsDec.addEventListener('click', function () {
+        if (!canShrinkRows()) {
+          showToast('Cannot shrink rows: items would collide at boundary', true);
+          return;
+        }
+        pushHistory();
+        state.rows--;
+        clampItemBounds();
+        render();
+      });
+
+      dom.btnRowsInc.addEventListener('click', function () {
+        if (state.rows < 12) {
+          pushHistory();
+          state.rows++;
+          render();
+        }
+      });
+
+      dom.inputRows.addEventListener('change', function () {
+        var v = parseInt(dom.inputRows.value, 10);
+        if (!isNaN(v)) {
+          var target = clamp(v, 1, 12);
+          if (target < state.rows) {
+            while (state.rows > target) {
+              if (!canShrinkRows()) {
+                showToast('Cannot shrink rows to ' + target + ': collision detected', true);
+                dom.inputRows.value = state.rows;
+                return;
+              }
+              state.rows--;
+            }
+            pushHistory();
+            clampItemBounds();
+            render();
+          } else if (target > state.rows) {
+            pushHistory();
+            state.rows = target;
+            render();
+          }
+        }
+      });
+
+      // Sliders with History on change
+      dom.rangeColGap.addEventListener('input', function () {
+        state.columnGap = parseInt(dom.rangeColGap.value, 10);
+        dom.valColGap.textContent = state.columnGap + 'px';
+        renderCanvas();
+        renderRulers();
+      });
+      dom.rangeColGap.addEventListener('change', function () {
+        pushHistory();
+      });
+
+      dom.rangeRowGap.addEventListener('input', function () {
+        state.rowGap = parseInt(dom.rangeRowGap.value, 10);
+        dom.valRowGap.textContent = state.rowGap + 'px';
+        renderCanvas();
+        renderRulers();
+      });
+      dom.rangeRowGap.addEventListener('change', function () {
+        pushHistory();
+      });
+
+      dom.rangeMinRowH.addEventListener('input', function () {
+        state.minRowHeight = parseInt(dom.rangeMinRowH.value, 10);
+        dom.valMinRowH.textContent = state.minRowHeight + 'px';
+        renderCanvas();
+        renderRulers();
+      });
+      dom.rangeMinRowH.addEventListener('change', function () {
+        pushHistory();
+      });
+
+      // Show Coordinates
+      dom.chkShowCoords.addEventListener('change', function () {
+        state.showCoordinates = dom.chkShowCoords.checked;
+        render();
+      });
+
+      // Presets
+      document.querySelectorAll('.forge-preset-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          pushHistory();
+          var p = btn.getAttribute('data-preset');
+          if (p === '3x3') {
+            state.columns = 3;
+            state.rows = 3;
+            state.columnGap = 16;
+            state.rowGap = 16;
+          } else if (p === '12col') {
+            state.columns = 12;
+            state.rows = 4;
+            state.columnGap = 16;
+            state.rowGap = 16;
+            state.minRowHeight = 100;
+          } else if (p === '2x2') {
+            state.columns = 2;
+            state.rows = 2;
+            state.columnGap = 20;
+            state.rowGap = 20;
+          } else if (p === '4x2') {
+            state.columns = 4;
+            state.rows = 2;
+            state.columnGap = 16;
+            state.rowGap = 16;
+          }
+          clampItemBounds();
+          render();
+          showToast('Preset applied: ' + btn.textContent);
+        });
+      });
+
+      // Selected Item Property Modifiers with Collision Prevention & History
+      var renameHistoryPushed = false;
+      dom.propItemLabel.addEventListener('focus', function () {
+        renameHistoryPushed = false;
+      });
+      dom.propItemLabel.addEventListener('input', function () {
+        var it = getSelectedItem();
+        if (it) {
+          if (!renameHistoryPushed) {
+            pushHistory();
+            renameHistoryPushed = true;
+          }
+          it.label = dom.propItemLabel.value;
+          renderCanvas();
+          renderPlacedItemsList();
+        }
+      });
+
+      function tryUpdateProp(targetRect, successMsg) {
+        var it = getSelectedItem();
+        if (!it) return;
+        if (checkCollision(it.id, targetRect)) {
+          showToast('Cell span occupied — cannot apply placement', true);
+          return;
+        }
+        pushHistory();
+        it.columnStart = targetRect.columnStart;
+        it.columnEnd = targetRect.columnEnd;
+        it.rowStart = targetRect.rowStart;
+        it.rowEnd = targetRect.rowEnd;
+        render();
+        if (successMsg) showToast(successMsg);
+      }
+
+      // Column Start / End Steppers
+      dom.btnColStartDec.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.columnStart > 1) {
+          tryUpdateProp({ columnStart: it.columnStart - 1, columnEnd: it.columnEnd, rowStart: it.rowStart, rowEnd: it.rowEnd });
+        }
+      });
+      dom.btnColStartInc.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.columnStart < it.columnEnd - 1) {
+          tryUpdateProp({ columnStart: it.columnStart + 1, columnEnd: it.columnEnd, rowStart: it.rowStart, rowEnd: it.rowEnd });
+        }
+      });
+      dom.propColStart.addEventListener('change', function () {
+        var it = getSelectedItem();
+        if (!it) return;
+        var v = parseInt(dom.propColStart.value, 10);
+        if (!isNaN(v)) {
+          tryUpdateProp({ columnStart: clamp(v, 1, it.columnEnd - 1), columnEnd: it.columnEnd, rowStart: it.rowStart, rowEnd: it.rowEnd });
+        }
+      });
+
+      dom.btnColEndDec.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.columnEnd > it.columnStart + 1) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd - 1, rowStart: it.rowStart, rowEnd: it.rowEnd });
+        }
+      });
+      dom.btnColEndInc.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.columnEnd <= state.columns) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd + 1, rowStart: it.rowStart, rowEnd: it.rowEnd });
+        }
+      });
+      dom.propColEnd.addEventListener('change', function () {
+        var it = getSelectedItem();
+        if (!it) return;
+        var v = parseInt(dom.propColEnd.value, 10);
+        if (!isNaN(v)) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: clamp(v, it.columnStart + 1, state.columns + 1), rowStart: it.rowStart, rowEnd: it.rowEnd });
+        }
+      });
+
+      // Row Start / End Steppers
+      dom.btnRowStartDec.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.rowStart > 1) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: it.rowStart - 1, rowEnd: it.rowEnd });
+        }
+      });
+      dom.btnRowStartInc.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.rowStart < it.rowEnd - 1) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: it.rowStart + 1, rowEnd: it.rowEnd });
+        }
+      });
+      dom.propRowStart.addEventListener('change', function () {
+        var it = getSelectedItem();
+        if (!it) return;
+        var v = parseInt(dom.propRowStart.value, 10);
+        if (!isNaN(v)) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: clamp(v, 1, it.rowEnd - 1), rowEnd: it.rowEnd });
+        }
+      });
+
+      dom.btnRowEndDec.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.rowEnd > it.rowStart + 1) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: it.rowStart, rowEnd: it.rowEnd - 1 });
+        }
+      });
+      dom.btnRowEndInc.addEventListener('click', function () {
+        var it = getSelectedItem();
+        if (it && it.rowEnd <= state.rows) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: it.rowStart, rowEnd: it.rowEnd + 1 });
+        }
+      });
+      dom.propRowEnd.addEventListener('change', function () {
+        var it = getSelectedItem();
+        if (!it) return;
+        var v = parseInt(dom.propRowEnd.value, 10);
+        if (!isNaN(v)) {
+          tryUpdateProp({ columnStart: it.columnStart, columnEnd: it.columnEnd, rowStart: it.rowStart, rowEnd: clamp(v, it.rowStart + 1, state.rows + 1) });
+        }
+      });
+
+      // Duplicate & Delete
+      dom.btnDupItem.addEventListener('click', function () {
+        if (state.selectedItemId) duplicateItem(state.selectedItemId);
+      });
+      dom.btnDelItem.addEventListener('click', function () {
+        if (state.selectedItemId) deleteItem(state.selectedItemId);
+      });
+
+      // Canvas background click to deselect
+      dom.gridCanvas.addEventListener('click', function (e) {
+        if (e.target === dom.gridCanvas) {
+          state.selectedItemId = null;
+          render();
+        }
+      });
+
+      // --- 9. GLOBAL KEYBOARD NAVIGATION & SHORTCUTS ---
+      window.addEventListener('keydown', function (e) {
+        var tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+        var isInput = tag === 'input' || tag === 'textarea' || tag === 'select' || (e.target && e.target.isContentEditable);
+
+        // Escape: cancel active interaction or clear selection
+        if (e.key === 'Escape') {
+          if (state.interaction.mode !== 'idle') {
+            cancelActiveInteraction();
+            e.preventDefault();
+          } else if (state.selectedItemId) {
+            state.selectedItemId = null;
+            render();
+            e.preventDefault();
+          }
+          return;
+        }
+
+        // Delete / Backspace: delete selected item (only when not typing in an input)
+        if ((e.key === 'Delete' || e.key === 'Backspace') && !isInput) {
+          if (state.selectedItemId) {
+            e.preventDefault();
+            deleteItem(state.selectedItemId);
+          }
+          return;
+        }
+
+        // Undo (Ctrl+Z / Cmd+Z) / Redo (Ctrl+Shift+Z / Cmd+Shift+Z / Ctrl+Y / Cmd+Y)
+        var isCtrlOrCmd = e.ctrlKey || e.metaKey;
+        if (isCtrlOrCmd && !e.altKey) {
+          if (e.key === 'z' || e.key === 'Z') {
+            e.preventDefault();
+            if (e.shiftKey) {
+              redo();
+            } else {
+              undo();
+            }
+          } else if (e.key === 'y' || e.key === 'Y') {
+            e.preventDefault();
+            redo();
+          }
+        }
+      });
+
+      // Initial Render
+      render();
+    })();
+  </script>
+</body>
+</html>

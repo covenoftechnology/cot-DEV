@@ -1,0 +1,149 @@
+---
+interface Props {
+  title?: string;
+  aether?: string | number;
+  difficulty?: string;
+  hint?: string;
+}
+
+const {
+  title = "Initiate's Trial Challenge",
+  aether = "25",
+  difficulty = "Mechanic",
+  hint
+} = Astro.props;
+---
+
+<div class="cov-exercise-box">
+  <div class="cov-exercise-header">
+    <div class="cov-exercise-title-group">
+      <span class="cov-exercise-glyph">⚙</span>
+      <h4 class="cov-exercise-title">{title}</h4>
+    </div>
+    <div class="cov-exercise-meta">
+      {difficulty && <span class="cov-exercise-diff">{difficulty}</span>}
+      <span class="cov-exercise-aether">✦ {aether} Aether</span>
+    </div>
+  </div>
+
+  <div class="cov-exercise-body">
+    <slot />
+  </div>
+
+  {hint && (
+    <details class="cov-exercise-hint">
+      <summary class="cov-exercise-hint-trigger">Reveal Grimoire Hint</summary>
+      <div class="cov-exercise-hint-body">
+        {hint}
+      </div>
+    </details>
+  )}
+</div>
+
+<style>
+  .cov-exercise-box {
+    margin: 32px 0;
+    border: 1px solid rgba(216, 181, 107, 0.24);
+    border-radius: 8px;
+    background: radial-gradient(circle at 100% 0%, rgba(139, 92, 196, 0.12), transparent 50%), #14101b;
+    padding: clamp(20px, 4vw, 28px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  }
+
+  .cov-exercise-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(216, 181, 107, 0.14);
+    padding-bottom: 14px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .cov-exercise-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .cov-exercise-glyph {
+    color: #d8b56b;
+    font-size: 16px;
+  }
+
+  .cov-exercise-title {
+    font-family: Cinzel, serif;
+    font-weight: 600;
+    font-size: 17px;
+    color: #f3ecdf;
+    margin: 0;
+  }
+
+  .cov-exercise-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .cov-exercise-diff {
+    font-family: 'EB Garamond', serif;
+    font-size: 12px;
+    color: #8f857a;
+    border: 1px solid rgba(216, 181, 107, 0.2);
+    border-radius: 3px;
+    padding: 2px 7px;
+  }
+
+  .cov-exercise-aether {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    color: #e8cf95;
+    background: rgba(216, 181, 107, 0.08);
+    border: 1px solid rgba(216, 181, 107, 0.3);
+    padding: 3px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .cov-exercise-body {
+    font-family: 'EB Garamond', serif;
+    font-size: 17px;
+    line-height: 1.65;
+    color: #cdc3b6;
+  }
+
+  .cov-exercise-body :global(p) {
+    margin: 0 0 12px !important;
+  }
+  .cov-exercise-body :global(p:last-child) {
+    margin-bottom: 0 !important;
+  }
+
+  .cov-exercise-hint {
+    margin-top: 18px;
+    border-top: 1px dashed rgba(216, 181, 107, 0.16);
+    padding-top: 12px;
+  }
+
+  .cov-exercise-hint-trigger {
+    font-family: 'Cinzel', serif;
+    font-size: 12px;
+    letter-spacing: 1px;
+    color: #b98fd8;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  .cov-exercise-hint-body {
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: rgba(185, 143, 216, 0.06);
+    border-left: 2px solid #b98fd8;
+    border-radius: 0 4px 4px 0;
+    font-family: 'EB Garamond', serif;
+    font-size: 15px;
+    color: #cdc3b6;
+    line-height: 1.5;
+  }
+</style>

@@ -1,0 +1,733 @@
+/**
+ * COVEN UAT ARTICLE FORGE — SECTION VISUAL GRID STYLES
+ * Visual CSS Grid, Slots, Precision Controls & Interactive Canvas
+ */
+
+/* ── Section Visual Grid Wrapper ──────────────────────── */
+.section-grid-wrapper {
+  margin-top: 14px;
+  background: rgba(14, 11, 20, 0.7);
+  border: 1px solid var(--studio-border);
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
+}
+
+/* ── Compact Section Grid Toolbar ─────────────────────── */
+.section-grid-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 8px 12px;
+  background: rgba(22, 18, 30, 0.85);
+  border: 1px solid var(--studio-border);
+  border-radius: 6px;
+}
+
+.section-grid-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.section-grid-toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.grid-control-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.grid-control-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--studio-gold);
+  text-transform: uppercase;
+}
+
+.grid-stepper {
+  display: flex;
+  align-items: center;
+  background: rgba(10, 8, 15, 0.8);
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.grid-stepper-btn {
+  background: transparent;
+  border: none;
+  color: var(--studio-text);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.grid-stepper-btn:hover:not(:disabled) {
+  background: rgba(216, 181, 107, 0.2);
+  color: var(--studio-gold-bright);
+}
+
+.grid-stepper-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.grid-stepper-val {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 0 8px;
+  min-width: 50px;
+  text-align: center;
+  color: var(--studio-text);
+  border-left: 1px solid rgba(216, 181, 107, 0.1);
+  border-right: 1px solid rgba(216, 181, 107, 0.1);
+}
+
+.grid-btn {
+  background: rgba(25, 20, 35, 0.8);
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  color: var(--studio-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.grid-btn:hover {
+  background: rgba(45, 35, 60, 0.9);
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
+}
+
+.grid-btn.is-active {
+  background: rgba(216, 181, 107, 0.2);
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
+}
+
+.grid-btn--gold {
+  background: rgba(216, 181, 107, 0.15);
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
+  font-weight: 500;
+}
+
+.grid-btn--gold:hover {
+  background: rgba(216, 181, 107, 0.3);
+  box-shadow: 0 0 10px rgba(216, 181, 107, 0.3);
+}
+
+/* ── Section Grid Canvas ──────────────────────────────── */
+.section-grid-canvas-wrap {
+  position: relative;
+  width: 100%;
+  border: 1.5px dashed rgba(216, 181, 107, 0.25);
+  border-radius: 6px;
+  background: #09070e;
+  background-image: 
+    radial-gradient(circle at 50% 50%, rgba(185, 143, 216, 0.04) 0%, transparent 80%),
+    linear-gradient(to right, rgba(216, 181, 107, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(216, 181, 107, 0.03) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  padding: 16px;
+  box-sizing: border-box;
+  user-select: none;
+}
+
+.section-grid-canvas {
+  display: grid;
+  width: 100%;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* ── Empty Grid Cells ─────────────────────────────────── */
+.section-grid-cell {
+  border: 1px dashed rgba(216, 181, 107, 0.12);
+  border-radius: 4px;
+  background: rgba(18, 14, 25, 0.4);
+  min-height: 80px;
+  position: relative;
+  cursor: crosshair;
+  transition: background 0.15s, border-color 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.section-grid-cell:hover {
+  background: rgba(216, 181, 107, 0.08);
+  border-color: rgba(216, 181, 107, 0.35);
+}
+
+.cell-coord-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(216, 181, 107, 0.4);
+  pointer-events: none;
+}
+
+/* ── Placed Grid Slots ────────────────────────────────── */
+.section-grid-slot {
+  position: relative;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 8px 10px;
+  background: linear-gradient(135deg, rgba(30, 22, 44, 0.98) 0%, rgba(16, 12, 24, 0.98) 100%);
+  border: 1.5px solid rgba(185, 143, 216, 0.45);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  cursor: default;
+  z-index: 5;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+  touch-action: none;
+  min-height: 80px;
+  box-sizing: border-box;
+}
+
+.section-grid-slot:hover {
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 14px rgba(185, 143, 216, 0.25);
+  border-color: rgba(216, 181, 107, 0.65);
+}
+
+.section-grid-slot.is-selected {
+  border: 2px solid var(--studio-gold);
+  box-shadow: 0 0 20px rgba(216, 181, 107, 0.35), inset 0 0 12px rgba(216, 181, 107, 0.08);
+  z-index: 10;
+}
+
+.section-grid-slot.is-moving {
+  opacity: 0.35 !important;
+}
+
+.section-grid-slot.is-resizing {
+  opacity: 0.45 !important;
+}
+
+/* Slot Drag Over States (Block Library Drop Target) */
+.section-grid-slot.slot-drag-hover {
+  border: 2px dashed var(--studio-gold-bright) !important;
+  background: rgba(216, 181, 107, 0.18) !important;
+  box-shadow: 0 0 20px rgba(216, 181, 107, 0.45) !important;
+}
+
+.section-grid-slot.slot-drag-replace-warning {
+  border: 2px dashed #f39c12 !important;
+  background: rgba(243, 156, 18, 0.18) !important;
+  box-shadow: 0 0 20px rgba(243, 156, 18, 0.4) !important;
+}
+
+.section-grid-slot.drag-target-forbidden {
+  border: 2px dashed #e74c3c !important;
+  background: rgba(231, 76, 60, 0.15) !important;
+  cursor: not-allowed !important;
+}
+
+/* Slot Header */
+.slot-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid rgba(216, 181, 107, 0.15);
+  user-select: none;
+}
+
+.slot-header-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Dedicated Slot Drag Handle: ⠿ */
+.slot-drag-handle {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1;
+  color: var(--studio-gold);
+  cursor: grab;
+  padding: 3px 6px;
+  border-radius: 3px;
+  background: rgba(216, 181, 107, 0.1);
+  border: 1px solid rgba(216, 181, 107, 0.2);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.12s;
+  touch-action: none;
+}
+
+.slot-drag-handle:hover {
+  background: rgba(216, 181, 107, 0.25);
+  color: var(--studio-gold-bright);
+  box-shadow: 0 0 8px rgba(216, 181, 107, 0.3);
+}
+
+.slot-drag-handle:active {
+  cursor: grabbing;
+}
+
+.slot-title {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--studio-gold-bright);
+  letter-spacing: 0.03em;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slot-glyph {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--studio-gold);
+}
+
+.slot-id-badge {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  background: rgba(185, 143, 216, 0.15);
+  border: 1px solid rgba(185, 143, 216, 0.25);
+  color: var(--studio-purple);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.slot-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+}
+
+.slot-action-btn {
+  background: rgba(25, 20, 35, 0.8);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 3px;
+  transition: all 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+.slot-action-btn:hover {
+  color: var(--studio-gold-bright);
+  background: rgba(216, 181, 107, 0.2);
+  border-color: var(--studio-gold);
+}
+
+.slot-action-btn--gold {
+  color: var(--studio-gold);
+  border-color: rgba(216, 181, 107, 0.3);
+}
+
+.slot-action-btn--gold:hover {
+  background: rgba(216, 181, 107, 0.25);
+  color: var(--studio-gold-bright);
+}
+
+.slot-action-btn--warning:hover {
+  color: #f39c12;
+  border-color: #f39c12;
+  background: rgba(243, 156, 18, 0.15);
+}
+
+.slot-action-btn--danger:hover {
+  color: #ff6b6b;
+  border-color: #ff6b6b;
+  background: rgba(255, 107, 107, 0.15);
+}
+
+/* Slot Body */
+.slot-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+/* Empty Slot State */
+.slot-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 90px;
+  padding: 14px 10px;
+  gap: 8px;
+  text-align: center;
+}
+
+.slot-add-block-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  background: rgba(216, 181, 107, 0.12);
+  border: 1px dashed rgba(216, 181, 107, 0.45);
+  border-radius: 5px;
+  color: var(--studio-gold-bright);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.slot-add-block-btn:hover {
+  background: rgba(216, 181, 107, 0.25);
+  border-color: var(--studio-gold);
+  transform: translateY(-1px);
+  box-shadow: 0 0 12px rgba(216, 181, 107, 0.3);
+}
+
+.slot-empty-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: rgba(216, 181, 107, 0.45);
+  font-style: italic;
+}
+
+/* Occupied Slot State & Embedded Block Editor */
+.section-grid-slot.is-occupied {
+  background: rgba(18, 14, 25, 0.95);
+}
+
+.section-grid-slot .block-editor-card {
+  background: transparent !important;
+  border: none !important;
+  border-radius: 4px !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: visible !important;
+}
+
+.section-grid-slot .block-editor-card .block-editor-header {
+  display: none !important; /* Unified into slot header */
+}
+
+.section-grid-slot .block-editor-body {
+  padding: 4px 0 6px 0;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Ensure inputs reflow naturally without scaling */
+.section-grid-slot input,
+.section-grid-slot textarea,
+.section-grid-slot select {
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* Move Block Popover */
+.slot-move-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 50;
+  background: rgba(22, 17, 30, 0.98);
+  border: 1px solid var(--studio-gold);
+  border-radius: 6px;
+  padding: 10px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.75);
+  min-width: 220px;
+  animation: fadeInProps 0.15s ease-out;
+}
+
+.slot-move-popover-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--studio-gold);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slot-move-item-btn {
+  width: 100%;
+  text-align: left;
+  padding: 6px 10px;
+  margin-bottom: 4px;
+  background: rgba(30, 24, 42, 0.85);
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  color: var(--studio-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.slot-move-item-btn:hover {
+  background: rgba(216, 181, 107, 0.2);
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
+}
+
+/* Pulse Library Highlight Animation */
+.pulse-library-highlight {
+  animation: pulseLibGlow 1.2s ease-in-out;
+}
+
+@keyframes pulseLibGlow {
+  0% { box-shadow: 0 0 0 rgba(216, 181, 107, 0); }
+  50% { box-shadow: 0 0 28px rgba(216, 181, 107, 0.55), inset 0 0 15px rgba(216, 181, 107, 0.2); }
+  100% { box-shadow: 0 0 0 rgba(216, 181, 107, 0); }
+}
+
+/* Legacy Migration Button */
+.btn-legacy-migrate-slot {
+  background: rgba(216, 181, 107, 0.15);
+  border: 1px solid var(--studio-gold);
+  color: var(--studio-gold-bright);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.12s;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-legacy-migrate-slot:hover {
+  background: rgba(216, 181, 107, 0.3);
+  box-shadow: 0 0 10px rgba(216, 181, 107, 0.35);
+}
+
+/* Slot Footer */
+.slot-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 4px;
+  pointer-events: none;
+}
+
+.slot-span-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--studio-text-muted);
+}
+
+/* Resize Grip (Southeast) */
+.slot-resize-grip {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  width: 16px;
+  height: 16px;
+  cursor: se-resize;
+  color: var(--studio-gold);
+  opacity: 0.6;
+  font-size: 13px;
+  line-height: 16px;
+  text-align: right;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  z-index: 12;
+  transition: opacity 0.15s;
+}
+
+.slot-resize-grip:hover,
+.section-grid-slot.is-selected .slot-resize-grip {
+  opacity: 1;
+  color: var(--studio-gold-bright);
+}
+
+/* Boundary Handles */
+.slot-handle {
+  position: absolute;
+  z-index: 15;
+  box-sizing: border-box;
+}
+
+.slot-handle-e {
+  top: 15%;
+  bottom: 15%;
+  right: -5px;
+  width: 10px;
+  cursor: e-resize;
+}
+
+.slot-handle-s {
+  left: 15%;
+  right: 15%;
+  bottom: -5px;
+  height: 10px;
+  cursor: s-resize;
+}
+
+.slot-handle-w {
+  top: 15%;
+  bottom: 15%;
+  left: -5px;
+  width: 10px;
+  cursor: w-resize;
+}
+
+.slot-handle-n {
+  left: 15%;
+  right: 15%;
+  top: -5px;
+  height: 10px;
+  cursor: n-resize;
+}
+
+/* ── Ghost Preview & Collision Indicator ─────────────── */
+.section-grid-preview {
+  position: relative;
+  border-radius: 6px;
+  pointer-events: none;
+  z-index: 8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  transition: background 0.08s ease, border-color 0.08s ease;
+}
+
+.section-grid-preview.is-valid {
+  background: rgba(216, 181, 107, 0.12);
+  border: 2px dashed var(--studio-gold);
+  color: var(--studio-gold-bright);
+  box-shadow: 0 0 16px rgba(216, 181, 107, 0.25);
+}
+
+.section-grid-preview.is-collision {
+  background: rgba(224, 108, 117, 0.22);
+  border: 2px solid #e06c75;
+  color: #ff858d;
+  box-shadow: 0 0 20px rgba(224, 108, 117, 0.4);
+}
+
+/* ── Slot Precision Property Panel ────────────────────── */
+.slot-properties-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  background: rgba(28, 22, 38, 0.95);
+  border: 1px solid rgba(216, 181, 107, 0.35);
+  border-radius: 6px;
+  flex-wrap: wrap;
+  animation: fadeInProps 0.15s ease-out;
+}
+
+@keyframes fadeInProps {
+  from { opacity: 0; transform: translateY(-3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.slot-prop-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slot-prop-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--studio-gold);
+  text-transform: uppercase;
+}
+
+.slot-prop-input {
+  background: rgba(12, 10, 18, 0.85);
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  color: var(--studio-text);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 3px 6px;
+  width: 50px;
+  text-align: center;
+}
+
+.slot-prop-input--text {
+  width: 140px;
+  text-align: left;
+}
+
+/* ── Legacy Blocks Transition Drawer ──────────────────── */
+.section-legacy-blocks-drawer {
+  margin-top: 10px;
+  border: 1px solid rgba(216, 181, 107, 0.15);
+  border-radius: 6px;
+  background: rgba(14, 11, 20, 0.5);
+  overflow: hidden;
+}
+
+.section-legacy-blocks-drawer summary {
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--studio-text-muted);
+  cursor: pointer;
+  background: rgba(20, 16, 28, 0.6);
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-legacy-blocks-drawer summary:hover {
+  color: var(--studio-gold);
+}
+
+.section-legacy-blocks-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+

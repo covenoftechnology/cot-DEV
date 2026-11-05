@@ -1,0 +1,9 @@
+---
+// src/pages/lab/layout-forge/articles.astro
+// COVEN — UAT ARTICLE FORGE: UAT ARTICLE CENTER
+import { getUatAdminCenterHtml } from '../../../uat/article-forge/integration/admin-center-html';
+
+const html = getUatAdminCenterHtml();
+---
+<Fragment set:html={html} />
+

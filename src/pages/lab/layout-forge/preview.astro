@@ -1,0 +1,440 @@
+---
+// src/pages/lab/layout-forge/preview.astro
+// COVEN — UAT ARTICLE FORGE (PHASE 5.1)
+// Visual & Reader-Facing Parity with Canonical Coven Article Preview
+import fs from 'node:fs';
+import path from 'node:path';
+import ArticleLayout from '../../../uat/article-forge/layouts/ArticleLayout.astro';
+import ArticleBlockRenderer from '../../../uat/article-forge/components/ArticleBlockRenderer.astro';
+import '../../../uat/article-forge/styles/article.css';
+import templateMeta from '../../../uat/article-forge/lib/template-meta';
+import type { ArticleDocument, ArticleSection, ArticleBlock } from '../../../uat/article-forge/types/article-document';
+import { migrateSectionToGridComposerV2 } from '../../../uat/article-forge/grid/geometry';
+
+function slugify(text: string): string {
+  return (text || '')
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '');
+}
+
+const uatDraftsDir = path.join(process.cwd(), '.uat-article-forge', 'drafts');
+const uatTempDir = path.join(process.cwd(), '.uat-article-forge', 'temp');
+
+let loadedDoc: any = null;
+
+// 1. Direct query parameter: ?draft=<studioId> (takes precedence when explicitly requested)
+const reqUrl = new URL(Astro.request.url);
+const draftParam = reqUrl.searchParams.get('draft') || Astro.url.searchParams.get('draft');
+if (draftParam) {
+  const sanitized = draftParam.replace(/[^a-zA-Z0-9_-]/g, '');
+  const candidatePath = path.join(uatDraftsDir, `${sanitized}.json`);
+  if (fs.existsSync(candidatePath)) {
+    try {
+      loadedDoc = JSON.parse(fs.readFileSync(candidatePath, 'utf-8'));
+    } catch (e) {
+      console.error('[UAT Preview] Failed to read draft by param:', candidatePath, e);
+    }
+  }
+}
+
+// 2. Check temporary preview state (synced by Preview button)
+if (!loadedDoc) {
+  const tempPreviewPath = path.join(uatTempDir, 'preview.json');
+  if (fs.existsSync(tempPreviewPath)) {
+    try {
+      loadedDoc = JSON.parse(fs.readFileSync(tempPreviewPath, 'utf-8'));
+    } catch (e) {
+      console.error('[UAT Preview] Failed to read temporary preview.json:', e);
+    }
+  }
+}
+
+// 3. Fallback to latest draft in .uat-article-forge/drafts
+if (!loadedDoc && fs.existsSync(uatDraftsDir)) {
+  try {
+    const files = fs.readdirSync(uatDraftsDir).filter(f => f.endsWith('.json'));
+    if (files.length > 0) {
+      const sorted = files.map(f => {
+        const fullPath = path.join(uatDraftsDir, f);
+        return { file: f, mtime: fs.statSync(fullPath).mtimeMs };
+      }).sort((a, b) => b.mtime - a.mtime);
+
+      loadedDoc = JSON.parse(fs.readFileSync(path.join(uatDraftsDir, sorted[0].file), 'utf-8'));
+    }
+  } catch (e) {
+    console.error('[UAT Preview] Failed to read latest draft from directory:', e);
+  }
+}
+
+// 4. Default baseline document if no draft exists
+const doc: ArticleDocument = loadedDoc || {
+  version: 1,
+  studioId: 'uat-preview-default',
+  slug: 'preview-article',
+  meta: {
+    ...templateMeta,
+    title: 'Preview Scroll · UAT Article Forge',
+    description: 'No draft loaded yet. Open UAT Article Forge and click Preview to view your work here with exact Coven visual parity.',
+    status: 'draft',
+  },
+  sections: [
+    {
+      id: 'welcome-to-uat-preview',
+      title: 'Welcome to UAT Preview',
+      kicker: '01 · UAT ARTICLE FORGE',
+      heading: 'Live Render Preview',
+      visualGrid: {
+        columns: 4,
+        rows: 2,
+        columnGap: 16,
+        rowGap: 16,
+        minRowHeight: 80,
+        layoutItems: [
+          {
+            id: 'item-welcome',
+            columnStart: 1,
+            columnSpan: 4,
+            columnEnd: 5,
+            rowStart: 1,
+            rowSpan: 1,
+            rowEnd: 2,
+            block: {
+              id: 'welcome-block',
+              type: 'title-text',
+              data: {
+                kicker: 'UAT PREVIEW READY',
+                heading: 'Your 4-Column Grid Layout will appear here',
+                paragraphs: [
+                  'Return to the UAT Article Forge editor, compose your section with the 4-column LEGO-style Grid Composer, and click "Preview" to view your article rendered here with exact Coven visual parity.'
+                ]
+              }
+            }
+          }
+        ],
+        slots: []
+      },
+      blocks: []
+    }
+  ]
+};
+
+// Ensure meta has canonical fallbacks
+const safeMeta = {
+  ...templateMeta,
+  ...(doc.meta || {}),
+  title: (doc.meta?.title && doc.meta.title.trim()) ? doc.meta.title.trim() : (templateMeta.title || 'Untitled Scroll'),
+  description: (doc.meta?.description !== undefined && doc.meta.description !== null && doc.meta.description.trim()) ? doc.meta.description.trim() : (templateMeta.description || ''),
+  category: doc.meta?.category || templateMeta.category || 'General',
+  author: doc.meta?.author || templateMeta.author || 'Oracle of Orgs',
+};
+---
+
+<ArticleLayout
+  article={{ slug: doc.slug || 'preview', meta: safeMeta }}
+  previousArticle={null}
+  nextArticle={null}
+  relatedArticles={[]}
+  wide={safeMeta.wide !== false}
+  isPreview={true}
+>
+  <div class="article-template">
+    {doc.sections && doc.sections.map((section: any, sIndex: number) => {
+      const sectionId = slugify(section.title) || `section-${sIndex + 1}`;
+      const sectionTitle = (typeof section.title === 'string' ? section.title.trim() : '') ||
+                           (typeof section.heading === 'string' ? section.heading.trim() : '') ||
+                           `Section ${sIndex + 1}`;
+      const vg = migrateSectionToGridComposerV2(section);
+      const cols = vg.columns || 4;
+      const minRowHeight = vg.minRowHeight || 80;
+      const colGap = vg.columnGap !== undefined ? vg.columnGap : 16;
+      const rowGap = vg.rowGap !== undefined ? vg.rowGap : 16;
+      const rawItems = Array.isArray(vg.layoutItems) && vg.layoutItems.length > 0 ? vg.layoutItems : (Array.isArray(vg.slots) ? vg.slots : []);
+
+      // Sort placed blocks deterministically by reading order: rowStart ASC, columnStart ASC
+      const sortedSlots = [...rawItems].filter(it => Boolean(it.block)).sort((a, b) => {
+        if (a.rowStart !== b.rowStart) return a.rowStart - b.rowStart;
+        return a.columnStart - b.columnStart;
+      });
+
+      return (
+        <section id={sectionId} class="article-section" data-toc-title={sectionTitle}>
+          {section.kicker && <div class="section-kicker">{section.kicker}</div>}
+          {sectionTitle && <h2 class="article-section-title">{sectionTitle}</h2>}
+
+          {/* Section Body: Visual Grid */}
+          {sortedSlots.length > 0 ? (
+            <div
+              class="section-reader-grid"
+              data-grid-cols={cols}
+              data-grid-colgap={colGap}
+              data-grid-rowgap={rowGap}
+              style={`
+                display: grid;
+                grid-template-columns: repeat(${cols}, minmax(0, 1fr));
+                grid-auto-rows: minmax(${minRowHeight}px, auto);
+                column-gap: ${colGap}px;
+                row-gap: ${rowGap}px;
+                width: 100%;
+                margin: 24px 0;
+              `}
+            >
+              {sortedSlots.map((slot: any, slIndex: number) => {
+                const hasBlock = Boolean(slot.block);
+                if (!hasBlock) return null;
+                const colStart = slot.columnStart || 1;
+                const colSpan = slot.columnSpan || Math.max(1, (slot.columnEnd || (colStart + 1)) - colStart);
+                const rowStart = slot.rowStart || 1;
+                const rowSpan = slot.rowSpan || Math.max(1, (slot.rowEnd || (rowStart + 1)) - rowStart);
+                const slotStyle = `
+                  grid-column: ${colStart} / span ${colSpan};
+                  grid-row: ${rowStart} / span ${rowSpan};
+                `;
+                return (
+                  <div
+                    class="reader-grid-item grid-reader-item reader-grid-slot"
+                    style={slotStyle}
+                    data-item-id={slot.id}
+                    data-slot-id={slot.id}
+                    data-col-start={colStart}
+                    data-col-span={colSpan}
+                    data-row-start={rowStart}
+                    data-row-span={rowSpan}
+                  >
+                    <ArticleBlockRenderer block={slot.block} sIndex={sIndex} bIndex={slIndex} doc={doc} />
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            /* Fallback if section has unslotted blocks */
+            section.blocks && section.blocks.length > 0 && (
+              <div class="section-blocks-fallback">
+                {section.blocks.map((block: any, bIndex: number) => (
+                  <ArticleBlockRenderer block={block} sIndex={sIndex} bIndex={bIndex} doc={doc} />
+                ))}
+              </div>
+            )
+          )}
+        </section>
+      );
+    })}
+  </div>
+
+  <!-- Subtle UAT Floating Navigation Pill -->
+  <aside class="uat-preview-pill" aria-label="UAT Preview Navigation">
+    <div class="uat-preview-pill-badge">UAT PREVIEW</div>
+    <a href="/lab/layout-forge/studio" class="uat-preview-pill-link" title="Return to Article Forge Studio">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M19 12H5M12 19l-7-7 7-7"/>
+      </svg>
+      <span>Back to Forge Studio</span>
+    </a>
+  </aside>
+</ArticleLayout>
+
+<style is:global>
+  /* Rich link styles in parity with ArticleRenderer */
+  .article-template .article-rich-link {
+    color: #e8cf95;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    cursor: pointer;
+    transition: color 0.15s ease;
+  }
+  .article-template .article-rich-link:hover {
+    color: #f3ecdf;
+  }
+  .article-template .article-rich-link--gold {
+    color: #e8cf95;
+  }
+  .article-template .article-rich-link--gold:hover {
+    color: #f3ecdf;
+  }
+  .article-template .article-rich-link--purple {
+    color: #b98fd8;
+  }
+  .article-template .article-rich-link--purple:hover {
+    color: #d5b2ee;
+  }
+  .article-template .article-rich-link--parchment {
+    color: #ece6dd;
+  }
+  .article-template .article-rich-link--parchment:hover {
+    color: #ffffff;
+  }
+  .article-template .article-rich-link--muted {
+    color: #8f857a;
+  }
+  .article-template .article-rich-link--muted:hover {
+    color: #cdc3b6;
+  }
+  .article-template .article-rich-link u {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* Reader Grid Foundation & Desktop Wide Breakout */
+  .section-reader-grid {
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
+  }
+
+  @media (min-width: 1024px) {
+    .section-reader-grid {
+      width: 100%;
+      max-width: 1360px;
+      margin-top: 28px;
+      margin-bottom: 28px;
+    }
+  }
+
+  /* Canonical prose reading width preservation */
+  .article-markdown-body > p,
+  .article-markdown-body > h2,
+  .article-markdown-body > h3,
+  .article-markdown-body > ul,
+  .article-markdown-body > ol,
+  .article-markdown-body > blockquote {
+    max-width: 820px;
+  }
+
+  .reader-grid-item,
+  .reader-grid-slot {
+    box-sizing: border-box;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .reader-grid-slot--empty {
+    background: transparent;
+    border: none;
+    pointer-events: none;
+  }
+
+  /* Mobile Responsive Stacking (<= 768px): Conservative deterministic stack */
+  @media (max-width: 768px) {
+    .section-reader-grid {
+      grid-template-columns: 1fr !important;
+      row-gap: 20px !important;
+      column-gap: 0 !important;
+    }
+
+    .reader-grid-item,
+    .reader-grid-slot {
+      grid-column: 1 / -1 !important;
+      grid-row: auto !important;
+      width: 100% !important;
+    }
+
+    /* Hide empty spacer slots on mobile so no blank gaps appear in single column */
+    .reader-grid-slot--empty {
+      display: none !important;
+    }
+  }
+
+  /* Floating Subtle UAT Pill */
+  .uat-preview-pill {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background: rgba(11, 10, 14, 0.9);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(216, 181, 107, 0.35);
+    padding: 8px 14px;
+    border-radius: 999px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.65), 0 0 16px rgba(157, 114, 231, 0.15);
+    font-family: var(--font-mono, Consolas, monospace);
+    font-size: 11px;
+    color: #ece6dd;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+  }
+
+  .uat-preview-pill:hover {
+    border-color: rgba(216, 181, 107, 0.75);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.75), 0 0 24px rgba(216, 181, 107, 0.25);
+    transform: translateY(-2px);
+  }
+
+  .uat-preview-pill-badge {
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 700;
+    color: #d8b56b;
+    background: rgba(216, 181, 107, 0.16);
+    padding: 2px 8px;
+    border-radius: 999px;
+    border: 1px solid rgba(216, 181, 107, 0.4);
+    font-size: 10px;
+  }
+
+  .uat-preview-pill-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #ece6dd;
+    text-decoration: none;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    transition: color 0.15s ease;
+  }
+
+  .uat-preview-pill-link:hover {
+    color: #f3d790;
+  }
+
+  @media (max-width: 640px) {
+    .uat-preview-pill {
+      bottom: 14px;
+      right: 14px;
+      padding: 6px 10px;
+      font-size: 10px;
+    }
+  }
+</style>
+
+<script is:inline define:vars={{ initialStudioId: doc.studioId, initialUpdatedAt: doc.updatedAt }}>
+  window.__uatPreviewDoc = {
+    studioId: initialStudioId,
+    updatedAt: initialUpdatedAt,
+  };
+
+  // Auto-refresh when returning to preview tab if draft updated
+  var lastCheckedTime = Date.now();
+  function checkFreshPreview() {
+    if (Date.now() - lastCheckedTime < 1500) return;
+    lastCheckedTime = Date.now();
+
+    var currentStudioId = initialStudioId;
+    if (!currentStudioId || currentStudioId === 'uat-preview-default') return;
+
+    fetch('/__uat-article-forge/drafts/' + encodeURIComponent(currentStudioId))
+      .then(function(res) { return res.json(); })
+      .then(function(data) {
+        if (data && data.ok && data.draft) {
+          if (data.draft.updatedAt && data.draft.updatedAt !== initialUpdatedAt) {
+            console.log('[UAT Preview] Document updated on server, refreshing view...');
+            window.location.reload();
+          }
+        }
+      })
+      .catch(function() {});
+  }
+
+  window.addEventListener('focus', checkFreshPreview);
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      checkFreshPreview();
+    }
+  });
+</script>

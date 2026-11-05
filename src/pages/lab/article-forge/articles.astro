@@ -1,0 +1,9 @@
+---
+// src/pages/lab/article-forge/articles.astro
+// Route alias for UAT Article Center
+import { getUatAdminCenterHtml } from '../../../uat/article-forge/integration/admin-center-html';
+
+const html = getUatAdminCenterHtml();
+---
+<Fragment set:html={html} />
+
