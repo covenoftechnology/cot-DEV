@@ -1,0 +1,73 @@
+---
+/**
+ * src/pages/lab/reader-fixture/[fixture].astro
+ * Dedicated non-production test harness for verifying Canonical Article Reader with fixtures.
+ * Uses Astro static routing (getStaticPaths) so it functions seamlessly in static builds and dev server.
+ * Completely isolated from canonical /template-preview/ routes and production articles.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import ArticleLayout from '../../../layouts/ArticleLayout.astro';
+import ArticleRenderer from '../../../components/article/ArticleRenderer.astro';
+import templateMeta from '../../../articles/_template/meta';
+import type { ArticleDocument } from '../../../types/article-document';
+
+export function getStaticPaths() {
+  // Gated test harness: Only emit fixture routes in development or when explicitly enabled for test runs.
+  // In production builds for deployment, this returns [] so zero fixture pages are generated in dist/.
+  if (import.meta.env.PROD && process.env.COVEN_ENABLE_FIXTURE_ROUTES !== 'true') {
+    return [];
+  }
+
+  const fixturesDir = path.join(process.cwd(), 'scratch', 'fixtures');
+  if (fs.existsSync(fixturesDir)) {
+    const files = fs.readdirSync(fixturesDir).filter((f) => f.endsWith('.json'));
+    if (files.length > 0) {
+      return files.map((file) => ({
+        params: { fixture: file.replace(/\.json$/, '') },
+      }));
+    }
+  }
+  return [];
+}
+
+const { fixture } = Astro.params;
+
+let fixtureDoc: ArticleDocument | null = null;
+
+if (fixture && fixture !== 'default') {
+  const fixturePath = path.join(process.cwd(), 'scratch', 'fixtures', `${fixture}.json`);
+  if (fs.existsSync(fixturePath)) {
+    try {
+      fixtureDoc = JSON.parse(fs.readFileSync(fixturePath, 'utf-8'));
+    } catch (e) {
+      console.error('[Lab Fixture] Error reading fixture JSON:', fixturePath, e);
+    }
+  }
+}
+
+const doc: ArticleDocument = fixtureDoc || {
+  version: 1,
+  studioId: 'lab-fixture-default',
+  slug: 'lab-fixture-article',
+  meta: {
+    ...templateMeta,
+    title: 'Lab Fixture Scroll · Test Harness',
+    description: 'Non-production test harness for canonical Article Reader verification.',
+    status: 'draft',
+  },
+  sections: [],
+};
+---
+
+<ArticleLayout
+  article={{ slug: doc.slug || 'lab-fixture', meta: doc.meta }}
+  previousArticle={null}
+  nextArticle={null}
+  relatedArticles={[]}
+  wide={doc.meta.wide !== false}
+  isPreview={true}
+>
+  <ArticleRenderer document={doc} />
+</ArticleLayout>
+

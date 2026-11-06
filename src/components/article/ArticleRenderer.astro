@@ -1,6 +1,7 @@
 ---
 import '../../articles/_template/article.css';
 import ArticleBlockRenderer from './ArticleBlockRenderer.astro';
+import { hasVisualGrid, resolveGridVerticalAlign } from '../../lib/article-grid/geometry';
 import type { ArticleDocument, ArticleSection, ArticleBlock } from '../../types/article-document';
 
 interface Props {
@@ -27,12 +28,84 @@ function slugify(text: string): string {
     const sectionId = slugify(section.title) || `section-${sIndex + 1}`;
     const sectionTitle = (typeof section.title === 'string' ? section.title.trim() : '') ||
                          (typeof section.heading === 'string' ? section.heading.trim() : '');
+    const isGrid = hasVisualGrid(section);
+
+    if (isGrid && section.visualGrid) {
+      const vg = section.visualGrid;
+      const cols = vg.columns || 4;
+      const colGap = vg.columnGap !== undefined ? vg.columnGap : 16;
+      const rowGap = vg.rowGap !== undefined ? vg.rowGap : 20;
+
+      // Filter and sort items deterministically by rowStart ASC, columnStart ASC
+      const sortedItems = (Array.isArray(vg.layoutItems) ? vg.layoutItems : [])
+        .filter((it) => Boolean(it && it.block))
+        .sort((a, b) => {
+          const aRow = a.rowStart || 1;
+          const bRow = b.rowStart || 1;
+          if (aRow !== bRow) return aRow - bRow;
+          const aCol = a.columnStart || 1;
+          const bCol = b.columnStart || 1;
+          return aCol - bCol;
+        });
+
+      return (
+        <section id={sectionId} class="article-section article-section--grid" data-toc-title={section.title}>
+          {section.kicker && <div class="section-kicker">{section.kicker}</div>}
+          {sectionTitle && <h2 class="article-section-title">{sectionTitle}</h2>}
+
+          <div class="section-reader-grid-breakout">
+            <div
+              class="section-reader-grid"
+              data-grid-cols={cols}
+              data-grid-colgap={colGap}
+              data-grid-rowgap={rowGap}
+              style={`
+                display: grid;
+                grid-template-columns: repeat(${cols}, minmax(0, 1fr));
+                grid-auto-rows: auto;
+                column-gap: ${colGap}px;
+                row-gap: ${rowGap}px;
+                width: 100%;
+              `}
+            >
+              {sortedItems.map((item, itemIdx) => {
+                const colStart = item.columnStart || 1;
+                const colSpan = item.columnSpan || Math.max(1, (item.columnEnd || (colStart + 1)) - colStart);
+                const rowStart = item.rowStart || 1;
+                const rowSpan = item.rowSpan || Math.max(1, (item.rowEnd || (rowStart + 1)) - rowStart);
+                const vAlign = resolveGridVerticalAlign(item.verticalAlign);
+                const itemStyle = `
+                  grid-column: ${colStart} / span ${colSpan};
+                  grid-row: ${rowStart} / span ${rowSpan};
+                  align-self: ${vAlign};
+                `;
+                return (
+                  <div
+                    class="reader-grid-item"
+                    style={itemStyle}
+                    data-item-id={item.id}
+                    data-col-start={colStart}
+                    data-col-span={colSpan}
+                    data-row-start={rowStart}
+                    data-row-span={rowSpan}
+                    data-valign={vAlign}
+                  >
+                    <ArticleBlockRenderer block={item.block} sIndex={sIndex} bIndex={itemIdx} doc={doc} />
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      );
+    }
+
     return (
       <section id={sectionId} class="article-section" data-toc-title={section.title}>
         {section.kicker && <div class="section-kicker">{section.kicker}</div>}
         {sectionTitle && <h2 class="article-section-title">{sectionTitle}</h2>}
 
-        {section.blocks.map((block: ArticleBlock, bIndex: number) => (
+        {Array.isArray(section.blocks) && section.blocks.map((block: ArticleBlock, bIndex: number) => (
           <ArticleBlockRenderer block={block} sIndex={sIndex} bIndex={bIndex} doc={doc} />
         ))}
       </section>
@@ -78,5 +151,251 @@ function slugify(text: string): string {
   .article-template .article-rich-link u {
     text-decoration: underline;
     text-underline-offset: 3px;
+  }
+
+  /* ── Canonical 4-Column Grid Reader & Scoped Desktop Breakout ── */
+  .article-template .article-section--grid {
+    position: relative;
+    width: 100%;
+  }
+
+  .article-template .section-reader-grid-breakout {
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  @media (min-width: 1024px) {
+    .article-template .section-reader-grid-breakout {
+      width: min(1360px, calc(100vw - 64px));
+      max-width: 1360px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  }
+
+  @media (max-width: 1023px) {
+    .article-template .section-reader-grid-breakout {
+      width: 100% !important;
+      max-width: 100% !important;
+      left: auto !important;
+      transform: none !important;
+    }
+  }
+
+  .article-template .section-reader-grid {
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
+    margin: 24px 0;
+  }
+
+  .article-template .section-reader-grid .reader-grid-item {
+    box-sizing: border-box;
+    min-width: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Scoped margin normalization: only direct children of Grid items */
+  .article-template .section-reader-grid .reader-grid-item > * {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+  }
+
+  /* Mobile Responsive Stacking (<= 768px): clean 1-column stack */
+  @media (max-width: 768px) {
+    .article-template .section-reader-grid {
+      grid-template-columns: 1fr !important;
+      row-gap: 20px !important;
+      column-gap: 0 !important;
+    }
+
+    .article-template .section-reader-grid .reader-grid-item {
+      grid-column: 1 / -1 !important;
+      grid-row: auto !important;
+      width: 100% !important;
+    }
+  }
+
+  /* ── Single Card Reader Style ── */
+  .article-template .single-card.pattern-card {
+    height: 100%;
+    box-sizing: border-box;
+  }
+
+  /* ── Comparison Fix ── */
+  .article-template .comparison-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .article-template .comparison-column {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  @media (max-width: 768px) {
+    .article-template .comparison-split {
+      grid-template-columns: 1fr;
+    }
+    .article-template .comparison-column:first-child {
+      border-right: none;
+      border-bottom: 1px solid rgba(216, 181, 107, 0.15);
+    }
+  }
+
+  /* ── Generic Embed Reader Styles ── */
+  .article-template .embed-block-wrap {
+    width: 100%;
+    box-sizing: border-box;
+    position: relative;
+  }
+
+  .article-template .embed-video-wrap {
+    position: relative;
+    width: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #0d0b14;
+    border: 1px solid rgba(216, 181, 107, 0.16);
+  }
+
+  .article-template .embed-video-wrap.aspect-16-9 {
+    aspect-ratio: 16 / 9;
+  }
+  .article-template .embed-video-wrap.aspect-4-3 {
+    aspect-ratio: 4 / 3;
+  }
+  .article-template .embed-video-wrap.aspect-1-1 {
+    aspect-ratio: 1 / 1;
+  }
+
+  .article-template .embed-video-element,
+  .article-template .embed-iframe-element {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: block;
+  }
+
+  .article-template .embed-image-figure {
+    margin: 0;
+    padding: 0;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+
+  .article-template .embed-remote-img {
+    width: 100%;
+    height: auto;
+    max-height: 720px;
+    object-fit: cover;
+    display: block;
+    border-radius: 6px;
+    border: 1px solid rgba(216, 181, 107, 0.16);
+  }
+
+  .article-template .embed-link-card-wrap {
+    width: 100%;
+  }
+
+  .article-template .embed-link-card {
+    display: flex;
+    flex-direction: column;
+    padding: 20px 22px;
+    background: #14101e;
+    border: 1px solid rgba(216, 181, 107, 0.22);
+    border-radius: 6px;
+    text-decoration: none;
+    transition: border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+    box-sizing: border-box;
+  }
+
+  .article-template .embed-link-card:hover {
+    border-color: rgba(216, 181, 107, 0.5);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .article-template .embed-link-domain {
+    font-family: var(--font-mono, monospace);
+    font-size: 11px;
+    color: #d8b56b;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .article-template .embed-link-arrow {
+    font-size: 14px;
+  }
+
+  .article-template .embed-link-title {
+    font-family: var(--font-display, 'Metamorphous', serif);
+    font-size: 16px;
+    font-weight: 600;
+    color: #ece6dd;
+    margin: 0 0 6px 0;
+  }
+
+  .article-template .embed-link-desc {
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 14px;
+    color: #9b9189;
+    line-height: 1.5;
+    margin: 0;
+  }
+
+  .article-template .embed-iframe-wrap {
+    width: 100%;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #0d0b14;
+    border: 1px solid rgba(216, 181, 107, 0.2);
+    min-height: 380px;
+  }
+
+  .article-template .embed-iframe-wrap.aspect-16-9 {
+    aspect-ratio: 16 / 9;
+  }
+  .article-template .embed-iframe-wrap.aspect-4-3 {
+    aspect-ratio: 4 / 3;
+  }
+  .article-template .embed-iframe-wrap.aspect-1-1 {
+    aspect-ratio: 1 / 1;
+  }
+
+  .article-template .embed-caption {
+    font-family: var(--font-mono, monospace);
+    font-size: 12px;
+    color: #9b9189;
+    margin-top: 8px;
+    text-align: center;
+  }
+
+  .article-template .embed-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+    background: rgba(20, 16, 30, 0.5);
+    border: 1px dashed rgba(216, 181, 107, 0.25);
+    border-radius: 6px;
+    color: #9b9189;
+    font-family: var(--font-mono, monospace);
+    font-size: 13px;
+    gap: 8px;
+  }
+
+  .article-template .embed-empty-icon {
+    font-size: 24px;
+    color: #d8b56b;
   }
 </style>

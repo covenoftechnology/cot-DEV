@@ -3,6 +3,8 @@ import Callout from './Callout.astro';
 import CodeBlock from './CodeBlock.astro';
 import ArticleTrial from './ArticleTrial.astro';
 import { canNestInCallout, MAX_NESTED_LIST_DEPTH, canAddNestedListChild } from '../../lib/article-block-registry';
+import { resolveCovenGlyph } from '../../lib/coven-icons';
+import { sanitizeEmbedUrl, parseVideoUrl, getIframePolicy } from '../../lib/article-grid/embed';
 import type { ArticleDocument, ArticleBlock } from '../../types/article-document';
 
 interface Props {
@@ -663,20 +665,128 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                 </div>
               );
 
+            case 'embed': {
+              const embedType = d.embedType || 'video';
+              const rawUrl = d.url || '';
+              const safeUrl = sanitizeEmbedUrl(rawUrl);
+              const cap = getRich(d.caption);
+              const titleData = getRich(d.title);
+              const altText = d.alt || titleData.text || 'Embedded media';
+              const aspect = d.aspectRatio || '16-9';
+
+              if (!safeUrl) {
+                return (
+                  <div class="embed-block-wrap embed-empty-state">
+                    <div class="embed-empty-icon">⧉</div>
+                    <div class="embed-empty-msg">No valid embed URL provided</div>
+                  </div>
+                );
+              }
+
+              if (embedType === 'video') {
+                const vid = parseVideoUrl(safeUrl);
+                return (
+                  <div class={`embed-block-wrap embed-video-wrap aspect-${aspect}`}>
+                    {vid.type === 'direct' ? (
+                      <video src={vid.embedSrc} controls playsinline preload="metadata" class="embed-video-element">
+                        Your browser does not support HTML5 video playback.
+                      </video>
+                    ) : (
+                      <iframe
+                        src={vid.embedSrc}
+                        title={titleData.text || 'Embedded Video'}
+                        class="embed-iframe-element"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen
+                        loading="lazy"
+                      />
+                    )}
+                    {cap.text && <div class={`embed-caption${cap.align !== 'left' ? ` rich-align-${cap.align}` : ''}`}><Fragment set:html={cleanHtml(cap.text)} /></div>}
+                  </div>
+                );
+              }
+
+              if (embedType === 'image') {
+                return (
+                  <figure class="embed-block-wrap embed-image-figure">
+                    <img src={safeUrl} alt={altText} loading="lazy" class="embed-remote-img" />
+                    {cap.text && <figcaption class={cap.align !== 'left' ? `rich-align-${cap.align}` : undefined}><Fragment set:html={cleanHtml(cap.text)} /></figcaption>}
+                  </figure>
+                );
+              }
+
+              if (embedType === 'link') {
+                let domain = '';
+                try {
+                  domain = new URL(safeUrl).hostname.replace(/^www\./, '');
+                } catch (e) {
+                  domain = safeUrl;
+                }
+                return (
+                  <div class="embed-block-wrap embed-link-card-wrap">
+                    <a href={safeUrl} target="_blank" rel="noopener noreferrer" class="embed-link-card">
+                      <div class="embed-link-content">
+                        <div class="embed-link-domain">
+                          <span>{domain}</span>
+                          <span class="embed-link-arrow">↗</span>
+                        </div>
+                        <h4 class="embed-link-title">{titleData.text || safeUrl}</h4>
+                        {cap.text && <p class="embed-link-desc"><Fragment set:html={cleanHtml(cap.text)} /></p>}
+                      </div>
+                    </a>
+                  </div>
+                );
+              }
+
+              if (embedType === 'iframe') {
+                const policy = getIframePolicy(safeUrl);
+                return (
+                  <div class={`embed-block-wrap embed-iframe-wrap aspect-${aspect}`}>
+                    <iframe
+                      src={safeUrl}
+                      title={titleData.text || 'Embedded Content'}
+                      class="embed-iframe-element"
+                      sandbox={policy.sandbox}
+                      loading="lazy"
+                      referrerpolicy="strict-origin-when-cross-origin"
+                    />
+                    {cap.text && <div class={`embed-caption${cap.align !== 'left' ? ` rich-align-${cap.align}` : ''}`}><Fragment set:html={cleanHtml(cap.text)} /></div>}
+                  </div>
+                );
+              }
+
+              return null;
+            }
+
+            case 'single-card': {
+              const cTitle = getRich(d.title);
+              const cDesc = getRich(d.desc);
+              const glyph = resolveCovenGlyph(d.icon, '✧');
+              return (
+                <div class="single-card pattern-card">
+                  {glyph && <div class="pattern-card-icon">{glyph}</div>}
+                  {cTitle.text && <h3 class={`pattern-card-title${cTitle.align !== 'left' ? ` rich-align-${cTitle.align}` : ''}`}><Fragment set:html={cleanHtml(cTitle.text)} /></h3>}
+                  {cDesc.text && <p class={`pattern-card-desc${cDesc.align !== 'left' ? ` rich-align-${cDesc.align}` : ''}`}><Fragment set:html={cleanHtml(cDesc.text)} /></p>}
+                </div>
+              );
+            }
+
             case 'card-grid-2': {
               const c1Title = getRich(d.card1Title);
               const c1Desc = getRich(d.card1Desc);
               const c2Title = getRich(d.card2Title);
               const c2Desc = getRich(d.card2Desc);
+              const icon1 = resolveCovenGlyph(d.card1Icon);
+              const icon2 = resolveCovenGlyph(d.card2Icon);
               return (
                 <div class="card-grid-2">
                   <div class="pattern-card">
-                    {d.card1Icon && <div class="pattern-card-icon">{d.card1Icon}</div>}
+                    {icon1 && <div class="pattern-card-icon">{icon1}</div>}
                     {c1Title.text && <h3 class={`pattern-card-title${c1Title.align !== 'left' ? ` rich-align-${c1Title.align}` : ''}`}><Fragment set:html={cleanHtml(c1Title.text)} /></h3>}
                     {c1Desc.text && <p class={`pattern-card-desc${c1Desc.align !== 'left' ? ` rich-align-${c1Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c1Desc.text)} /></p>}
                   </div>
                   <div class="pattern-card">
-                    {d.card2Icon && <div class="pattern-card-icon">{d.card2Icon}</div>}
+                    {icon2 && <div class="pattern-card-icon">{icon2}</div>}
                     {c2Title.text && <h3 class={`pattern-card-title${c2Title.align !== 'left' ? ` rich-align-${c2Title.align}` : ''}`}><Fragment set:html={cleanHtml(c2Title.text)} /></h3>}
                     {c2Desc.text && <p class={`pattern-card-desc${c2Desc.align !== 'left' ? ` rich-align-${c2Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c2Desc.text)} /></p>}
                   </div>
@@ -691,20 +801,23 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               const c2Desc = getRich(d.card2Desc);
               const c3Title = getRich(d.card3Title);
               const c3Desc = getRich(d.card3Desc);
+              const icon1 = resolveCovenGlyph(d.card1Icon);
+              const icon2 = resolveCovenGlyph(d.card2Icon);
+              const icon3 = resolveCovenGlyph(d.card3Icon);
               return (
                 <div class="card-grid-3">
                   <div class="pattern-card">
-                    {d.card1Icon && <div class="pattern-card-icon">{d.card1Icon}</div>}
+                    {icon1 && <div class="pattern-card-icon">{icon1}</div>}
                     {c1Title.text && <h3 class={`pattern-card-title${c1Title.align !== 'left' ? ` rich-align-${c1Title.align}` : ''}`}><Fragment set:html={cleanHtml(c1Title.text)} /></h3>}
                     {c1Desc.text && <p class={`pattern-card-desc${c1Desc.align !== 'left' ? ` rich-align-${c1Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c1Desc.text)} /></p>}
                   </div>
                   <div class="pattern-card">
-                    {d.card2Icon && <div class="pattern-card-icon">{d.card2Icon}</div>}
+                    {icon2 && <div class="pattern-card-icon">{icon2}</div>}
                     {c2Title.text && <h3 class={`pattern-card-title${c2Title.align !== 'left' ? ` rich-align-${c2Title.align}` : ''}`}><Fragment set:html={cleanHtml(c2Title.text)} /></h3>}
                     {c2Desc.text && <p class={`pattern-card-desc${c2Desc.align !== 'left' ? ` rich-align-${c2Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c2Desc.text)} /></p>}
                   </div>
                   <div class="pattern-card">
-                    {d.card3Icon && <div class="pattern-card-icon">{d.card3Icon}</div>}
+                    {icon3 && <div class="pattern-card-icon">{icon3}</div>}
                     {c3Title.text && <h3 class={`pattern-card-title${c3Title.align !== 'left' ? ` rich-align-${c3Title.align}` : ''}`}><Fragment set:html={cleanHtml(c3Title.text)} /></h3>}
                     {c3Desc.text && <p class={`pattern-card-desc${c3Desc.align !== 'left' ? ` rich-align-${c3Desc.align}` : ''}`}><Fragment set:html={cleanHtml(c3Desc.text)} /></p>}
                   </div>
@@ -721,11 +834,13 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               const col2Items = (Array.isArray(d.col2Items) ? d.col2Items : [])
                 .map((it: any) => getRich(it))
                 .filter(it => it.text);
+              const icon1 = resolveCovenGlyph(d.col1Icon, '✉');
+              const icon2 = resolveCovenGlyph(d.col2Icon, '◈');
               return (
                 <div class="comparison-split">
                   <div class="comparison-column">
                     <div class="comparison-col-header">
-                      {d.col1Icon && <span class="comparison-col-icon">{d.col1Icon}</span>}
+                      {icon1 && <span class="comparison-col-icon">{icon1}</span>}
                       <span class={h1.align !== 'left' ? `rich-align-${h1.align}` : undefined}><Fragment set:html={cleanHtml(h1.text)} /></span>
                     </div>
                     <ul class="comparison-list">
@@ -736,7 +851,7 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                   </div>
                   <div class="comparison-column">
                     <div class="comparison-col-header">
-                      {d.col2Icon && <span class="comparison-col-icon">{d.col2Icon}</span>}
+                      {icon2 && <span class="comparison-col-icon">{icon2}</span>}
                       <span class={h2.align !== 'left' ? `rich-align-${h2.align}` : undefined}><Fragment set:html={cleanHtml(h2.text)} /></span>
                     </div>
                     <ul class="comparison-list">
