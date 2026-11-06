@@ -389,7 +389,12 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
     function isInsertablePaletteBlock(b) {
       var type = typeof b === 'string' ? b : (b ? b.type : '');
-      return type !== 'text-title' && type !== 'bullet-list';
+      if (type === 'text-title' || type === 'bullet-list') return false;
+      var def = (window.STUDIO_REGISTRY && window.STUDIO_REGISTRY[type]) || (typeof b === 'object' ? b : null);
+      if (def && typeof def.insertable === 'boolean') {
+        return def.insertable;
+      }
+      return true;
     }
     window.isInsertablePaletteBlock = isInsertablePaletteBlock;
     window.getInsertablePaletteBlocks = function() {

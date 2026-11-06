@@ -5,6 +5,9 @@ export interface BlockDefinition {
   description: string;
   defaultData: Record<string, any>;
   canNestInCallout?: boolean;
+  insertable?: boolean;
+  gridEligible?: boolean;
+  legacyLayoutBlock?: boolean;
 }
 
 export const ARTICLE_BLOCK_CATEGORIES = [
@@ -27,6 +30,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Title + Text',
     category: '01 Basic Typography',
     description: 'Thematic kicker, section heading, and body paragraphs.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       heading: '',
       paragraphs: [''],
@@ -38,6 +43,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Text + Title',
     category: '01 Basic Typography',
     description: 'Introductory bridge paragraph transitioning into a secondary heading.',
+    insertable: false,
+    gridEligible: false,
     defaultData: {
       intro: '',
       heading: '',
@@ -49,6 +56,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Solo Text',
     category: '01 Basic Typography',
     description: 'Continuous editorial narrative paragraphs with inline formatting.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       paragraphs: [''],
     },
@@ -60,6 +69,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Bullet List',
     category: '02 Lists & Steps',
     description: 'Summarize key points in signature diamond bullet style.',
+    insertable: false,
+    gridEligible: false,
     defaultData: {
       items: [
         { id: 'b_item_1', text: '' },
@@ -71,6 +82,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Nested Bullet List',
     category: '02 Lists & Steps',
     description: 'Hierarchical bullets with primary and sub-level items.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       layout: 'vertical',
       items: [
@@ -87,6 +100,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Numbered Steps',
     category: '02 Lists & Steps',
     description: 'Sequential procedures, rituals, or setup instructions.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       steps: [
         { id: 'step_1', badge: '01', title: '', text: '' },
@@ -94,12 +109,15 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     },
   },
 
-  // ── 03. COLUMN LAYOUTS ──
+  // ── 03. COLUMN LAYOUTS (Legacy Read-Compatible; Active in Canonical Studio until Phase 6.4) ──
   'text-image': {
     type: 'text-image',
     label: 'Text + Image',
     category: '03 Column Layouts',
     description: '50/50 layout with technical copy on left and diagram on right.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       paragraphs: [{ text: '', align: 'left' }],
       text: '',
@@ -113,6 +131,9 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Image + Text',
     category: '03 Column Layouts',
     description: '50/50 layout with diagram on left and narrative on right.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       paragraphs: [{ text: '', align: 'left' }],
       imageSrc: '',
@@ -126,6 +147,9 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Two Text Columns',
     category: '03 Column Layouts',
     description: 'Parallel concepts or complementary subsystems side-by-side.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       col1Title: '',
       col1Text: '',
@@ -138,6 +162,9 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Three Columns',
     category: '03 Column Layouts',
     description: 'Three foundational pillars or architectural tiers.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       columns: [
         { id: 'col_1', kicker: 'PILLAR I', title: '', text: '' },
@@ -152,6 +179,9 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '03 Column Layouts',
     description: 'Arrange existing Coven blocks across responsive columns.',
     canNestInCallout: false,
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       columnCount: 2,
       ratio: '50-50',
@@ -174,6 +204,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Single Image',
     category: '04 Images & Media',
     description: 'Standard bounded diagram or figure with caption.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       src: '',
       alt: '',
@@ -185,6 +217,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Full Width Image',
     category: '04 Images & Media',
     description: 'Full-width technical diagram spanning the editorial column.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       src: '',
       alt: '',
@@ -196,6 +230,9 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Two Images Grid',
     category: '04 Images & Media',
     description: 'Side-by-side comparison of two visual artifacts.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       img1Src: '',
       img1Alt: '',
@@ -210,6 +247,9 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Three Images Grid',
     category: '04 Images & Media',
     description: 'Triad of visual assets or state progressions.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       img1Src: '',
       img1Alt: '',
@@ -227,6 +267,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Horizontal Gallery Scroll',
     category: '04 Images & Media',
     description: 'Horizontal scrollable gallery of model artifacts or cards.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       cards: [
         { id: 'g_card_1', src: '', alt: '', caption: '' },
@@ -234,13 +276,47 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       hint: '✦ Scroll horizontally to inspect model artifacts',
     },
   },
+  'embed': {
+    type: 'embed',
+    label: 'Embed',
+    category: '04 Images & Media',
+    description: 'Embed remote media, streaming video, link cards, or secure web frame.',
+    canNestInCallout: true,
+    insertable: false, // Gated: active in Grid Composer V2 (Phase 6.4)
+    gridEligible: true,
+    defaultData: {
+      embedType: 'video',
+      url: '',
+      title: '',
+      caption: '',
+      alt: '',
+      aspectRatio: '16-9',
+    },
+  },
 
   // ── 05. CARDS & COMPARISONS ──
+  'single-card': {
+    type: 'single-card',
+    label: 'Single Card',
+    category: '05 Cards & Comparisons',
+    description: 'Feature pattern card with glyph icon, heading, and description.',
+    canNestInCallout: true,
+    insertable: false, // Gated: active in Grid Composer V2 (Phase 6.4)
+    gridEligible: true,
+    defaultData: {
+      icon: '✧',
+      title: '',
+      desc: '',
+    },
+  },
   'card-grid-2': {
     type: 'card-grid-2',
     label: '2-Card Grid',
     category: '05 Cards & Comparisons',
     description: 'Two feature pattern cards with glyph icons.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       card1Icon: '✧',
       card1Title: '',
@@ -255,6 +331,9 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: '3-Card Grid',
     category: '05 Cards & Comparisons',
     description: 'Three functional modules or architectural components.',
+    insertable: true,
+    gridEligible: false,
+    legacyLayoutBlock: true,
     defaultData: {
       card1Icon: '✧',
       card1Title: '',
@@ -272,6 +351,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: '50/50 Comparison',
     category: '05 Cards & Comparisons',
     description: 'Compare two technologies, approaches, or channels side-by-side.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       col1Icon: '✉',
       col1Header: 'SIDE A',
@@ -290,6 +371,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Stats & Metrics',
     category: '05 Cards & Comparisons',
     description: 'Quantitative benchmark numbers and metrics in three cards.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       stat1Num: '',
       stat1Label: '',
@@ -309,6 +392,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Technical Table',
     category: '06 Technical Tables',
     description: 'Responsive specification table with status badges.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       columns: [
         { id: 'col_feat', label: 'Feature' },
@@ -327,6 +412,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '07 Callouts & Quotes',
     description: 'System warnings, practical tips, or arcane notices.',
     canNestInCallout: false,
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       calloutType: 'note',
       text: '',
@@ -338,6 +425,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Pullquote',
     category: '07 Callouts & Quotes',
     description: 'Prominent philosophical principle or quote.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       quote: '',
       author: '',
@@ -350,6 +439,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Code Block',
     category: '08 Code Inscriptions',
     description: 'Syntax-highlighted code with copy button and filename header.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       title: '',
       language: 'typescript',
@@ -363,6 +454,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'FAQ Accordion',
     category: '09 Interactive Blocks',
     description: 'Collapsible questions and answers for architectural doubts.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       items: [
         {
@@ -378,6 +471,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Exercise / Trial Scenario',
     category: '09 Interactive Blocks',
     description: 'Interactive scenario trial with collapsible answer reveal.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       badge: 'TRIAL SCENARIO 01',
       scenario: '',
@@ -392,6 +487,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '09 Interactive Blocks',
     description: 'Trial challenge with structured questions where initiates test mastery and claim Aether.',
     canNestInCallout: false,
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       title: "You've reached the trial",
       intro: 'Test your mastery of this knowledge scroll. Earn Aether and prove your standing among the initiates.',
@@ -416,6 +513,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Key Takeaways',
     category: '10 Closing Content',
     description: 'Summary of core doctrines before concluding the scroll.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       title: 'Key Takeaways for the Initiate',
       items: [
@@ -428,6 +527,8 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Related Documentation',
     category: '10 Closing Content',
     description: 'Cards linking to official documentation or complementary scrolls.',
+    insertable: true,
+    gridEligible: true,
     defaultData: {
       items: [
         {
@@ -451,13 +552,55 @@ export function getBlockDefinition(type: string): BlockDefinition | undefined {
   return ARTICLE_BLOCK_REGISTRY[type];
 }
 
-export function isInsertablePaletteBlock(block: { type: string } | string): boolean {
-  const type = typeof block === 'string' ? block : block.type;
-  return type !== 'text-title' && type !== 'bullet-list';
+export function isRegisteredBlockType(block: { type: string } | string): boolean {
+  const type = typeof block === 'string' ? block : block?.type;
+  return Boolean(type && ARTICLE_BLOCK_REGISTRY[type]);
+}
+
+export function isInsertablePaletteBlock(
+  block: { type: string; insertable?: boolean } | string
+): boolean {
+  const type = typeof block === 'string' ? block : block?.type;
+  if (!type) return false;
+  const def = ARTICLE_BLOCK_REGISTRY[type];
+  if (def && typeof def.insertable === 'boolean') {
+    return def.insertable;
+  }
+  if (typeof block === 'object' && block && typeof block.insertable === 'boolean') {
+    return block.insertable;
+  }
+  return Boolean(def);
+}
+
+export function isGridEligibleBlock(
+  block: { type: string; gridEligible?: boolean; insertable?: boolean } | string
+): boolean {
+  const type = typeof block === 'string' ? block : block?.type;
+  if (!type) return false;
+  const def = ARTICLE_BLOCK_REGISTRY[type];
+  if (def && typeof def.gridEligible === 'boolean') {
+    return def.gridEligible;
+  }
+  return isInsertablePaletteBlock(block);
+}
+
+export function isLegacyNonInsertableBlock(block: { type: string } | string): boolean {
+  const type = typeof block === 'string' ? block : block?.type;
+  if (!type) return false;
+  const def = ARTICLE_BLOCK_REGISTRY[type];
+  return Boolean(def && def.insertable === false);
 }
 
 export function getInsertablePaletteBlocks(): BlockDefinition[] {
   return Object.values(ARTICLE_BLOCK_REGISTRY).filter(isInsertablePaletteBlock);
+}
+
+export function getGridEligibleBlocks(): BlockDefinition[] {
+  return Object.values(ARTICLE_BLOCK_REGISTRY).filter(isGridEligibleBlock);
+}
+
+export function getLegacyNonInsertableBlocks(): BlockDefinition[] {
+  return Object.values(ARTICLE_BLOCK_REGISTRY).filter(isLegacyNonInsertableBlock);
 }
 
 export const CALLOUT_FORBIDDEN_BLOCK_TYPES = ['callout', 'flex-layout', 'article-trial'] as const;
