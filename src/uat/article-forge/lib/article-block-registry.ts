@@ -5,6 +5,7 @@ export interface BlockDefinition {
   description: string;
   defaultData: Record<string, any>;
   canNestInCallout?: boolean;
+  insertable?: boolean;
 }
 
 export const ARTICLE_BLOCK_CATEGORIES = [
@@ -38,6 +39,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Text + Title',
     category: '01 Basic Typography',
     description: 'Introductory bridge paragraph transitioning into a secondary heading.',
+    insertable: false,
     defaultData: {
       intro: '',
       heading: '',
@@ -60,6 +62,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Bullet List',
     category: '02 Lists & Steps',
     description: 'Summarize key points in signature diamond bullet style.',
+    insertable: false,
     defaultData: {
       items: [
         { id: 'b_item_1', text: '' },
@@ -100,6 +103,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Text + Image',
     category: '03 Column Layouts',
     description: '50/50 layout with technical copy on left and diagram on right.',
+    insertable: false,
     defaultData: {
       paragraphs: [{ text: '', align: 'left' }],
       text: '',
@@ -113,6 +117,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Image + Text',
     category: '03 Column Layouts',
     description: '50/50 layout with diagram on left and narrative on right.',
+    insertable: false,
     defaultData: {
       paragraphs: [{ text: '', align: 'left' }],
       imageSrc: '',
@@ -126,6 +131,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Two Text Columns',
     category: '03 Column Layouts',
     description: 'Parallel concepts or complementary subsystems side-by-side.',
+    insertable: false,
     defaultData: {
       col1Title: '',
       col1Text: '',
@@ -138,6 +144,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Three Columns',
     category: '03 Column Layouts',
     description: 'Three foundational pillars or architectural tiers.',
+    insertable: false,
     defaultData: {
       columns: [
         { id: 'col_1', kicker: 'PILLAR I', title: '', text: '' },
@@ -152,6 +159,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '03 Column Layouts',
     description: 'Arrange existing Coven blocks across responsive columns.',
     canNestInCallout: false,
+    insertable: false,
     defaultData: {
       columnCount: 2,
       ratio: '50-50',
@@ -196,6 +204,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Two Images Grid',
     category: '04 Images & Media',
     description: 'Side-by-side comparison of two visual artifacts.',
+    insertable: false,
     defaultData: {
       img1Src: '',
       img1Alt: '',
@@ -210,6 +219,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Three Images Grid',
     category: '04 Images & Media',
     description: 'Triad of visual assets or state progressions.',
+    insertable: false,
     defaultData: {
       img1Src: '',
       img1Alt: '',
@@ -234,13 +244,43 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       hint: '✦ Scroll horizontally to inspect model artifacts',
     },
   },
+  'embed': {
+    type: 'embed',
+    label: 'Embed',
+    category: '04 Images & Media',
+    description: 'Embed remote media, streaming video, link cards, or secure web frame.',
+    canNestInCallout: true,
+    insertable: true,
+    defaultData: {
+      embedType: 'video',
+      url: '',
+      title: '',
+      caption: '',
+      alt: '',
+      aspectRatio: '16-9',
+    },
+  },
 
   // ── 05. CARDS & COMPARISONS ──
+  'single-card': {
+    type: 'single-card',
+    label: 'Single Card',
+    category: '05 Cards & Comparisons',
+    description: 'Feature pattern card with glyph icon, heading, and description.',
+    canNestInCallout: true,
+    insertable: true,
+    defaultData: {
+      icon: '✧',
+      title: '',
+      desc: '',
+    },
+  },
   'card-grid-2': {
     type: 'card-grid-2',
     label: '2-Card Grid',
     category: '05 Cards & Comparisons',
     description: 'Two feature pattern cards with glyph icons.',
+    insertable: false,
     defaultData: {
       card1Icon: '✧',
       card1Title: '',
@@ -255,6 +295,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: '3-Card Grid',
     category: '05 Cards & Comparisons',
     description: 'Three functional modules or architectural components.',
+    insertable: false,
     defaultData: {
       card1Icon: '✧',
       card1Title: '',
@@ -451,9 +492,30 @@ export function getBlockDefinition(type: string): BlockDefinition | undefined {
   return ARTICLE_BLOCK_REGISTRY[type];
 }
 
-export function isInsertablePaletteBlock(block: { type: string } | string): boolean {
+export const NON_INSERTABLE_BLOCK_TYPES = new Set<string>([
+  'text-title',
+  'bullet-list',
+  'text-image',
+  'image-text',
+  'two-columns',
+  'three-columns',
+  'flex-layout',
+  'two-images',
+  'three-images',
+  'card-grid-2',
+  'card-grid-3',
+]);
+
+export function isInsertablePaletteBlock(block: { type: string; insertable?: boolean } | string): boolean {
   const type = typeof block === 'string' ? block : block.type;
-  return type !== 'text-title' && type !== 'bullet-list';
+  const def = ARTICLE_BLOCK_REGISTRY[type];
+  if (def && typeof def.insertable === 'boolean') {
+    return def.insertable;
+  }
+  if (typeof block === 'object' && typeof block.insertable === 'boolean') {
+    return block.insertable;
+  }
+  return !NON_INSERTABLE_BLOCK_TYPES.has(type);
 }
 
 export function getInsertablePaletteBlocks(): BlockDefinition[] {

@@ -1,5 +1,6 @@
 ---
 import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES, getInsertablePaletteBlocks, MAX_NESTED_LIST_DEPTH } from '../../../uat/article-forge/lib/article-block-registry';
+import { COVEN_ICON_REGISTRY } from '../../../uat/article-forge/lib/coven-icons';
 import {
   ARTICLE_CATEGORIES,
   ARTICLE_DIFFICULTIES,
@@ -32,6 +33,7 @@ const canonicalTags = ARTICLE_TAGS;
 const difficultyGlyphs = DIFFICULTY_GLYPHS;
 const totalBlockCount = getInsertablePaletteBlocks().length;
 const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
+const covenIconRegistry = COVEN_ICON_REGISTRY;
 ---
 
 <!DOCTYPE html>
@@ -417,7 +419,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
     mergedCategories,
     mergedTags,
     publishedArticles,
-    maxNestedListDepth
+    maxNestedListDepth,
+    covenIconRegistry
   }}>
     window.STUDIO_REGISTRY = blockRegistry;
     window.STUDIO_CATEGORIES = blockCategories;
@@ -428,10 +431,18 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
     window.STUDIO_MERGED_CATEGORIES = mergedCategories;
     window.STUDIO_MERGED_TAGS = mergedTags;
     window.STUDIO_PUBLISHED_ARTICLES = publishedArticles;
+    window.COVEN_ICON_REGISTRY = covenIconRegistry;
 
     function isInsertablePaletteBlock(b) {
       var type = typeof b === 'string' ? b : (b ? b.type : '');
-      return type !== 'text-title' && type !== 'bullet-list';
+      var def = (window.STUDIO_REGISTRY && window.STUDIO_REGISTRY[type]) || (typeof b === 'object' ? b : null);
+      if (def && typeof def.insertable === 'boolean') {
+        return def.insertable;
+      }
+      return type !== 'text-title' && type !== 'bullet-list' &&
+        type !== 'text-image' && type !== 'image-text' && type !== 'two-columns' && type !== 'three-columns' && type !== 'flex-layout' &&
+        type !== 'two-images' && type !== 'three-images' &&
+        type !== 'card-grid-2' && type !== 'card-grid-3';
     }
     window.isInsertablePaletteBlock = isInsertablePaletteBlock;
     window.getInsertablePaletteBlocks = function() {
@@ -504,6 +515,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
       'two-images': '⚏',
       'three-images': '⚌',
       'gallery-scroll': '☷',
+      'embed': '⧉',
+      'single-card': '⊞',
       'card-grid-2': '⊞',
       'card-grid-3': '⊟',
       'comparison': '⚖',
@@ -566,6 +579,34 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;');
       }
+
+      function renderCovenIconSelectHtml(fieldName, currentValue, label) {
+        var cur = (currentValue || '').trim();
+        var foundInReg = false;
+        var optionsHtml = (window.COVEN_ICON_REGISTRY || []).map(function(ic) {
+          var isSel = (ic.id === cur || ic.glyph === cur);
+          if (isSel) foundInReg = true;
+          return '<option value="' + escapeHtml(ic.id) + '"' + (isSel ? ' selected' : '') + '>' +
+            ic.glyph + ' ' + escapeHtml(ic.label) +
+          '</option>';
+        }).join('');
+
+        var customOptionHtml = '';
+        if (!foundInReg && cur) {
+          customOptionHtml = '<option value="' + escapeHtml(cur) + '" selected>' + escapeHtml(cur) + ' (Custom)</option>';
+        }
+
+        return (
+          '<div class="studio-form-group">' +
+            '<label class="studio-label">' + escapeHtml(label || 'Icon') + '</label>' +
+            '<select class="studio-select coven-icon-select" data-field="' + escapeHtml(fieldName) + '">' +
+              customOptionHtml +
+              optionsHtml +
+            '</select>' +
+          '</div>'
+        );
+      }
+      window.renderCovenIconSelectHtml = renderCovenIconSelectHtml;
 
       // ── Rich Text Helpers (Basic Typography: title-text, text-title, solo-text) ──
       function getRichData(val) {
@@ -3294,6 +3335,16 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 }
                 break;
 
+              case 'embed':
+                if (d.title !== undefined) d.title = getRichData(d.title);
+                if (d.caption !== undefined) d.caption = getRichData(d.caption);
+                break;
+
+              case 'single-card':
+                d.title = getRichData(d.title);
+                d.desc = getRichData(d.desc);
+                break;
+
               case 'card-grid-2':
                 d.card1Title = getRichData(d.card1Title);
                 d.card1Desc = getRichData(d.card1Desc);
@@ -3800,6 +3851,14 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         var firstCategory = true;
 
         window.STUDIO_CATEGORIES.forEach(function(cat) {
+          var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
+            return b.category === cat && isInsertablePaletteBlock(b);
+          });
+
+          if (matchingBlocks.length === 0) {
+            return;
+          }
+
           var accordion = document.createElement('div');
           accordion.className = 'category-accordion' + (firstCategory ? ' open' : '');
           firstCategory = false;
@@ -3808,10 +3867,6 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           var header = document.createElement('button');
           header.type = 'button';
           header.className = 'category-accordion-header';
-
-          var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
-            return b.category === cat && isInsertablePaletteBlock(b);
-          });
 
           header.innerHTML =
             '<div class="category-accordion-title">' +
@@ -5414,19 +5469,76 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-gallery-card">+ Add Image Card</button></div></div>';
             break;
 
+          case 'embed':
+            var embedType = d.embedType || 'video';
+            var aspect = d.aspectRatio || '16/9';
+            html +=
+              '<div class="studio-form-group">' +
+                '<label class="studio-label">Embed Type</label>' +
+                '<select class="studio-select" data-field="embedType">' +
+                  '<option value="video"' + (embedType === 'video' ? ' selected' : '') + '>▶ Video (YouTube / Vimeo / MP4)</option>' +
+                  '<option value="image"' + (embedType === 'image' ? ' selected' : '') + '>📷 Remote Image</option>' +
+                  '<option value="link"' + (embedType === 'link' ? ' selected' : '') + '>🔗 Link Card</option>' +
+                  '<option value="iframe"' + (embedType === 'iframe' ? ' selected' : '') + '>⧉ Sandboxed Iframe</option>' +
+                '</select>' +
+              '</div>' +
+              '<div class="studio-form-group">' +
+                '<label class="studio-label">' + (embedType === 'video' ? 'Video URL' : (embedType === 'image' ? 'Image URL' : (embedType === 'link' ? 'Link Destination URL' : 'Iframe Embed URL'))) + '</label>' +
+                '<input type="text" class="studio-input" data-field="url" value="' + escapeHtml(d.url || '') + '" placeholder="' + (embedType === 'video' ? 'https://www.youtube.com/watch?v=... or Vimeo, MP4' : (embedType === 'image' ? 'https://images.unsplash.com/... or https://...' : (embedType === 'link' ? 'https://...' : 'https://...'))) + '" />' +
+              '</div>';
+
+            if (embedType === 'video' || embedType === 'iframe' || embedType === 'image') {
+              html +=
+                '<div class="studio-form-group">' +
+                  '<label class="studio-label">Aspect Ratio</label>' +
+                  '<select class="studio-select" data-field="aspectRatio">' +
+                    '<option value="16/9"' + (aspect === '16/9' ? ' selected' : '') + '>16:9 (Standard Widescreen)</option>' +
+                    '<option value="4/3"' + (aspect === '4/3' ? ' selected' : '') + '>4:3 (Classic Academy)</option>' +
+                    '<option value="1/1"' + (aspect === '1/1' ? ' selected' : '') + '>1:1 (Square)</option>' +
+                    '<option value="auto"' + (aspect === 'auto' ? ' selected' : '') + '>Auto (Intrinsic Ratio)</option>' +
+                  '</select>' +
+                '</div>';
+            }
+
+            if (embedType === 'image') {
+              html +=
+                '<div class="studio-form-group">' +
+                  '<label class="studio-label">Accessibility Alt Text</label>' +
+                  '<input type="text" class="studio-input" data-field="alt" value="' + escapeHtml(d.alt || '') + '" placeholder="Visual description for screen readers..." />' +
+                '</div>';
+            }
+
+            if (embedType !== 'image') {
+              html += renderRichTextFieldHtml(embedType === 'link' ? 'Card Title *' : 'Title (Optional)', 'data-rich-field="title"', d.title, embedType === 'link' ? 'Destination title...' : 'Embed title or label...');
+            }
+
+            html += renderRichTextFieldHtml(embedType === 'link' ? 'Summary / Description' : 'Caption (Optional)', 'data-rich-field="caption"', d.caption, embedType === 'link' ? 'Brief destination summary...' : 'Embed caption or credit...');
+
+            if (embedType === 'iframe') {
+              html += '<div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted);margin-top:6px;line-height:1.4">ℹ Sandboxed Iframe: scripts and popups are strictly isolated. URL must use HTTPS or HTTP.</div>';
+            }
+            break;
+
           // ── 05. CARDS & COMPARISONS ──
+          case 'single-card':
+            html +=
+              renderCovenIconSelectHtml('icon', d.icon, 'Card Icon') +
+              renderRichTextFieldHtml('Title', 'data-rich-field="title"', d.title, 'Card title...') +
+              renderRichTextFieldHtml('Description', 'data-rich-field="desc"', d.desc, 'Card description...');
+            break;
+
           case 'card-grid-2':
             html +=
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
+                  renderCovenIconSelectHtml('card1Icon', d.card1Icon, 'Card 1 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card1Title"', d.card1Title, 'Card 1 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card1Desc"', d.card1Desc, 'Card 1 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 2</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '◈') + '" /></div>' +
+                  renderCovenIconSelectHtml('card2Icon', d.card2Icon, 'Card 2 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card2Title"', d.card2Title, 'Card 2 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card2Desc"', d.card2Desc, 'Card 2 description...') +
                 '</div>' +
@@ -5438,19 +5550,19 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
               '<div class="studio-cols-grid-3">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
+                  renderCovenIconSelectHtml('card1Icon', d.card1Icon, 'Card 1 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card1Title"', d.card1Title, 'Card 1 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card1Desc"', d.card1Desc, 'Card 1 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 2</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '⚙') + '" /></div>' +
+                  renderCovenIconSelectHtml('card2Icon', d.card2Icon, 'Card 2 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card2Title"', d.card2Title, 'Card 2 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card2Desc"', d.card2Desc, 'Card 2 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 3</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card3Icon" value="' + escapeHtml(d.card3Icon || '✦') + '" /></div>' +
+                  renderCovenIconSelectHtml('card3Icon', d.card3Icon, 'Card 3 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card3Title"', d.card3Title, 'Card 3 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card3Desc"', d.card3Desc, 'Card 3 description...') +
                 '</div>' +
@@ -5463,7 +5575,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Side A</div>' +
                   renderRichTextFieldHtml('Header', 'data-rich-field="col1Header"', d.col1Header, 'e.g. INBOUND ARCHITECTURE') +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col1Icon" value="' + escapeHtml(d.col1Icon || '✉') + '" /></div>' +
+                  renderCovenIconSelectHtml('col1Icon', d.col1Icon, 'Side A Icon') +
                   '<div class="studio-form-group"><label class="studio-label">Side A Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col1Items || []).forEach(function(it) {
               var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="1" data-item-id="' + it.id + '">✕</button>';
@@ -5481,7 +5593,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Side B</div>' +
                   renderRichTextFieldHtml('Header', 'data-rich-field="col2Header"', d.col2Header, 'e.g. OUTBOUND DISPATCH') +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col2Icon" value="' + escapeHtml(d.col2Icon || '◈') + '" /></div>' +
+                  renderCovenIconSelectHtml('col2Icon', d.col2Icon, 'Side B Icon') +
                   '<div class="studio-form-group"><label class="studio-label">Side B Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col2Items || []).forEach(function(it) {
               var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="2" data-item-id="' + it.id + '">✕</button>';
@@ -5853,10 +5965,19 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         // 1. Direct field inputs
         bBody.querySelectorAll('[data-field]').forEach(function(input) {
           var field = input.getAttribute('data-field');
-          input.addEventListener('input', function(e) {
-            d[field] = e.target.value;
+          function handleFieldUpdate(val) {
+            d[field] = val;
             calculateReadingTime();
             triggerAutosave();
+            if (field === 'embedType') {
+              renderSections();
+            }
+          }
+          input.addEventListener('input', function(e) {
+            handleFieldUpdate(e.target.value);
+          });
+          input.addEventListener('change', function(e) {
+            handleFieldUpdate(e.target.value);
           });
         });
 
@@ -7349,6 +7470,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           rowStart: rStart,
           rowSpan: 1, // Content-driven single logical row
           rowEnd: rStart + 1,
+          verticalAlign: 'start',
           block: newBlock,
           label: def.label || blockType
         };
@@ -7516,6 +7638,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           rowStart: placement.rowStart,
           rowSpan: 1,
           rowEnd: placement.rowStart + 1,
+          verticalAlign: item.verticalAlign || 'start',
           block: copyBlock,
           label: item.label || 'Duplicate Block'
         };
@@ -8422,6 +8545,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           var spanCols = clampVal(item.columnSpan || 4, 1, 4);
 
           var itemEl = document.createElement('div');
+          var vAlign = item.verticalAlign || 'start';
           itemEl.className = 'grid-block-item section-grid-slot is-occupied' +
             (isSel ? ' is-selected' : '') +
             (isMov ? ' is-moving' : '') +
@@ -8429,10 +8553,13 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             (isRes ? ' is-resizing' : '');
           itemEl.setAttribute('data-item-id', item.id);
           itemEl.setAttribute('data-slot-id', item.id);
+          itemEl.setAttribute('data-block-type', blk ? blk.type : '');
           itemEl.setAttribute('data-span', spanCols);
+          itemEl.setAttribute('data-valign', vAlign);
           itemEl.setAttribute('data-row-start', item.rowStart);
           itemEl.style.gridColumn = item.columnStart + ' / span ' + spanCols;
           itemEl.style.gridRow = item.rowStart + ' / span 1'; // Content-driven height
+          itemEl.style.alignSelf = vAlign;
 
           // Block Header (Two-Row Adaptive Layout)
           var itemHeader = document.createElement('div');
@@ -8460,6 +8587,12 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 '<button type="button" class="grid-width-btn' + (spanCols === 3 ? ' is-active' : '') + '" data-w="3" title="75% (3 columns)">75%</button>' +
                 '<button type="button" class="grid-width-btn' + (spanCols === 4 ? ' is-active' : '') + '" data-w="4" title="100% (4 columns)">100%</button>' +
               '</div>' +
+              '<div class="grid-valign-buttons" title="Vertical alignment inside row">' +
+                '<span class="grid-valign-label">Align:</span>' +
+                '<button type="button" class="grid-valign-btn' + (vAlign === 'start' ? ' is-active' : '') + '" data-valign="start" title="Align Top">Top</button>' +
+                '<button type="button" class="grid-valign-btn' + (vAlign === 'center' ? ' is-active' : '') + '" data-valign="center" title="Align Center">Center</button>' +
+                '<button type="button" class="grid-valign-btn' + (vAlign === 'end' ? ' is-active' : '') + '" data-valign="end" title="Align Bottom">Bottom</button>' +
+              '</div>' +
               '<div class="grid-block-header-actions slot-actions">' +
                 '<button type="button" class="grid-block-btn btn-slot-dup" data-act="dup-item" title="Duplicate block">⧉</button>' +
                 '<button type="button" class="grid-block-btn grid-block-btn--danger btn-slot-del" data-act="del-item" title="Delete block">×</button>' +
@@ -8468,7 +8601,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
           // Selection
           itemHeader.addEventListener('click', function(e) {
-            if (e.target.closest('[data-act="dup-item"], [data-act="del-item"], [data-act="click-move"], [data-act="toggle-focus"], .grid-width-btn')) return;
+            if (e.target.closest('[data-act="dup-item"], [data-act="del-item"], [data-act="click-move"], [data-act="toggle-focus"], .grid-width-btn, .grid-valign-btn')) return;
             secActiveSlotIds[sec.id] = item.id;
             renderSections();
           });
@@ -8498,6 +8631,21 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
               e.stopPropagation();
               var targetW = parseInt(btn.getAttribute('data-w'), 10) || 4;
               setBlockItemWidth(sec, item, targetW);
+            });
+          });
+
+          // Quick Vertical Alignment Buttons
+          itemHeader.querySelectorAll('.grid-valign-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var targetV = btn.getAttribute('data-valign') || 'start';
+              item.verticalAlign = targetV;
+              itemEl.setAttribute('data-valign', targetV);
+              itemEl.style.alignSelf = targetV;
+              itemHeader.querySelectorAll('.grid-valign-btn').forEach(function(b) {
+                b.classList.toggle('is-active', b.getAttribute('data-valign') === targetV);
+              });
+              triggerAutosave();
             });
           });
 
@@ -8834,6 +8982,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           rowStart: placement.rowStart,
           rowSpan: 1,
           rowEnd: placement.rowStart + 1,
+          verticalAlign: 'start',
           block: blk,
           label: window.STUDIO_REGISTRY[blk.type] ? window.STUDIO_REGISTRY[blk.type].label : blk.type
         };

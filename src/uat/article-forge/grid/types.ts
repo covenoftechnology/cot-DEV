@@ -18,6 +18,7 @@ export interface GridLayoutItem extends GridRect {
   id: string;
   block: ArticleBlock;
   label?: string;
+  verticalAlign?: 'start' | 'center' | 'end';
   // Compatibility aliases
   blocks?: ArticleBlock[];
 }
