@@ -338,6 +338,23 @@
   overflow: hidden;
 }
 
+/* ── Focus Canvas Workspace Mode ─────────────────────────────────── */
+body.coven-studio.is-canvas-focused .studio-library-pane,
+body.coven-studio.is-canvas-focused .studio-settings-pane {
+  display: none !important;
+}
+
+body.coven-studio.is-canvas-focused .studio-workspace {
+  grid-template-columns: 1fr !important;
+}
+
+body.coven-studio.is-canvas-focused #btn-focus-canvas {
+  background: rgba(201, 168, 76, 0.22) !important;
+  border-color: var(--studio-gold, #c9a84c) !important;
+  color: var(--studio-gold, #c9a84c) !important;
+  box-shadow: 0 0 12px rgba(201, 168, 76, 0.25) !important;
+}
+
 /* ── Left Pane: Block Library ─────────────────────────────── */
 .coven-studio .studio-library-pane {
   background: var(--studio-surface);
@@ -2123,6 +2140,7 @@
 .coven-studio .rich-text-toolbar {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 3px;
   padding: 4px 6px;
   background: #14111d;
@@ -2205,7 +2223,7 @@
   border: 1px solid rgba(216, 181, 107, 0.4);
   border-radius: 4px;
   padding: 6px;
-  z-index: 60;
+  z-index: 250;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
   min-width: 145px;
   display: flex;
@@ -2294,7 +2312,7 @@
   border: 1px solid rgba(216, 181, 107, 0.4);
   border-radius: 4px;
   padding: 6px;
-  z-index: 60;
+  z-index: 250;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
   min-width: 155px;
   display: flex;
@@ -2468,7 +2486,7 @@
   border: 1px solid rgba(216, 181, 107, 0.4);
   border-radius: 4px;
   padding: 10px 12px;
-  z-index: 70;
+  z-index: 250;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
   width: 290px;
   display: flex;

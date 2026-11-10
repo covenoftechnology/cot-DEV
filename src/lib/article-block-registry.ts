@@ -109,13 +109,13 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     },
   },
 
-  // ── 03. COLUMN LAYOUTS (Legacy Read-Compatible; Active in Canonical Studio until Phase 6.4) ──
+  // ── 03. COLUMN LAYOUTS (Retired from Insertable Palette in Phase 6.3; Legacy Read/Edit-Compatible) ──
   'text-image': {
     type: 'text-image',
     label: 'Text + Image',
     category: '03 Column Layouts',
     description: '50/50 layout with technical copy on left and diagram on right.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -131,7 +131,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Image + Text',
     category: '03 Column Layouts',
     description: '50/50 layout with diagram on left and narrative on right.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -147,7 +147,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Two Text Columns',
     category: '03 Column Layouts',
     description: 'Parallel concepts or complementary subsystems side-by-side.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -162,7 +162,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Three Columns',
     category: '03 Column Layouts',
     description: 'Three foundational pillars or architectural tiers.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -179,7 +179,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '03 Column Layouts',
     description: 'Arrange existing Coven blocks across responsive columns.',
     canNestInCallout: false,
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -230,7 +230,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Two Images Grid',
     category: '04 Images & Media',
     description: 'Side-by-side comparison of two visual artifacts.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -247,7 +247,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: 'Three Images Grid',
     category: '04 Images & Media',
     description: 'Triad of visual assets or state progressions.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -282,7 +282,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '04 Images & Media',
     description: 'Embed remote media, streaming video, link cards, or secure web frame.',
     canNestInCallout: true,
-    insertable: false, // Gated: active in Grid Composer V2 (Phase 6.4)
+    insertable: true,
     gridEligible: true,
     defaultData: {
       embedType: 'video',
@@ -301,10 +301,10 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     category: '05 Cards & Comparisons',
     description: 'Feature pattern card with glyph icon, heading, and description.',
     canNestInCallout: true,
-    insertable: false, // Gated: active in Grid Composer V2 (Phase 6.4)
+    insertable: true,
     gridEligible: true,
     defaultData: {
-      icon: '✧',
+      icon: 'spark',
       title: '',
       desc: '',
     },
@@ -314,7 +314,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: '2-Card Grid',
     category: '05 Cards & Comparisons',
     description: 'Two feature pattern cards with glyph icons.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -331,7 +331,7 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     label: '3-Card Grid',
     category: '05 Cards & Comparisons',
     description: 'Three functional modules or architectural components.',
-    insertable: true,
+    insertable: false,
     gridEligible: false,
     legacyLayoutBlock: true,
     defaultData: {
@@ -354,12 +354,12 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     insertable: true,
     gridEligible: true,
     defaultData: {
-      col1Icon: '✉',
+      col1Icon: 'envelope',
       col1Header: 'SIDE A',
       col1Items: [
         { id: 'cmp_1', text: '' },
       ],
-      col2Icon: '◈',
+      col2Icon: 'diamond',
       col2Header: 'SIDE B',
       col2Items: [
         { id: 'cmp_2', text: '' },

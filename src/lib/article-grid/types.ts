@@ -37,8 +37,8 @@ export interface VisualGrid {
   rows: number;          // Dynamic logical rows (clamped MIN_GRID_ROWS..MAX_GRID_ROWS)
   columnGap: number;     // Default 16px (cycle: 8, 16, 24, 32)
   rowGap: number;        // Default 16px (cycle: 8, 16, 24, 32)
-  minRowHeight: number;  // Default 80px
-  showCoordinates?: boolean;
+  minRowHeight?: number; // Authoring canvas cell height (editor-only)
+  showCoordinates?: boolean; // Authoring coordinate overlay toggle (editor-only)
   layoutItems: GridLayoutItem[];
 }
 

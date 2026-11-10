@@ -1,5 +1,6 @@
 ---
 import { ARTICLE_BLOCK_REGISTRY, ARTICLE_BLOCK_CATEGORIES, getInsertablePaletteBlocks, MAX_NESTED_LIST_DEPTH } from '../../lib/article-block-registry';
+import { COVEN_ICON_REGISTRY } from '../../lib/coven-icons';
 import {
   ARTICLE_CATEGORIES,
   ARTICLE_DIFFICULTIES,
@@ -10,9 +11,11 @@ import {
 } from '../../lib/article-taxonomy';
 import { getArticleCategories, getArticleTags, getPublishedArticles } from '../../lib/articles';
 import '../../styles/article-studio.css';
+import '../../lib/article-grid/composer.css';
 
 const blockRegistry = ARTICLE_BLOCK_REGISTRY;
 const blockCategories = ARTICLE_BLOCK_CATEGORIES;
+const covenIconRegistry = COVEN_ICON_REGISTRY;
 const publishedCats = getArticleCategories();
 const publishedTags = getArticleTags();
 const mergedCategories = mergeCategories(publishedCats);
@@ -62,6 +65,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
       <a href="/template-preview/meme-studio?new=1" class="studio-btn studio-btn--ghost" id="btn-create-meme" title="Open Coven Meme Studio">Create Meme</a>
       <a href="/template-preview/articles" class="studio-btn studio-btn--ghost" id="btn-article-center" title="Open Coven Article Center">Article Center</a>
       <button class="studio-btn studio-btn--ghost" id="btn-duplicate-article" title="Duplicate current article" type="button">Duplicate</button>
+      <button class="studio-btn studio-btn--secondary" id="btn-focus-canvas" title="Toggle full-width canvas workspace" type="button">⛶ Focus Canvas</button>
       <button class="studio-btn studio-btn--secondary" id="btn-save-draft" title="Save draft immediately" type="button">Save Draft</button>
       <button class="studio-btn studio-btn--secondary" id="btn-preview" title="Live preview in single reusable tab" type="button">Preview ↗</button>
       <button class="studio-btn studio-btn--primary" id="btn-publish" title="Publish article to src/articles" type="button">Publish ✦</button>
@@ -364,10 +368,33 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
     </div>
   </div>
 
+  <!-- Client-side Grid Geometry Bridge -->
+  <script>
+    import {
+      hasVisualGrid,
+      getItemColumnEnd,
+      getItemRowEnd,
+      isAmbiguousSection,
+      getActiveSectionBlocks,
+      validateDocumentForPublish,
+      deepCloneAndRegenerateIds,
+    } from '../../lib/article-grid/geometry';
+    import { validateEmbedBlockData } from '../../lib/article-grid/embed';
+    (window as any).hasVisualGrid = hasVisualGrid;
+    (window as any).getItemColumnEnd = getItemColumnEnd;
+    (window as any).getItemRowEnd = getItemRowEnd;
+    (window as any).isAmbiguousSection = isAmbiguousSection;
+    (window as any).getActiveSectionBlocks = getActiveSectionBlocks;
+    (window as any).validateDocumentForPublish = validateDocumentForPublish;
+    (window as any).deepCloneAndRegenerateIds = deepCloneAndRegenerateIds;
+    (window as any).validateEmbedBlockData = validateEmbedBlockData;
+  </script>
+
   <!-- Client-side Logic -->
   <script define:vars={{
     blockRegistry,
     blockCategories,
+    covenIconRegistry,
     canonicalCategories,
     canonicalDifficulties,
     canonicalTags,
@@ -379,6 +406,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
   }}>
     window.STUDIO_REGISTRY = blockRegistry;
     window.STUDIO_CATEGORIES = blockCategories;
+    window.COVEN_ICON_REGISTRY = covenIconRegistry;
     window.STUDIO_CANONICAL_CATEGORIES = canonicalCategories;
     window.STUDIO_CANONICAL_DIFFICULTIES = canonicalDifficulties;
     window.STUDIO_CANONICAL_TAGS = canonicalTags;
@@ -467,6 +495,8 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
       'two-images': '⚏',
       'three-images': '⚌',
       'gallery-scroll': '☷',
+      'embed': '⧉',
+      'single-card': '⊞',
       'card-grid-2': '⊞',
       'card-grid-3': '⊟',
       'comparison': '⚖',
@@ -529,6 +559,34 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           .replace(/>/g, '&gt;')
           .replace(/"/g, '&quot;');
       }
+
+      function renderCovenIconSelectHtml(fieldName, currentValue, label) {
+        var cur = (currentValue || '').trim();
+        var foundInReg = false;
+        var optionsHtml = (window.COVEN_ICON_REGISTRY || []).map(function(ic) {
+          var isSel = (ic.id === cur || ic.glyph === cur);
+          if (isSel) foundInReg = true;
+          return '<option value="' + escapeHtml(ic.id) + '"' + (isSel ? ' selected' : '') + '>' +
+            ic.glyph + ' ' + escapeHtml(ic.label) +
+          '</option>';
+        }).join('');
+
+        var customOptionHtml = '';
+        if (!foundInReg && cur) {
+          customOptionHtml = '<option value="' + escapeHtml(cur) + '" selected>' + escapeHtml(cur) + ' (Custom)</option>';
+        }
+
+        return (
+          '<div class="studio-form-group">' +
+            '<label class="studio-label">' + escapeHtml(label || 'Icon') + '</label>' +
+            '<select class="studio-select coven-icon-select" data-field="' + escapeHtml(fieldName) + '">' +
+              customOptionHtml +
+              optionsHtml +
+            '</select>' +
+          '</div>'
+        );
+      }
+      window.renderCovenIconSelectHtml = renderCovenIconSelectHtml;
 
       // ── Rich Text Helpers (Basic Typography: title-text, text-title, solo-text) ──
       function getRichData(val) {
@@ -3213,6 +3271,24 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 }
                 break;
 
+              case 'embed':
+                d.embedType = (d.embedType === 'image' || d.embedType === 'link' || d.embedType === 'iframe') ? d.embedType : 'video';
+                if (d.aspectRatio === '16/9') d.aspectRatio = '16-9';
+                if (d.aspectRatio === '4/3') d.aspectRatio = '4-3';
+                if (d.aspectRatio === '1/1') d.aspectRatio = '1-1';
+                d.aspectRatio = (d.aspectRatio === '4-3' || d.aspectRatio === '1-1') ? d.aspectRatio : '16-9';
+                d.url = typeof d.url === 'string' ? d.url : '';
+                d.alt = typeof d.alt === 'string' ? d.alt : '';
+                d.title = getRichData(d.title);
+                d.caption = getRichData(d.caption);
+                break;
+
+              case 'single-card':
+                d.icon = d.icon || 'spark';
+                d.title = getRichData(d.title);
+                d.desc = getRichData(d.desc);
+                break;
+
               case 'card-grid-2':
                 d.card1Title = getRichData(d.card1Title);
                 d.card1Desc = getRichData(d.card1Desc);
@@ -3420,8 +3496,40 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           if (!sec.id) sec.id = uid('sec');
           if (!sec.blocks) sec.blocks = [];
           sec.blocks.forEach(normalizeBlock);
+          if (hasVisualGridSection(sec)) {
+            if (!isAmbiguousSectionClient(sec)) {
+              sec.blocks = [];
+            }
+            normalizeGridSection(sec);
+            (sec.visualGrid.layoutItems || []).forEach(function(it) {
+              if (it && it.block) normalizeBlock(it.block);
+            });
+          }
         });
         return doc;
+      }
+
+      function isAmbiguousSectionClient(sec) {
+        if (typeof window.isAmbiguousSection === 'function') {
+          return window.isAmbiguousSection(sec);
+        }
+        if (!sec || typeof sec !== 'object') return false;
+        var hasLegacy = Array.isArray(sec.blocks) && sec.blocks.length > 0;
+        var hasGrid = Boolean(sec.visualGrid && Array.isArray(sec.visualGrid.layoutItems) && sec.visualGrid.layoutItems.length > 0);
+        return hasLegacy && hasGrid;
+      }
+
+      function getActiveSectionBlocksClient(sec) {
+        if (typeof window.getActiveSectionBlocks === 'function') {
+          return window.getActiveSectionBlocks(sec);
+        }
+        if (!sec || typeof sec !== 'object') return [];
+        if (hasVisualGridSection(sec)) {
+          return (sec.visualGrid && Array.isArray(sec.visualGrid.layoutItems))
+            ? sec.visualGrid.layoutItems.map(function(it) { return it && it.block; }).filter(Boolean)
+            : [];
+        }
+        return Array.isArray(sec.blocks) ? sec.blocks.filter(Boolean) : [];
       }
 
       // ── Reading Time Auto Calculator ────────────────────
@@ -3446,9 +3554,12 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           addWords(sec.kicker);
           addWords(sec.heading);
 
-          (sec.blocks || []).forEach(function(blk) {
+          var secBlocks = getActiveSectionBlocksClient(sec);
+
+          secBlocks.forEach(function(blk) {
             var d = blk.data || {};
             addWords(d.title);
+            addWords(d.desc);
             addWords(d.heading);
             addWords(d.intro);
             if (blk.type !== 'title-text' || d.showText !== false) {
@@ -3715,6 +3826,14 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         var firstCategory = true;
 
         window.STUDIO_CATEGORIES.forEach(function(cat) {
+          var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
+            return b.category === cat && isInsertablePaletteBlock(b);
+          });
+
+          if (matchingBlocks.length === 0) {
+            return;
+          }
+
           var accordion = document.createElement('div');
           accordion.className = 'category-accordion' + (firstCategory ? ' open' : '');
           firstCategory = false;
@@ -3723,10 +3842,6 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           var header = document.createElement('button');
           header.type = 'button';
           header.className = 'category-accordion-header';
-
-          var matchingBlocks = Object.values(window.STUDIO_REGISTRY).filter(function(b) {
-            return b.category === cat && isInsertablePaletteBlock(b);
-          });
 
           header.innerHTML =
             '<div class="category-accordion-title">' +
@@ -3760,17 +3875,165 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
               '</div>' +
               '<button type="button" class="studio-btn studio-btn--insert" data-block-type="' + blk.type + '" title="Insert into active section">+ Insert</button>';
 
+            var lastDragEndTime = 0;
+
             card.querySelector('.studio-btn--insert').addEventListener('click', function(e) {
               e.stopPropagation();
               addBlockToActiveSection(blk.type);
             });
 
             card.addEventListener('click', function() {
+              if (Date.now() - lastDragEndTime < 250) return;
               addBlockToActiveSection(blk.type);
             });
 
+            // Pointer-based Library Drag Engine (Deterministic WYSIWYG placement)
+            card.addEventListener('pointerdown', function(pdEvent) {
+              if (pdEvent.target && pdEvent.target.closest('.studio-btn--insert')) return;
+              if (pdEvent.button !== 0) return;
+
+              var startX = pdEvent.clientX;
+              var startY = pdEvent.clientY;
+              var isDragging = false;
+              var avatar = null;
+              var lastPointerTarget = null;
+              var activeCanvas = null;
+
+              function onPointerMove(pmEvent) {
+                var cx = pmEvent.clientX;
+                var cy = pmEvent.clientY;
+                var dist = Math.hypot(cx - startX, cy - startY);
+
+                if (!isDragging) {
+                  if (dist < 6) return;
+                  isDragging = true;
+                  try { card.setPointerCapture(pmEvent.pointerId); } catch(err) {}
+                  document.body.classList.add('is-grid-dragging');
+
+                  avatar = document.createElement('div');
+                  avatar.className = 'grid-drag-avatar';
+                  avatar.innerHTML = '<span class="grid-drag-avatar-glyph">' + glyph + '</span><span>' + escapeHtml(blk.label) + ' (25%)</span>';
+                  document.body.appendChild(avatar);
+                  startDragAutoScroll();
+                }
+
+                if (avatar) {
+                  avatar.style.left = (cx + 12) + 'px';
+                  avatar.style.top = (cy + 12) + 'px';
+                }
+
+                var canvases = document.querySelectorAll('.grid-composer-canvas');
+                var foundCanvas = null;
+                var foundSec = null;
+
+                for (var ci = 0; ci < canvases.length; ci++) {
+                  var cEl = canvases[ci];
+                  var cRect = cEl.getBoundingClientRect();
+                  if (cx >= cRect.left && cx <= cRect.right && cy >= cRect.top && cy <= cRect.bottom) {
+                    foundCanvas = cEl;
+                    var sId = cEl.getAttribute('data-sec-id');
+                    foundSec = currentDoc.sections.find(function(s) { return s.id === sId; });
+                    break;
+                  }
+                }
+
+                if (activeCanvas && activeCanvas !== foundCanvas) {
+                  var prevGhost = activeCanvas.querySelector('.grid-placement-preview');
+                  if (prevGhost) prevGhost.remove();
+                }
+                activeCanvas = foundCanvas;
+
+                if (foundCanvas && foundSec && hasVisualGridSection(foundSec)) {
+                  var vg = foundSec.visualGrid;
+                  var cell = resolvePointerToGridCell(cx, cy, foundCanvas, vg.minRowHeight, vg.rowGap, vg.columnGap);
+                  var reqSpan = 1; // Default 25% for library drop
+                  var res = resolvePlacementTarget(vg.layoutItems, cell.col, cell.row, reqSpan, false);
+
+                  var ghost = foundCanvas.querySelector('.grid-placement-preview');
+                  if (!ghost) {
+                    ghost = document.createElement('div');
+                    ghost.className = 'grid-placement-preview';
+                    foundCanvas.appendChild(ghost);
+                  }
+                  ghost.style.gridColumn = res.columnStart + ' / span ' + res.columnSpan;
+                  ghost.style.gridRow = res.rowStart + ' / span 1';
+
+                  if (res.valid) {
+                    ghost.className = 'grid-placement-preview is-valid' + (res.autoFitApplied ? ' is-autofit' : '');
+                    ghost.textContent = '+ Place ' + escapeHtml(blk.label) + ' (' + getSpanPercentageLabel(res.columnSpan) + (res.autoFitApplied ? ' · Auto-fit' : '') + ')';
+                    lastPointerTarget = {
+                      sec: foundSec,
+                      blockType: blk.type,
+                      colStart: res.columnStart,
+                      colSpan: res.columnSpan,
+                      rowStart: res.rowStart
+                    };
+                  } else {
+                    ghost.className = 'grid-placement-preview is-invalid-drop';
+                    ghost.textContent = '⚠ ' + (res.reason || 'Space Occupied');
+                    lastPointerTarget = null;
+                  }
+                } else {
+                  if (activeCanvas) {
+                    var g = activeCanvas.querySelector('.grid-placement-preview');
+                    if (g) g.remove();
+                  }
+                  lastPointerTarget = null;
+                }
+              }
+
+              function onPointerUp(puEvent) {
+                window.removeEventListener('pointermove', onPointerMove);
+                window.removeEventListener('pointerup', onPointerUp);
+                window.removeEventListener('pointercancel', onPointerUp);
+                try { card.releasePointerCapture(puEvent.pointerId); } catch(err) {}
+
+                document.body.classList.remove('is-grid-dragging');
+                stopDragAutoScroll();
+
+                if (avatar) {
+                  avatar.remove();
+                  avatar = null;
+                }
+                if (activeCanvas) {
+                  var g = activeCanvas.querySelector('.grid-placement-preview');
+                  if (g) g.remove();
+                  activeCanvas = null;
+                }
+
+                if (isDragging) {
+                  lastDragEndTime = Date.now();
+                  if (lastPointerTarget && lastPointerTarget.sec) {
+                    commitBlockPlacement(lastPointerTarget.sec, lastPointerTarget.blockType, lastPointerTarget.colStart, lastPointerTarget.colSpan, lastPointerTarget.rowStart);
+                  } else {
+                    // Check if dropped over a Legacy section card
+                    var legacyCards = document.querySelectorAll('.section-card[data-section-mode="legacy"]');
+                    var matchedLegacySecId = null;
+                    for (var li = 0; li < legacyCards.length; li++) {
+                      var lRect = legacyCards[li].getBoundingClientRect();
+                      if (puEvent.clientX >= lRect.left && puEvent.clientX <= lRect.right && puEvent.clientY >= lRect.top && puEvent.clientY <= lRect.bottom) {
+                        matchedLegacySecId = legacyCards[li].getAttribute('data-sec-id');
+                        break;
+                      }
+                    }
+                    if (matchedLegacySecId) {
+                      addBlockToActiveSection(blk.type, matchedLegacySecId);
+                    } else {
+                      showToast('Choose a valid Grid location.', 'warning');
+                    }
+                  }
+                  lastPointerTarget = null;
+                }
+              }
+
+              window.addEventListener('pointermove', onPointerMove);
+              window.addEventListener('pointerup', onPointerUp);
+              window.addEventListener('pointercancel', onPointerUp);
+            });
+
             card.addEventListener('dragstart', function(e) {
-              draggedBlockData = { source: 'library', type: blk.type };
+              draggedBlockData = { source: 'library', type: blk.type, widthSpan: 1 };
+              window.draggedBlockData = draggedBlockData;
               e.dataTransfer.setData('text/plain', JSON.stringify(draggedBlockData));
               e.dataTransfer.effectAllowed = 'copy';
               startDragAutoScroll();
@@ -3778,6 +4041,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
             card.addEventListener('dragend', function() {
               draggedBlockData = null;
+              window.draggedBlockData = null;
               stopDragAutoScroll();
             });
 
@@ -3865,6 +4129,15 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           title: secTitle,
           kicker: '',
           heading: '',
+          visualGrid: {
+            columns: 4,
+            rows: 3,
+            columnGap: 16,
+            rowGap: 16,
+            minRowHeight: 80,
+            showCoordinates: false,
+            layoutItems: []
+          },
           blocks: []
         };
         currentDoc.sections.push(newSec);
@@ -3881,10 +4154,21 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         var copy = JSON.parse(JSON.stringify(original));
         copy.id = uid('sec');
         copy.title = copy.title + ' — Copy';
-        copy.blocks.forEach(function(b) {
-          b.id = uid('blk');
-          regenerateBlockNestedIds(b);
-        });
+        if (Array.isArray(copy.blocks)) {
+          copy.blocks.forEach(function(b) {
+            b.id = uid('blk');
+            regenerateBlockNestedIds(b);
+          });
+        }
+        if (copy.visualGrid && Array.isArray(copy.visualGrid.layoutItems)) {
+          copy.visualGrid.layoutItems.forEach(function(it) {
+            it.id = uid('grid_item');
+            if (it.block) {
+              it.block.id = uid('blk');
+              regenerateBlockNestedIds(it.block);
+            }
+          });
+        }
         currentDoc.sections.splice(idx + 1, 0, copy);
         activeSectionId = copy.id;
         renderSections();
@@ -4315,7 +4599,10 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         var sec = currentDoc.sections.find(function(s) { return s.id === secId; });
         if (!sec) return;
 
-        var subtitle = sec.blocks.length === 1 ? 'Contains 1 block.' : ('Contains ' + sec.blocks.length + ' block(s).');
+        var blkCount = hasVisualGridSection(sec)
+          ? (sec.visualGrid.layoutItems ? sec.visualGrid.layoutItems.length : 0)
+          : (sec.blocks ? sec.blocks.length : 0);
+        var subtitle = blkCount === 1 ? 'Contains 1 block.' : ('Contains ' + blkCount + ' block(s).');
 
         showInlineDelete(
           triggerBtn,
@@ -4356,6 +4643,12 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
         var def = window.STUDIO_REGISTRY[type];
         if (!def) return;
+
+        if (hasVisualGridSection(sec)) {
+          activeSectionId = sec.id;
+          enterPlacementMode(type);
+          return;
+        }
 
         var newBlock = {
           id: uid('blk'),
@@ -4411,6 +4704,13 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           d.items.forEach(function(it) { it.id = uid('faq'); });
         } else if (block.type === 'technical-table' && Array.isArray(d.rows)) {
           d.rows.forEach(function(r) { r.id = uid('row'); });
+        } else if (block.type === 'comparison') {
+          if (Array.isArray(d.columns)) {
+            d.columns.forEach(function(col) { col.id = uid('ccol'); });
+          }
+          if (Array.isArray(d.rows)) {
+            d.rows.forEach(function(r) { r.id = uid('crow'); });
+          }
         } else if (block.type === 'related-docs' && Array.isArray(d.items)) {
           d.items.forEach(function(rd) { rd.id = uid('rd'); });
         } else if (block.type === 'key-takeaways' && Array.isArray(d.items)) {
@@ -4437,6 +4737,38 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         if (!blockId || !currentDoc || !Array.isArray(currentDoc.sections)) return null;
         for (var s = 0; s < currentDoc.sections.length; s++) {
           var sec = currentDoc.sections[s];
+          if (sec.visualGrid && Array.isArray(sec.visualGrid.layoutItems)) {
+            for (var g = 0; g < sec.visualGrid.layoutItems.length; g++) {
+              var gItem = sec.visualGrid.layoutItems[g];
+              var gBlk = gItem ? gItem.block : null;
+              if (!gBlk) continue;
+              if (gBlk.id === blockId) {
+                return {
+                  block: gBlk,
+                  section: sec,
+                  parentType: 'grid-slot',
+                  parentBlockId: null,
+                  columnId: null,
+                  slotId: gItem.id
+                };
+              }
+              if (gBlk.type === 'callout' && gBlk.data && Array.isArray(gBlk.data.blocks)) {
+                var gCalloutBlocks = gBlk.data.blocks;
+                for (var gcb = 0; gcb < gCalloutBlocks.length; gcb++) {
+                  if (gCalloutBlocks[gcb].id === blockId) {
+                    return {
+                      block: gCalloutBlocks[gcb],
+                      section: sec,
+                      parentType: 'callout',
+                      parentBlockId: gBlk.id,
+                      columnId: null,
+                      slotId: gItem.id
+                    };
+                  }
+                }
+              }
+            }
+          }
           if (!Array.isArray(sec.blocks)) continue;
           for (var b = 0; b < sec.blocks.length; b++) {
             var blk = sec.blocks[b];
@@ -5117,19 +5449,78 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             html += '</div><div style="margin-top:8px"><button type="button" class="studio-btn studio-btn--sm" data-act="add-gallery-card">+ Add Image Card</button></div></div>';
             break;
 
+          case 'embed':
+            var embedType = d.embedType || 'video';
+            var aspect = d.aspectRatio || '16-9';
+            if (aspect === '16/9') aspect = '16-9';
+            if (aspect === '4/3') aspect = '4-3';
+            if (aspect === '1/1') aspect = '1-1';
+            html +=
+              '<div class="studio-form-group">' +
+                '<label class="studio-label">Embed Type</label>' +
+                '<select class="studio-select" data-field="embedType">' +
+                  '<option value="video"' + (embedType === 'video' ? ' selected' : '') + '>▶ Video (YouTube / Vimeo / MP4)</option>' +
+                  '<option value="image"' + (embedType === 'image' ? ' selected' : '') + '>📷 Remote Image</option>' +
+                  '<option value="link"' + (embedType === 'link' ? ' selected' : '') + '>🔗 Link Card</option>' +
+                  '<option value="iframe"' + (embedType === 'iframe' ? ' selected' : '') + '>⧉ Sandboxed Iframe</option>' +
+                '</select>' +
+              '</div>' +
+              '<div class="studio-form-group">' +
+                '<label class="studio-label">' + (embedType === 'video' ? 'Video URL' : (embedType === 'image' ? 'Image URL' : (embedType === 'link' ? 'Link Destination URL' : 'Iframe Embed URL'))) + '</label>' +
+                '<input type="text" class="studio-input" data-field="url" value="' + escapeHtml(d.url || '') + '" placeholder="' + (embedType === 'video' ? 'https://www.youtube.com/watch?v=... or Vimeo, MP4' : (embedType === 'image' ? 'https://images.unsplash.com/... or https://...' : (embedType === 'link' ? 'https://...' : 'https://...'))) + '" />' +
+              '</div>';
+
+            if (embedType === 'video' || embedType === 'iframe') {
+              html +=
+                '<div class="studio-form-group">' +
+                  '<label class="studio-label">Aspect Ratio</label>' +
+                  '<select class="studio-select" data-field="aspectRatio">' +
+                    '<option value="16-9"' + (aspect === '16-9' ? ' selected' : '') + '>16:9 (Standard Widescreen)</option>' +
+                    '<option value="4-3"' + (aspect === '4-3' ? ' selected' : '') + '>4:3 (Classic Academy)</option>' +
+                    '<option value="1-1"' + (aspect === '1-1' ? ' selected' : '') + '>1:1 (Square)</option>' +
+                  '</select>' +
+                '</div>';
+            }
+
+            if (embedType === 'image') {
+              html +=
+                '<div class="studio-form-group">' +
+                  '<label class="studio-label">Accessibility Alt Text</label>' +
+                  '<input type="text" class="studio-input" data-field="alt" value="' + escapeHtml(d.alt || '') + '" placeholder="Visual description for screen readers..." />' +
+                '</div>';
+            }
+
+            if (embedType !== 'image') {
+              html += renderRichTextFieldHtml(embedType === 'link' ? 'Card Title *' : 'Title (Optional)', 'data-rich-field="title"', d.title, embedType === 'link' ? 'Destination title...' : 'Embed title or label...');
+            }
+
+            html += renderRichTextFieldHtml(embedType === 'link' ? 'Summary / Description' : 'Caption (Optional)', 'data-rich-field="caption"', d.caption, embedType === 'link' ? 'Brief destination summary...' : 'Embed caption or credit...');
+
+            if (embedType === 'iframe') {
+              html += '<div style="font-family:var(--font-mono);font-size:10px;color:var(--studio-text-muted);margin-top:6px;line-height:1.4">ℹ Universal Embed: Any valid HTTPS URL is supported. Sandboxed for security. If a destination site restricts embedding (X-Frame-Options or CSP), readers can use the external link fallback.</div>';
+            }
+            break;
+
           // ── 05. CARDS & COMPARISONS ──
+          case 'single-card':
+            html +=
+              renderCovenIconSelectHtml('icon', d.icon, 'Card Icon') +
+              renderRichTextFieldHtml('Title', 'data-rich-field="title"', d.title, 'Card title...') +
+              renderRichTextFieldHtml('Description', 'data-rich-field="desc"', d.desc, 'Card description...');
+            break;
+
           case 'card-grid-2':
             html +=
               '<div class="studio-cols-grid-2">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
+                  renderCovenIconSelectHtml('card1Icon', d.card1Icon, 'Card 1 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card1Title"', d.card1Title, 'Card 1 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card1Desc"', d.card1Desc, 'Card 1 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 2</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '◈') + '" /></div>' +
+                  renderCovenIconSelectHtml('card2Icon', d.card2Icon, 'Card 2 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card2Title"', d.card2Title, 'Card 2 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card2Desc"', d.card2Desc, 'Card 2 description...') +
                 '</div>' +
@@ -5141,19 +5532,19 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
               '<div class="studio-cols-grid-3">' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 1</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card1Icon" value="' + escapeHtml(d.card1Icon || '✧') + '" /></div>' +
+                  renderCovenIconSelectHtml('card1Icon', d.card1Icon, 'Card 1 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card1Title"', d.card1Title, 'Card 1 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card1Desc"', d.card1Desc, 'Card 1 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 2</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card2Icon" value="' + escapeHtml(d.card2Icon || '⚙') + '" /></div>' +
+                  renderCovenIconSelectHtml('card2Icon', d.card2Icon, 'Card 2 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card2Title"', d.card2Title, 'Card 2 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card2Desc"', d.card2Desc, 'Card 2 description...') +
                 '</div>' +
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Card 3</div>' +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="card3Icon" value="' + escapeHtml(d.card3Icon || '✦') + '" /></div>' +
+                  renderCovenIconSelectHtml('card3Icon', d.card3Icon, 'Card 3 Icon') +
                   renderRichTextFieldHtml('Title', 'data-rich-field="card3Title"', d.card3Title, 'Card 3 title...') +
                   renderRichTextFieldHtml('Description', 'data-rich-field="card3Desc"', d.card3Desc, 'Card 3 description...') +
                 '</div>' +
@@ -5166,7 +5557,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Side A</div>' +
                   renderRichTextFieldHtml('Header', 'data-rich-field="col1Header"', d.col1Header, 'e.g. INBOUND ARCHITECTURE') +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col1Icon" value="' + escapeHtml(d.col1Icon || '✉') + '" /></div>' +
+                  renderCovenIconSelectHtml('col1Icon', d.col1Icon, 'Side A Icon') +
                   '<div class="studio-form-group"><label class="studio-label">Side A Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col1Items || []).forEach(function(it) {
               var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="1" data-item-id="' + it.id + '">✕</button>';
@@ -5184,7 +5575,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
                 '<div class="studio-col-panel">' +
                   '<div class="studio-col-panel-title">Side B</div>' +
                   renderRichTextFieldHtml('Header', 'data-rich-field="col2Header"', d.col2Header, 'e.g. OUTBOUND DISPATCH') +
-                  '<div class="studio-form-group"><label class="studio-label">Icon</label><input type="text" class="studio-input" data-field="col2Icon" value="' + escapeHtml(d.col2Icon || '◈') + '" /></div>' +
+                  renderCovenIconSelectHtml('col2Icon', d.col2Icon, 'Side B Icon') +
                   '<div class="studio-form-group"><label class="studio-label">Side B Items</label><div style="display:flex;flex-direction:column;gap:8px">';
             (d.col2Items || []).forEach(function(it) {
               var itRemove = '<button type="button" class="studio-btn studio-btn--icon studio-btn--danger" data-act="del-col-item" data-side="2" data-item-id="' + it.id + '">✕</button>';
@@ -5556,11 +5947,28 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         // 1. Direct field inputs
         bBody.querySelectorAll('[data-field]').forEach(function(input) {
           var field = input.getAttribute('data-field');
-          input.addEventListener('input', function(e) {
-            d[field] = e.target.value;
+          function handleFieldUpdate(e) {
+            var newVal = e.target.value;
+            var changed = d[field] !== newVal;
+            d[field] = newVal;
             calculateReadingTime();
             triggerAutosave();
-          });
+            if (changed && block.type === 'embed' && field === 'embedType') {
+              var focusedId = activeFocusedBlock ? activeFocusedBlock.itemId : null;
+              renderSections();
+              if (focusedId) {
+                var newItemEl = document.querySelector('.grid-block-item[data-item-id="' + focusedId + '"]');
+                var foundItem = (sec.visualGrid && sec.visualGrid.layoutItems) ? sec.visualGrid.layoutItems.find(function(it) { return it.id === focusedId; }) : null;
+                if (newItemEl && foundItem) {
+                  openBlockFocusEditor(sec, foundItem, newItemEl, newItemEl.closest('.grid-composer-canvas'));
+                }
+              }
+            }
+          }
+          input.addEventListener('input', handleFieldUpdate);
+          if (input.tagName === 'SELECT') {
+            input.addEventListener('change', handleFieldUpdate);
+          }
         });
 
         // 2. Array primitive fields (e.g. paragraphs)
@@ -6368,8 +6776,1921 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         }
       }
 
-      // ── Render Sections & Blocks (Center Column) ────────
+      // ── CANONICAL GRID COMPOSER V2 ENGINE (4-Column Authoring) ────────
+      var MAX_GRID_ROWS = 200;
+      var MIN_GRID_ROWS = 3;
+      window.MAX_GRID_ROWS = MAX_GRID_ROWS;
+      window.MIN_GRID_ROWS = MIN_GRID_ROWS;
+
+      var secGridHistories = {}; // secId -> { past: [], future: [] }
+      var secActiveSlotIds = {}; // secId -> itemId | null
+      var secGridInteractions = {}; // secId -> interaction state
+      var activePlacement = null; // { blockType: string, widthSpan: number, explicitWidth: boolean, label: string }
+      var activeMove = null; // { secId: string, itemId: string, item: object }
+      window.activePlacement = activePlacement;
+      window.activeMove = activeMove;
+
+      function clampVal(val, min, max) {
+        return Math.min(Math.max(val, min), max);
+      }
+
+      function getItemLabel(item) {
+        if (!item) return 'Block';
+        var blk = item.block;
+        if (blk && blk.type && window.STUDIO_REGISTRY && window.STUDIO_REGISTRY[blk.type]) {
+          return window.STUDIO_REGISTRY[blk.type].label;
+        }
+        return (blk && blk.type) ? blk.type : 'Block';
+      }
+      window.getItemLabel = getItemLabel;
+
+      function hasVisualGridSection(sec) {
+        if (typeof window.hasVisualGrid === 'function') {
+          return window.hasVisualGrid(sec);
+        }
+        return false;
+      }
+      window.hasVisualGridSection = hasVisualGridSection;
+
+      function rectsOverlapCoords(r1, r2) {
+        var r1ColStart = r1.columnStart || 1;
+        var r1ColSpan = r1.columnSpan || 1;
+        var r1ColEnd = r1ColStart + r1ColSpan;
+
+        var r1RowStart = r1.rowStart || 1;
+        var r1RowSpan = r1.rowSpan || 1;
+        var r1RowEnd = r1RowStart + r1RowSpan;
+
+        var r2ColStart = r2.columnStart || 1;
+        var r2ColSpan = r2.columnSpan || 1;
+        var r2ColEnd = r2ColStart + r2ColSpan;
+
+        var r2RowStart = r2.rowStart || 1;
+        var r2RowSpan = r2.rowSpan || 1;
+        var r2RowEnd = r2RowStart + r2RowSpan;
+
+        var colOverlap = Math.max(r1ColStart, r2ColStart) < Math.min(r1ColEnd, r2ColEnd);
+        var rowOverlap = Math.max(r1RowStart, r2RowStart) < Math.min(r1RowEnd, r2RowEnd);
+        return colOverlap && rowOverlap;
+      }
+
+      function checkSlotCollisionState(items, excludeId, rect) {
+        if (!Array.isArray(items)) return false;
+        for (var i = 0; i < items.length; i++) {
+          var it = items[i];
+          if (it.id === excludeId) continue;
+          if (rectsOverlapCoords(it, rect)) return true;
+        }
+        return false;
+      }
+      window.checkSlotCollisionState = checkSlotCollisionState;
+
+      function getSpanPercentageLabel(colSpan) {
+        var s = clampVal(colSpan, 1, 4);
+        switch (s) {
+          case 1: return '25%';
+          case 2: return '50%';
+          case 3: return '75%';
+          case 4: return '100%';
+          default: return (s * 25) + '%';
+        }
+      }
+      window.getSpanPercentageLabel = getSpanPercentageLabel;
+
+      function resolvePlacementTarget(items, targetCol, targetRow, requestedSpan, explicitWidth, excludeItemId) {
+        var col = clampVal(targetCol, 1, 4);
+        var row = clampVal(targetRow, 1, MAX_GRID_ROWS);
+        var reqSpan = clampVal(requestedSpan || 4, 1, 4);
+
+        var contiguousFree = 0;
+        for (var c = col; c <= 4; c++) {
+          var singleCell = {
+            columnStart: c,
+            columnSpan: 1,
+            rowStart: row,
+            rowSpan: 1
+          };
+          if (checkSlotCollisionState(items, excludeItemId, singleCell)) {
+            break;
+          }
+          contiguousFree++;
+        }
+
+        if (contiguousFree === 0) {
+          return {
+            valid: false,
+            columnStart: col,
+            columnSpan: reqSpan,
+            rowStart: row,
+            rowSpan: 1,
+            contiguousFree: 0,
+            autoFitApplied: false,
+            reason: 'Space Occupied'
+          };
+        }
+
+        if (explicitWidth) {
+          if (contiguousFree >= reqSpan) {
+            return {
+              valid: true,
+              columnStart: col,
+              columnSpan: reqSpan,
+              rowStart: row,
+              rowSpan: 1,
+              contiguousFree: contiguousFree,
+              autoFitApplied: false
+            };
+          } else {
+            return {
+              valid: false,
+              columnStart: col,
+              columnSpan: reqSpan,
+              rowStart: row,
+              rowSpan: 1,
+              contiguousFree: contiguousFree,
+              autoFitApplied: false,
+              reason: 'Needs ' + getSpanPercentageLabel(reqSpan) + ' · only ' + getSpanPercentageLabel(contiguousFree) + ' available'
+            };
+          }
+        }
+
+        if (contiguousFree >= reqSpan) {
+          return {
+            valid: true,
+            columnStart: col,
+            columnSpan: reqSpan,
+            rowStart: row,
+            rowSpan: 1,
+            contiguousFree: contiguousFree,
+            autoFitApplied: false
+          };
+        } else {
+          return {
+            valid: true,
+            columnStart: col,
+            columnSpan: contiguousFree,
+            rowStart: row,
+            rowSpan: 1,
+            contiguousFree: contiguousFree,
+            autoFitApplied: true,
+            reason: getSpanPercentageLabel(contiguousFree) + ' · Auto-fit'
+          };
+        }
+      }
+      window.resolvePlacementTarget = resolvePlacementTarget;
+
+      function getRequiredRowsForItems(items) {
+        var maxRow = 1;
+        if (Array.isArray(items)) {
+          items.forEach(function(it) {
+            var end = (it.rowStart || 1) + (it.rowSpan || 1) - 1;
+            if (end > maxRow) maxRow = end;
+          });
+        }
+        return maxRow;
+      }
+
+      function normalizeSectionRows(sec) {
+        if (!sec || !sec.visualGrid) return;
+        var vg = sec.visualGrid;
+        var items = Array.isArray(vg.layoutItems) ? vg.layoutItems : [];
+        var highest = getRequiredRowsForItems(items);
+        vg.rows = clampVal(Math.max(MIN_GRID_ROWS, highest + 1), MIN_GRID_ROWS, MAX_GRID_ROWS);
+      }
+      window.normalizeSectionRows = normalizeSectionRows;
+
+      function findFirstAvailablePlacement(items, currentRows, preferredColSpan, preferredRowSpan) {
+        var span = clampVal(preferredColSpan || 4, 1, 4);
+        var rSpan = 1;
+        var rows = clampVal(currentRows || MIN_GRID_ROWS, MIN_GRID_ROWS, MAX_GRID_ROWS);
+
+        for (var r = 1; r <= rows; r++) {
+          for (var c = 1; c <= 4 - span + 1; c++) {
+            var cand = { columnStart: c, columnSpan: span, rowStart: r, rowSpan: rSpan };
+            if (!checkSlotCollisionState(items, null, cand)) {
+              return {
+                columnStart: c,
+                columnSpan: span,
+                rowStart: r,
+                rowSpan: rSpan,
+                requiredRows: Math.min(MAX_GRID_ROWS, Math.max(rows, r + 1))
+              };
+            }
+          }
+        }
+
+        var newRow = Math.min(MAX_GRID_ROWS, rows + 1);
+        return {
+          columnStart: 1,
+          columnSpan: span,
+          rowStart: newRow,
+          rowSpan: rSpan,
+          requiredRows: Math.min(MAX_GRID_ROWS, newRow + 1)
+        };
+      }
+      window.findFirstAvailablePlacement = findFirstAvailablePlacement;
+
+      function normalizeGridSection(sec) {
+        if (!sec || !hasVisualGridSection(sec)) return null;
+        var vg = sec.visualGrid;
+        var rawItems = Array.isArray(vg.layoutItems) ? vg.layoutItems : [];
+        var newItems = [];
+
+        rawItems.forEach(function(it) {
+          var block = it && it.block ? it.block : null;
+          if (!block) return;
+
+          var colStart = clampVal(it.columnStart || 1, 1, 4);
+          var rawSpan = it.columnSpan || 1;
+          var colSpan = clampVal(rawSpan, 1, 4 - colStart + 1);
+          var rStart = clampVal(it.rowStart || 1, 1, MAX_GRID_ROWS);
+          var vAlign = (it.verticalAlign === 'center' || it.verticalAlign === 'end') ? it.verticalAlign : 'start';
+
+          it.id = it.id || uid('grid_item');
+          it.columnStart = colStart;
+          it.columnSpan = colSpan;
+          delete it.columnEnd;
+          it.rowStart = rStart;
+          it.rowSpan = 1;
+          delete it.rowEnd;
+          it.verticalAlign = vAlign;
+          it.block = block;
+          delete it.label;
+          newItems.push(it);
+        });
+
+        vg.columns = 4;
+        vg.columnGap = typeof vg.columnGap === 'number' ? vg.columnGap : 16;
+        vg.rowGap = typeof vg.rowGap === 'number' ? vg.rowGap : 16;
+        vg.minRowHeight = typeof vg.minRowHeight === 'number' ? vg.minRowHeight : 80;
+        vg.showCoordinates = Boolean(vg.showCoordinates);
+
+        var highestRow = newItems.reduce(function(m, it) { return Math.max(m, it.rowStart); }, 0);
+        if (vg.rows > 50 && highestRow < 30) {
+          vg.rows = Math.max(MIN_GRID_ROWS, highestRow + 1);
+        } else {
+          vg.rows = clampVal(Math.max(MIN_GRID_ROWS, highestRow + 1, vg.rows || MIN_GRID_ROWS), MIN_GRID_ROWS, MAX_GRID_ROWS);
+        }
+
+        vg.layoutItems = newItems;
+        return vg;
+      }
+      window.normalizeGridSection = normalizeGridSection;
+
+      function getSecHistory(secId) {
+        if (!secGridHistories[secId]) {
+          secGridHistories[secId] = { past: [], future: [] };
+        }
+        return secGridHistories[secId];
+      }
+
+      function pushSectionHistory(sec) {
+        if (!sec || !sec.visualGrid) return;
+        var h = getSecHistory(sec.id);
+        var snap = JSON.parse(JSON.stringify(sec.visualGrid));
+        h.past.push(snap);
+        if (h.past.length > 50) h.past.shift();
+        h.future = [];
+      }
+
+      function undoSectionVisualGrid(sec) {
+        var h = getSecHistory(sec.id);
+        if (h.past.length === 0) return;
+        var cur = JSON.parse(JSON.stringify(sec.visualGrid));
+        h.future.push(cur);
+        var prev = h.past.pop();
+        sec.visualGrid = prev;
+        renderSections();
+        triggerAutosave();
+        showToast('Undo layout: ' + sec.title);
+      }
+
+      function redoSectionVisualGrid(sec) {
+        var h = getSecHistory(sec.id);
+        if (h.future.length === 0) return;
+        var cur = JSON.parse(JSON.stringify(sec.visualGrid));
+        h.past.push(cur);
+        var next = h.future.pop();
+        sec.visualGrid = next;
+        renderSections();
+        triggerAutosave();
+        showToast('Redo layout: ' + sec.title);
+      }
+
+      function isAllowedInGridSlot(type) {
+        if (!type || type === 'flex-layout') return false;
+        if (!window.STUDIO_REGISTRY || !window.STUDIO_REGISTRY[type]) return false;
+        return isInsertablePaletteBlock(type);
+      }
+      window.isAllowedInGridSlot = isAllowedInGridSlot;
+
+      // ── PLACEMENT MODE & CLICK-TO-MOVE CONTROLS ──
+      function enterPlacementMode(blockType, defaultWidth) {
+        if (window.activeFocusedBlock) window.closeBlockFocusEditor();
+        var canonicalType = blockType;
+        if (blockType === 'paragraph') canonicalType = 'solo-text';
+        if (blockType === 'quote') canonicalType = 'pullquote';
+        if (blockType === 'image' || blockType === 'media-image') canonicalType = 'single-image';
+
+        if (!isAllowedInGridSlot(canonicalType)) {
+          showToast('Block type is non-insertable: ' + blockType, 'warning');
+          return;
+        }
+
+        var def = window.STUDIO_REGISTRY[canonicalType];
+        if (!def) {
+          showToast('Unknown block type: ' + canonicalType, 'error');
+          return;
+        }
+
+        var span = defaultWidth || 4; // Default 100%
+        activePlacement = {
+          blockType: canonicalType,
+          widthSpan: span,
+          explicitWidth: Boolean(defaultWidth),
+          label: def.label || canonicalType
+        };
+        window.activePlacement = activePlacement;
+        activeMove = null;
+        window.activeMove = null;
+
+        document.body.classList.add('is-grid-placement-mode');
+        document.body.classList.remove('is-grid-move-mode');
+        renderSections();
+        showToast('Placement Mode: Click an available cell to place ' + (def.label || canonicalType) + ' (Esc to cancel)', 'info');
+      }
+      window.enterPlacementMode = enterPlacementMode;
+
+      function exitPlacementMode() {
+        activePlacement = null;
+        window.activePlacement = null;
+        document.body.classList.remove('is-grid-placement-mode');
+        renderSections();
+      }
+      window.exitPlacementMode = exitPlacementMode;
+
+      function enterMoveMode(sec, item) {
+        if (window.activeFocusedBlock) window.closeBlockFocusEditor();
+        activeMove = {
+          secId: sec.id,
+          itemId: item.id,
+          item: item
+        };
+        window.activeMove = activeMove;
+        activePlacement = null;
+        window.activePlacement = null;
+
+        document.body.classList.add('is-grid-move-mode');
+        document.body.classList.remove('is-grid-placement-mode');
+        renderSections();
+        showToast('Move Mode: Click an available cell to move ' + getItemLabel(item) + ' (Esc to cancel)', 'info');
+      }
+      window.enterMoveMode = enterMoveMode;
+
+      function exitMoveMode() {
+        activeMove = null;
+        window.activeMove = null;
+        document.body.classList.remove('is-grid-move-mode');
+        renderSections();
+      }
+      window.exitMoveMode = exitMoveMode;
+
+      // ── FOCUS EDITOR AUTHORING STATE (25% Block Comfortable Editor) ──
+      var activeFocusedBlock = null;
+      window.activeFocusedBlock = null;
+
+      function closeBlockFocusEditor() {
+        if (!activeFocusedBlock) return;
+        var entry = activeFocusedBlock;
+        activeFocusedBlock = null;
+        window.activeFocusedBlock = null;
+
+        var itemEl = entry.itemEl;
+        var anchorEl = entry.anchorEl;
+        var btn = itemEl ? itemEl.querySelector('[data-act="toggle-focus"]') : null;
+
+        if (itemEl) {
+          itemEl.classList.remove('is-focused-editor');
+          itemEl.style.position = '';
+          itemEl.style.gridColumn = (entry.item.columnStart || 1) + ' / span ' + (entry.item.columnSpan || 1);
+          itemEl.style.gridRow = (entry.item.rowStart || 1) + ' / span 1';
+          itemEl.style.top = '';
+          itemEl.style.left = '';
+          itemEl.style.width = '';
+          itemEl.style.zIndex = '';
+        }
+
+        if (anchorEl && anchorEl.parentNode) {
+          anchorEl.remove();
+        }
+
+        if (btn) {
+          btn.innerHTML = '⛶ Edit';
+          btn.classList.remove('is-active');
+          btn.title = 'Expand to comfortable authoring width (640px)';
+        }
+
+        if (entry.canvasEl) {
+          entry.canvasEl._cachedRowGeometry = null;
+          if (entry.sec && entry.sec.visualGrid) {
+            computeCanvasRowGeometry(entry.canvasEl, null, entry.sec.visualGrid.rowGap, entry.sec.visualGrid.minRowHeight);
+          }
+        }
+      }
+      window.closeBlockFocusEditor = closeBlockFocusEditor;
+
+      function openBlockFocusEditor(sec, item, itemEl, canvasEl) {
+        if (!sec || !item || !itemEl) return;
+
+        if (activeFocusedBlock && activeFocusedBlock.itemId === item.id) {
+          closeBlockFocusEditor();
+          return;
+        }
+
+        if (activeFocusedBlock) {
+          closeBlockFocusEditor();
+        }
+
+        var cEl = canvasEl || itemEl.closest('.grid-composer-canvas');
+        if (!cEl) return;
+
+        var origHeight = itemEl.offsetHeight;
+        var canvasWidth = cEl.clientWidth;
+        var targetWidth = 640;
+
+        var blk = item.block;
+        var blkDef = blk ? (window.STUDIO_REGISTRY[blk.type] || { label: blk.type }) : { label: 'Block' };
+        var glyph = blk ? (BLOCK_GLYPHS[blk.type] || '✦') : '✧';
+        var spanCols = clampVal(item.columnSpan || 1, 1, 4);
+
+        var anchor = document.createElement('div');
+        anchor.className = 'grid-block-anchor';
+        anchor.setAttribute('data-anchor-for', item.id);
+        anchor.setAttribute('data-col-start', item.columnStart);
+        anchor.setAttribute('data-row-start', item.rowStart);
+        anchor.style.gridColumn = item.columnStart + ' / span ' + spanCols;
+        anchor.style.gridRow = item.rowStart + ' / span 1';
+        anchor.style.minHeight = Math.max(120, origHeight) + 'px';
+        anchor.innerHTML =
+          '<div class="grid-block-anchor-inner">' +
+            '<span class="grid-block-anchor-glyph">' + glyph + '</span>' +
+            '<span class="grid-block-anchor-text">Editing ' + escapeHtml(getItemLabel(item)) + ' · ' + getSpanPercentageLabel(spanCols) + '</span>' +
+            '<span class="grid-block-anchor-hint">Esc or ✕ to close</span>' +
+          '</div>';
+
+        anchor.addEventListener('click', function(e) {
+          e.stopPropagation();
+          closeBlockFocusEditor();
+        });
+
+        cEl.insertBefore(anchor, itemEl);
+
+        var anchorLeft = anchor.offsetLeft;
+        var anchorTop = anchor.offsetTop;
+        var anchorWidth = anchor.offsetWidth;
+
+        var leftPos = anchorLeft;
+        if (item.columnStart === 1) {
+          leftPos = anchorLeft;
+        } else if (item.columnStart === 4) {
+          leftPos = (anchorLeft + anchorWidth) - targetWidth;
+        } else {
+          leftPos = anchorLeft + (anchorWidth / 2) - (targetWidth / 2);
+        }
+
+        var minLeft = 16;
+        var maxLeft = Math.max(16, canvasWidth - targetWidth - 16);
+        leftPos = Math.max(minLeft, Math.min(leftPos, maxLeft));
+
+        itemEl.classList.add('is-focused-editor');
+        itemEl.style.position = 'absolute';
+        itemEl.style.gridColumn = 'auto';
+        itemEl.style.gridRow = 'auto';
+        itemEl.style.top = anchorTop + 'px';
+        itemEl.style.left = leftPos + 'px';
+        itemEl.style.width = targetWidth + 'px';
+        itemEl.style.zIndex = '100';
+
+        var btn = itemEl.querySelector('[data-act="toggle-focus"]');
+        if (btn) {
+          btn.innerHTML = '✕ Done';
+          btn.classList.add('is-active');
+          btn.title = 'Finish editing and restore layout view';
+        }
+
+        activeFocusedBlock = {
+          secId: sec.id,
+          itemId: item.id,
+          sec: sec,
+          item: item,
+          itemEl: itemEl,
+          anchorEl: anchor,
+          canvasEl: cEl
+        };
+        window.activeFocusedBlock = activeFocusedBlock;
+
+        cEl._cachedRowGeometry = null;
+      }
+      window.openBlockFocusEditor = openBlockFocusEditor;
+
+      window.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape' || e.keyCode === 27) {
+          if (activeFocusedBlock) {
+            closeBlockFocusEditor();
+            return;
+          }
+          if (activePlacement) {
+            exitPlacementMode();
+            showToast('Placement cancelled', 'info');
+          } else if (activeMove) {
+            exitMoveMode();
+            showToast('Move cancelled', 'info');
+          }
+        }
+      });
+
+      document.addEventListener('pointerdown', function(e) {
+        if (!activeFocusedBlock) return;
+        if (e.target.closest('.is-focused-editor, .grid-block-anchor, .rich-color-menu, .rich-highlight-menu, .rich-link-popover, .ql-tooltip, .rich-text-popover, .dialog-popover, .coven-modal, .custom-color-popover')) {
+          return;
+        }
+        closeBlockFocusEditor();
+      });
+
+      function commitBlockPlacement(sec, blockType, colStart, colSpan, rowStart, preloadedData) {
+        var def = window.STUDIO_REGISTRY[blockType];
+        if (!def) return null;
+
+        var mergedData = JSON.parse(JSON.stringify(def.defaultData || {}));
+        if (preloadedData && typeof preloadedData === 'object') {
+          Object.assign(mergedData, JSON.parse(JSON.stringify(preloadedData)));
+        }
+        if ((blockType === 'solo-text' || blockType === 'title-text') && (!Array.isArray(mergedData.paragraphs) || mergedData.paragraphs.length === 0)) {
+          mergedData.paragraphs = [mergedData.text || ''];
+        }
+        if (blockType === 'callout' && (!Array.isArray(mergedData.blocks) || mergedData.blocks.length === 0)) {
+          mergedData.blocks = [
+            {
+              id: uid('blk'),
+              type: 'solo-text',
+              data: { paragraphs: [{ text: '', align: 'left' }] }
+            }
+          ];
+        }
+
+        var newBlock = {
+          id: uid('blk'),
+          type: blockType,
+          data: mergedData
+        };
+        regenerateBlockNestedIds(newBlock);
+
+        var span = clampVal(colSpan || 4, 1, 4);
+        var start = clampVal(colStart || 1, 1, 4 - span + 1);
+        var rStart = clampVal(rowStart || 1, 1, MAX_GRID_ROWS);
+
+        var newItem = {
+          id: uid('grid_item'),
+          columnStart: start,
+          columnSpan: span,
+          rowStart: rStart,
+          rowSpan: 1,
+          verticalAlign: 'start',
+          block: newBlock
+        };
+
+        pushSectionHistory(sec);
+        sec.visualGrid.layoutItems.push(newItem);
+        secActiveSlotIds[sec.id] = newItem.id;
+
+        normalizeDocument(currentDoc);
+        normalizeSectionRows(sec);
+        renderSections();
+        triggerAutosave();
+        showToast('Placed ' + (def.label || blockType) + ' (' + getSpanPercentageLabel(span) + ') on Grid', 'success');
+        return newItem;
+      }
+      window.commitBlockPlacement = commitBlockPlacement;
+
+      function commitBlockMove(sec, item, targetCol, targetRow) {
+        var span = item.columnSpan || 4;
+        var candColStart = clampVal(targetCol, 1, 4 - span + 1);
+        var candRowStart = clampVal(targetRow, 1, MAX_GRID_ROWS);
+
+        var cand = {
+          columnStart: candColStart,
+          columnSpan: span,
+          rowStart: candRowStart,
+          rowSpan: 1
+        };
+
+        if (checkSlotCollisionState(sec.visualGrid.layoutItems, item.id, cand)) {
+          showToast('Space occupied — cannot move here', 'warning');
+          renderSections();
+          return false;
+        }
+
+        pushSectionHistory(sec);
+        item.columnStart = cand.columnStart;
+        delete item.columnEnd;
+        item.rowStart = cand.rowStart;
+        item.rowSpan = 1;
+        delete item.rowEnd;
+
+        normalizeSectionRows(sec);
+        renderSections();
+        triggerAutosave();
+        showToast('Moved ' + getItemLabel(item) + ' to row ' + item.rowStart, 'success');
+        return true;
+      }
+      window.commitBlockMove = commitBlockMove;
+
+      function setBlockItemWidth(sec, item, newSpan) {
+        var span = clampVal(newSpan, 1, 4);
+        if (span === item.columnSpan) return;
+
+        var targetStart = item.columnStart;
+        if (targetStart + span - 1 > 4) {
+          targetStart = 4 - span + 1;
+        }
+
+        var cand = {
+          columnStart: targetStart,
+          columnSpan: span,
+          rowStart: item.rowStart,
+          rowSpan: 1
+        };
+
+        if (checkSlotCollisionState(sec.visualGrid.layoutItems, item.id, cand)) {
+          showToast('Space occupied — cannot expand to ' + getSpanPercentageLabel(span), 'warning');
+          renderSections();
+          return;
+        }
+
+        if (activeFocusedBlock) closeBlockFocusEditor();
+        pushSectionHistory(sec);
+        item.columnStart = cand.columnStart;
+        item.columnSpan = cand.columnSpan;
+        delete item.columnEnd;
+        item.rowSpan = 1;
+        delete item.rowEnd;
+
+        normalizeSectionRows(sec);
+        renderSections();
+        triggerAutosave();
+        showToast('Resized ' + getItemLabel(item) + ' to ' + getSpanPercentageLabel(span), 'success');
+      }
+      window.setBlockItemWidth = setBlockItemWidth;
+
+      function insertBlockDirectly(blockType, secId, preferredSpan, preferredRow) {
+        var canonicalType = blockType;
+        if (blockType === 'paragraph') canonicalType = 'solo-text';
+        if (blockType === 'quote') canonicalType = 'pullquote';
+        if (blockType === 'image' || blockType === 'media-image') canonicalType = 'single-image';
+        blockType = canonicalType;
+
+        if (!isAllowedInGridSlot(blockType)) {
+          showToast('Block type is non-insertable: ' + blockType, 'warning');
+          return null;
+        }
+
+        var def = window.STUDIO_REGISTRY[blockType];
+        if (!def) {
+          showToast('Unknown block type: ' + blockType, 'error');
+          return null;
+        }
+
+        var targetSecId = secId || activeSectionId || (currentDoc.sections[0] ? currentDoc.sections[0].id : null);
+        var sec = currentDoc.sections.find(function(s) { return s.id === targetSecId; }) || currentDoc.sections[0];
+        if (!sec || !hasVisualGridSection(sec)) return null;
+
+        normalizeGridSection(sec);
+        var vg = sec.visualGrid;
+
+        var span = clampVal(preferredSpan || 4, 1, 4);
+        var placement = findFirstAvailablePlacement(vg.layoutItems, vg.rows, span, 1);
+        if (preferredRow) {
+          placement.rowStart = preferredRow;
+        }
+
+        return commitBlockPlacement(sec, blockType, placement.columnStart, span, placement.rowStart);
+      }
+      window.insertBlockDirectly = insertBlockDirectly;
+
+      function duplicateGridItem(sec, itemId) {
+        var vg = sec.visualGrid;
+        var item = vg.layoutItems.find(function(it) { return it.id === itemId; });
+        if (!item || !item.block) return;
+
+        var copyBlock = JSON.parse(JSON.stringify(item.block));
+        copyBlock.id = uid('blk');
+        regenerateBlockNestedIds(copyBlock);
+
+        var span = item.columnSpan || 4;
+        var placement = findFirstAvailablePlacement(vg.layoutItems, vg.rows, span, 1);
+
+        var dupItem = {
+          id: uid('grid_item'),
+          columnStart: placement.columnStart,
+          columnSpan: placement.columnSpan,
+          rowStart: placement.rowStart,
+          rowSpan: 1,
+          verticalAlign: item.verticalAlign || 'start',
+          block: copyBlock
+        };
+
+        pushSectionHistory(sec);
+        vg.layoutItems.push(dupItem);
+        secActiveSlotIds[sec.id] = dupItem.id;
+
+        normalizeSectionRows(sec);
+        renderSections();
+        triggerAutosave();
+        showToast('Duplicated ' + getItemLabel(dupItem), 'success');
+      }
+      window.duplicateGridItem = duplicateGridItem;
+
+      function deleteGridItem(sec, itemId, force) {
+        var vg = sec.visualGrid;
+        var item = vg.layoutItems.find(function(it) { return it.id === itemId; });
+        if (!item) return;
+
+        if (!force) {
+          var triggerEl = document.querySelector('.grid-block-item[data-item-id="' + itemId + '"] [data-act="del-item"]') || document.body;
+          showInlineDelete(
+            triggerEl,
+            'Delete ' + getItemLabel(item) + ' from grid?',
+            null,
+            function() {
+              deleteGridItem(sec, itemId, true);
+            }
+          );
+          return;
+        }
+
+        if (activeFocusedBlock && activeFocusedBlock.itemId === itemId) {
+          closeBlockFocusEditor();
+        }
+
+        pushSectionHistory(sec);
+        vg.layoutItems = vg.layoutItems.filter(function(it) { return it.id !== itemId; });
+        if (secActiveSlotIds[sec.id] === itemId) {
+          secActiveSlotIds[sec.id] = null;
+        }
+
+        normalizeSectionRows(sec);
+        renderSections();
+        triggerAutosave();
+        showToast('Deleted ' + getItemLabel(item), 'info');
+      }
+      window.deleteGridItem = deleteGridItem;
+
+      function computeCanvasRowGeometry(canvasEl, visibleRows, rowGap, minRowHeight) {
+        if (!canvasEl) return { rowBounds: [] };
+        var canvasRect = canvasEl.getBoundingClientRect();
+        var rGap = (typeof rowGap === 'number') ? rowGap : 16;
+        var minH = (typeof minRowHeight === 'number') ? minRowHeight : 80;
+        var maxRows = Math.max(visibleRows || 1, 1);
+
+        var rowTops = {};
+        var rowBottoms = {};
+
+        var cellSlots = canvasEl.querySelectorAll('.grid-cell-slot, .grid-block-anchor');
+        for (var i = 0; i < cellSlots.length; i++) {
+          var slot = cellSlots[i];
+          var r = parseInt(slot.getAttribute('data-row') || slot.getAttribute('data-row-start'), 10);
+          if (!isNaN(r)) {
+            var sRect = slot.getBoundingClientRect();
+            if (sRect.height > 0) {
+              if (rowTops[r] === undefined || sRect.top < rowTops[r]) rowTops[r] = sRect.top;
+              if (rowBottoms[r] === undefined || sRect.bottom > rowBottoms[r]) rowBottoms[r] = sRect.bottom;
+              if (r > maxRows) maxRows = r;
+            }
+          }
+        }
+
+        var blockItems = canvasEl.querySelectorAll('.grid-block-item:not(.is-focused-editor)');
+        for (var j = 0; j < blockItems.length; j++) {
+          var bItem = blockItems[j];
+          var bStart = parseInt(bItem.getAttribute('data-row-start'), 10);
+          if (!isNaN(bStart)) {
+            var bRect = bItem.getBoundingClientRect();
+            if (bRect.height > 0) {
+              if (rowTops[bStart] === undefined || bRect.top < rowTops[bStart]) rowTops[bStart] = bRect.top;
+              if (rowBottoms[bStart] === undefined || bRect.bottom > rowBottoms[bStart]) rowBottoms[bStart] = bRect.bottom;
+              if (bStart > maxRows) maxRows = bStart;
+            }
+          }
+        }
+
+        var rowBounds = [];
+        var currentTop = canvasRect.top + 16;
+        for (var r = 1; r <= maxRows; r++) {
+          var top = rowTops[r];
+          var bottom = rowBottoms[r];
+          if (top !== undefined && bottom !== undefined && bottom > top) {
+            rowBounds.push({ row: r, top: top, bottom: bottom });
+            currentTop = bottom + rGap;
+          } else {
+            var estTop = currentTop;
+            var estBottom = estTop + minH;
+            rowBounds.push({ row: r, top: estTop, bottom: estBottom });
+            currentTop = estBottom + rGap;
+          }
+        }
+
+        var result = {
+          canvasRect: canvasRect,
+          rowBounds: rowBounds
+        };
+        if (canvasEl.isConnected && canvasRect.width > 0) {
+          canvasEl._cachedRowGeometry = result;
+        }
+        return result;
+      }
+      window.computeCanvasRowGeometry = computeCanvasRowGeometry;
+
+      function resolvePointerToGridCell(clientX, clientY, canvasEl, minRowHeight, rowGap, columnGap, cachedRect, cachedRowGeometry) {
+        var rect = cachedRect || canvasEl.getBoundingClientRect();
+        var padding = 16;
+        var innerW = Math.max(1, rect.width - (2 * padding));
+        var colGap = columnGap || 16;
+        var rGap = rowGap || 16;
+        var minH = minRowHeight || 80;
+
+        var colTrackSize = ((innerW - (3 * colGap)) / 4) + colGap;
+
+        var x = (typeof clientX === 'number' && !isNaN(clientX)) ? clientX : (rect.left + padding);
+        var y = (typeof clientY === 'number' && !isNaN(clientY)) ? clientY : (rect.top + padding);
+        var relX = x - (rect.left + padding);
+
+        var col = Math.floor(relX / colTrackSize) + 1;
+        col = clampVal(col, 1, 4);
+
+        var cachedGeom = cachedRowGeometry || (canvasEl && canvasEl._cachedRowGeometry);
+        if (cachedGeom && (!cachedGeom.canvasRect || cachedGeom.canvasRect.width === 0 || Math.abs(cachedGeom.canvasRect.top - rect.top) > 1)) {
+          cachedGeom = null;
+        }
+        var geom = cachedGeom || (canvasEl ? computeCanvasRowGeometry(canvasEl, null, rGap, minH) : null);
+        var row = 1;
+        if (geom && Array.isArray(geom.rowBounds) && geom.rowBounds.length > 0) {
+          var bounds = geom.rowBounds;
+          if (y < bounds[0].top) {
+            row = 1;
+          } else if (y > bounds[bounds.length - 1].bottom) {
+            var last = bounds[bounds.length - 1];
+            var extra = Math.floor((y - last.bottom) / (minH + rGap));
+            row = clampVal(last.row + Math.max(1, extra), 1, MAX_GRID_ROWS);
+          } else {
+            for (var i = 0; i < bounds.length; i++) {
+              var b = bounds[i];
+              if (y >= b.top && y <= b.bottom) {
+                row = b.row;
+                break;
+              }
+              if (i < bounds.length - 1 && y > b.bottom && y < bounds[i + 1].top) {
+                var mid = (b.bottom + bounds[i + 1].top) / 2;
+                row = y <= mid ? b.row : bounds[i + 1].row;
+                break;
+              }
+            }
+          }
+        } else {
+          var rowTrackSize = Math.max(40, minH + rGap);
+          var relY = y - (rect.top + padding);
+          row = Math.floor(relY / rowTrackSize) + 1;
+        }
+
+        return {
+          col: clampVal(col, 1, 4),
+          row: clampVal(row, 1, MAX_GRID_ROWS)
+        };
+      }
+      window.resolvePointerToGridCell = resolvePointerToGridCell;
+
+      function startBlockMoveAction(sec, item, canvasEl, initialEvent) {
+        if (window.activeFocusedBlock) window.closeBlockFocusEditor();
+        var vg = sec.visualGrid;
+        var canvasRect = canvasEl.getBoundingClientRect();
+        var startX = initialEvent.clientX;
+        var startY = initialEvent.clientY;
+        var startCell = resolvePointerToGridCell(startX, startY, canvasEl, vg.minRowHeight, vg.rowGap, vg.columnGap, canvasRect);
+        var originRect = {
+          columnStart: item.columnStart,
+          columnSpan: item.columnSpan,
+          columnEnd: item.columnStart + item.columnSpan,
+          rowStart: item.rowStart,
+          rowSpan: 1,
+          rowEnd: item.rowStart + 1
+        };
+        var isDragging = false;
+        var ghostEl = null;
+        var moveRafId = null;
+        var lastMoveTarget = null;
+
+        var itemEl = canvasEl.querySelector('.grid-block-item[data-item-id="' + item.id + '"]');
+
+        function onMove(e) {
+          var clientX = e.clientX;
+          var clientY = e.clientY;
+          var dist = Math.hypot(clientX - startX, clientY - startY);
+          if (!isDragging) {
+            if (dist < 4) return;
+            isDragging = true;
+            document.body.classList.add('is-grid-dragging');
+            canvasEl.classList.add('is-dragging-active');
+            if (itemEl) itemEl.classList.add('is-moving');
+            ghostEl = canvasEl.querySelector('.grid-placement-preview');
+            if (!ghostEl) {
+              ghostEl = document.createElement('div');
+              ghostEl.className = 'grid-placement-preview is-valid';
+              canvasEl.appendChild(ghostEl);
+            }
+          }
+
+          if (moveRafId) return;
+          moveRafId = requestAnimationFrame(function() {
+            moveRafId = null;
+            var curCell = resolvePointerToGridCell(clientX, clientY, canvasEl, vg.minRowHeight, vg.rowGap, vg.columnGap, canvasRect);
+            var deltaCol = curCell.col - startCell.col;
+            var deltaRow = curCell.row - startCell.row;
+
+            var candColStart = clampVal(originRect.columnStart + deltaCol, 1, 4 - originRect.columnSpan + 1);
+            var candRowStart = clampVal(originRect.rowStart + deltaRow, 1, MAX_GRID_ROWS);
+
+            var res = resolvePlacementTarget(vg.layoutItems, candColStart, candRowStart, originRect.columnSpan, true, item.id);
+
+            if (lastMoveTarget &&
+                lastMoveTarget.colStart === res.columnStart &&
+                lastMoveTarget.rowStart === res.rowStart &&
+                lastMoveTarget.valid === res.valid) {
+              return;
+            }
+            lastMoveTarget = { colStart: res.columnStart, rowStart: res.rowStart, valid: res.valid };
+
+            if (ghostEl) {
+              ghostEl.style.gridColumn = res.columnStart + ' / span ' + res.columnSpan;
+              ghostEl.style.gridRow = res.rowStart + ' / span 1';
+              if (res.valid) {
+                ghostEl.className = 'grid-placement-preview is-valid';
+                ghostEl.textContent = '✦ Move to (' + res.columnStart + ',' + res.rowStart + ') · ' + getSpanPercentageLabel(res.columnSpan);
+              } else {
+                ghostEl.className = 'grid-placement-preview is-invalid-drop';
+                ghostEl.textContent = '⚠ ' + (res.reason || 'Space Occupied');
+              }
+            }
+
+            secGridInteractions[sec.id] = {
+              mode: 'moving',
+              itemId: item.id,
+              previewRect: { columnStart: res.columnStart, columnSpan: res.columnSpan, rowStart: res.rowStart, rowSpan: 1 },
+              hasCollision: !res.valid
+            };
+          });
+        }
+
+        function onUp(e) {
+          if (moveRafId) {
+            cancelAnimationFrame(moveRafId);
+            moveRafId = null;
+          }
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+          window.removeEventListener('pointercancel', onUp);
+
+          document.body.classList.remove('is-grid-dragging');
+          canvasEl.classList.remove('is-dragging-active');
+          if (ghostEl) ghostEl.remove();
+          if (itemEl) itemEl.classList.remove('is-moving');
+
+          var act = secGridInteractions[sec.id];
+          secGridInteractions[sec.id] = { mode: 'idle' };
+
+          if (e && e.type === 'pointercancel') {
+            renderSections();
+            return;
+          }
+
+          if (isDragging && act && act.mode === 'moving') {
+            if (act.hasCollision) {
+              showToast('Space occupied — position reverted', 'warning');
+              renderSections();
+            } else if (act.previewRect && (act.previewRect.columnStart !== originRect.columnStart || act.previewRect.rowStart !== originRect.rowStart)) {
+              commitBlockMove(sec, item, act.previewRect.columnStart, act.previewRect.rowStart);
+            } else {
+              renderSections();
+            }
+          }
+        }
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+      }
+
+      function startBlockResizeAction(sec, item, edge, canvasEl, initialEvent) {
+        if (window.activeFocusedBlock) window.closeBlockFocusEditor();
+        var vg = sec.visualGrid;
+        var canvasRect = canvasEl.getBoundingClientRect();
+        var originRect = {
+          columnStart: item.columnStart,
+          columnSpan: item.columnSpan,
+          columnEnd: item.columnStart + item.columnSpan,
+          rowStart: item.rowStart,
+          rowSpan: 1,
+          rowEnd: item.rowStart + 1
+        };
+
+        var itemEl = canvasEl.querySelector('.grid-block-item[data-item-id="' + item.id + '"]');
+        if (itemEl) itemEl.classList.add('is-resizing');
+        document.body.classList.add('is-grid-dragging');
+        canvasEl.classList.add('is-dragging-active');
+
+        var ghostEl = canvasEl.querySelector('.grid-placement-preview');
+        if (!ghostEl) {
+          ghostEl = document.createElement('div');
+          ghostEl.className = 'grid-placement-preview is-valid';
+          canvasEl.appendChild(ghostEl);
+        }
+
+        var tooltip = document.createElement('div');
+        tooltip.className = 'grid-resize-tooltip';
+        if (itemEl) itemEl.appendChild(tooltip);
+
+        var resizeRafId = null;
+        var lastResizeTarget = null;
+
+        function onMove(e) {
+          var clientX = e.clientX;
+          var clientY = e.clientY;
+          if (resizeRafId) return;
+          resizeRafId = requestAnimationFrame(function() {
+            resizeRafId = null;
+            var curCell = resolvePointerToGridCell(clientX, clientY, canvasEl, vg.minRowHeight, vg.rowGap, vg.columnGap, canvasRect);
+            var newColStart = originRect.columnStart;
+            var newColSpan = originRect.columnSpan;
+
+            if (edge === 'e') {
+              var endCol = Math.max(originRect.columnStart, curCell.col);
+              newColSpan = clampVal(endCol - originRect.columnStart + 1, 1, 4 - originRect.columnStart + 1);
+            } else if (edge === 'w') {
+              var originColEnd = originRect.columnStart + originRect.columnSpan;
+              var startCol = Math.min(originColEnd - 1, curCell.col);
+              startCol = clampVal(startCol, 1, originColEnd - 1);
+              newColSpan = originColEnd - startCol;
+              newColStart = startCol;
+            }
+
+            var candRect = {
+              columnStart: newColStart,
+              columnSpan: newColSpan,
+              rowStart: originRect.rowStart,
+              rowSpan: 1
+            };
+
+            var collision = checkSlotCollisionState(vg.layoutItems, item.id, candRect);
+
+            if (lastResizeTarget &&
+                lastResizeTarget.colStart === candRect.columnStart &&
+                lastResizeTarget.colSpan === candRect.columnSpan &&
+                lastResizeTarget.collision === collision) {
+              return;
+            }
+            lastResizeTarget = { colStart: candRect.columnStart, colSpan: candRect.columnSpan, collision: collision };
+
+            if (ghostEl) {
+              ghostEl.style.gridColumn = candRect.columnStart + ' / span ' + candRect.columnSpan;
+              ghostEl.style.gridRow = candRect.rowStart + ' / span 1';
+              if (collision) {
+                ghostEl.className = 'grid-placement-preview is-invalid-drop';
+                ghostEl.textContent = '⚠ Space Occupied';
+              } else {
+                ghostEl.className = 'grid-placement-preview is-valid';
+                ghostEl.textContent = '✦ ' + getSpanPercentageLabel(candRect.columnSpan) + ' (' + candRect.columnSpan + ' of 4 cols)';
+              }
+            }
+
+            tooltip.textContent = getSpanPercentageLabel(newColSpan) + ' · ' + newColSpan + ' of 4 columns';
+
+            secGridInteractions[sec.id] = {
+              mode: 'resizing',
+              itemId: item.id,
+              previewRect: candRect,
+              hasCollision: collision
+            };
+          });
+        }
+
+        function onUp(e) {
+          if (resizeRafId) {
+            cancelAnimationFrame(resizeRafId);
+            resizeRafId = null;
+          }
+          window.removeEventListener('pointermove', onMove);
+          window.removeEventListener('pointerup', onUp);
+          window.removeEventListener('pointercancel', onUp);
+
+          document.body.classList.remove('is-grid-dragging');
+          canvasEl.classList.remove('is-dragging-active');
+          if (ghostEl) ghostEl.remove();
+          tooltip.remove();
+          if (itemEl) itemEl.classList.remove('is-resizing');
+
+          var act = secGridInteractions[sec.id];
+          secGridInteractions[sec.id] = { mode: 'idle' };
+
+          if (e && e.type === 'pointercancel') {
+            renderSections();
+            return;
+          }
+
+          if (act && act.mode === 'resizing') {
+            if (act.hasCollision) {
+              showToast('Space occupied — resize reverted', 'warning');
+              renderSections();
+            } else if (act.previewRect && (act.previewRect.columnSpan !== originRect.columnSpan || act.previewRect.columnStart !== originRect.columnStart)) {
+              pushSectionHistory(sec);
+              item.columnStart = act.previewRect.columnStart;
+              item.columnSpan = act.previewRect.columnSpan;
+              delete item.columnEnd;
+              item.rowSpan = 1;
+              delete item.rowEnd;
+
+              normalizeSectionRows(sec);
+              renderSections();
+              triggerAutosave();
+              showToast('Resized ' + getItemLabel(item) + ' to ' + getSpanPercentageLabel(item.columnSpan));
+            } else {
+              renderSections();
+            }
+          }
+        }
+
+        window.addEventListener('pointermove', onMove);
+        window.addEventListener('pointerup', onUp);
+        window.addEventListener('pointercancel', onUp);
+      }
+
+      function renderSectionVisualGridElement(sec) {
+        normalizeGridSection(sec);
+        var vg = sec.visualGrid;
+        var h = getSecHistory(sec.id);
+        var activeItemId = secActiveSlotIds[sec.id];
+        var inter = secGridInteractions[sec.id] || { mode: 'idle' };
+
+        var wrap = document.createElement('div');
+        wrap.className = 'grid-composer-wrapper section-grid-wrapper';
+        wrap.setAttribute('data-sec-grid-id', sec.id);
+
+        if (activePlacement) {
+          var pBanner = document.createElement('div');
+          pBanner.className = 'grid-mode-banner is-placement-mode';
+          pBanner.innerHTML =
+            '<div class="mode-banner-left">' +
+              '<span class="mode-banner-badge">PLACEMENT MODE</span>' +
+              '<span class="mode-banner-block-title">✦ <strong>' + escapeHtml(activePlacement.label) + '</strong></span>' +
+            '</div>' +
+            '<div class="mode-banner-center">' +
+              '<span class="mode-banner-label">Width:</span>' +
+              '<div class="mode-banner-pills">' +
+                '<button type="button" class="mode-pill' + (activePlacement.widthSpan === 1 ? ' is-active' : '') + '" data-w="1">25% (1 col)</button>' +
+                '<button type="button" class="mode-pill' + (activePlacement.widthSpan === 2 ? ' is-active' : '') + '" data-w="2">50% (2 cols)</button>' +
+                '<button type="button" class="mode-pill' + (activePlacement.widthSpan === 3 ? ' is-active' : '') + '" data-w="3">75% (3 cols)</button>' +
+                '<button type="button" class="mode-pill' + (activePlacement.widthSpan === 4 ? ' is-active' : '') + '" data-w="4">100% (4 cols)</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="mode-banner-right">' +
+              '<span class="mode-banner-help">Click an available cell · Press <strong>Esc</strong> to cancel</span>' +
+              '<button type="button" class="mode-banner-cancel" data-act="cancel-place">✕ Cancel</button>' +
+            '</div>';
+
+          pBanner.querySelectorAll('.mode-pill').forEach(function(pill) {
+            pill.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var w = parseInt(pill.getAttribute('data-w'), 10) || 4;
+              activePlacement.widthSpan = w;
+              activePlacement.explicitWidth = true;
+              renderSections();
+            });
+          });
+
+          pBanner.querySelector('[data-act="cancel-place"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            exitPlacementMode();
+          });
+
+          wrap.appendChild(pBanner);
+        } else if (activeMove && activeMove.secId === sec.id) {
+          var mBanner = document.createElement('div');
+          mBanner.className = 'grid-mode-banner is-move-mode';
+          var movingItem = vg.layoutItems.find(function(it) { return it.id === activeMove.itemId; }) || activeMove.item;
+          mBanner.innerHTML =
+            '<div class="mode-banner-left">' +
+              '<span class="mode-banner-badge mode-banner-badge--move">MOVE MODE</span>' +
+              '<span class="mode-banner-block-title">⠿ Moving: <strong>' + escapeHtml(getItemLabel(movingItem)) + ' (' + getSpanPercentageLabel(movingItem ? movingItem.columnSpan : 4) + ')</strong></span>' +
+            '</div>' +
+            '<div class="mode-banner-right">' +
+              '<span class="mode-banner-help">Click an available cell to move here · Press <strong>Esc</strong> to cancel</span>' +
+              '<button type="button" class="mode-banner-cancel" data-act="cancel-move">✕ Cancel</button>' +
+            '</div>';
+
+          mBanner.querySelector('[data-act="cancel-move"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            exitMoveMode();
+          });
+
+          wrap.appendChild(mBanner);
+        }
+
+        var tb = document.createElement('div');
+        tb.className = 'grid-composer-toolbar section-grid-toolbar';
+        tb.innerHTML =
+          '<div class="grid-composer-toolbar-left section-grid-toolbar-left">' +
+            '<span class="grid-badge-4col">4 COLS</span>' +
+            '<div class="grid-control-group">' +
+              '<span class="grid-control-label">Rows:</span>' +
+              '<span class="grid-stepper-val" id="stat-rows-' + sec.id + '">' + vg.rows + ' rows</span>' +
+            '</div>' +
+            '<div class="grid-control-group">' +
+              '<button type="button" class="grid-btn" data-act="cycle-gap" title="Cycle column & row gap">Gap: ' + vg.columnGap + 'px</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="grid-composer-toolbar-right section-grid-toolbar-right">' +
+            '<button type="button" class="grid-btn' + (vg.showCoordinates ? ' is-active' : '') + '" data-act="toggle-coords" title="Toggle coordinates"># Coords</button>' +
+            '<button type="button" class="grid-btn" data-act="undo-grid" ' + (h.past.length === 0 ? 'disabled style="opacity:0.4"' : '') + ' title="Undo layout">⟲</button>' +
+            '<button type="button" class="grid-btn" data-act="redo-grid" ' + (h.future.length === 0 ? 'disabled style="opacity:0.4"' : '') + ' title="Redo layout">⟳</button>' +
+            '<button type="button" class="grid-btn" data-act="reset-grid" title="Reset grid to empty 4-column">Reset</button>' +
+          '</div>';
+
+        tb.querySelector('[data-act="cycle-gap"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          pushSectionHistory(sec);
+          var gaps = [8, 16, 24, 32];
+          var idx = gaps.indexOf(vg.columnGap);
+          var nextGap = gaps[(idx + 1) % gaps.length];
+          vg.columnGap = nextGap;
+          vg.rowGap = nextGap;
+          renderSections();
+          triggerAutosave();
+        });
+
+        tb.querySelector('[data-act="toggle-coords"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          vg.showCoordinates = !vg.showCoordinates;
+          renderSections();
+          triggerAutosave();
+        });
+
+        tb.querySelector('[data-act="undo-grid"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          undoSectionVisualGrid(sec);
+        });
+
+        tb.querySelector('[data-act="redo-grid"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          redoSectionVisualGrid(sec);
+        });
+
+        tb.querySelector('[data-act="reset-grid"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          showInlineDelete(
+            e.currentTarget,
+            'Reset grid? All blocks in this section will be removed.',
+            null,
+            function() {
+              pushSectionHistory(sec);
+              vg.rows = MIN_GRID_ROWS;
+              vg.layoutItems = [];
+              secActiveSlotIds[sec.id] = null;
+              renderSections();
+              triggerAutosave();
+              showToast('Grid reset to 4-column empty');
+            }
+          );
+        });
+
+        wrap.appendChild(tb);
+
+        var canvasWrap = document.createElement('div');
+        canvasWrap.className = 'grid-composer-canvas-wrap section-grid-canvas-wrap grid-composer-viewport';
+
+        var canvas = document.createElement('div');
+        canvas.className = 'grid-composer-canvas section-grid-canvas';
+        canvas.style.display = 'grid';
+        canvas.style.gridTemplateColumns = 'repeat(4, minmax(var(--studio-grid-column-min, 340px), 1fr))';
+        canvas.style.minWidth = 'calc((4 * var(--studio-grid-column-min, 340px)) + (3 * ' + (vg.columnGap || 16) + 'px) + 32px)';
+        canvas.style.gridAutoRows = 'auto';
+        canvas.style.gap = vg.rowGap + 'px ' + vg.columnGap + 'px';
+        canvas.setAttribute('data-sec-id', sec.id);
+
+        canvas.addEventListener('click', function(e) {
+          if (e.target === canvas) {
+            if (activePlacement) {
+              var cell = resolvePointerToGridCell(e.clientX, e.clientY, canvas, vg.minRowHeight, vg.rowGap, vg.columnGap);
+              var span = activePlacement.widthSpan || 4;
+              var isExplicit = Boolean(activePlacement.explicitWidth);
+              var res = resolvePlacementTarget(vg.layoutItems, cell.col, cell.row, span, isExplicit);
+              if (res.valid) {
+                commitBlockPlacement(sec, activePlacement.blockType, res.columnStart, res.columnSpan, res.rowStart);
+                exitPlacementMode();
+                return;
+              }
+            } else if (activeMove && activeMove.secId === sec.id) {
+              var mCell = resolvePointerToGridCell(e.clientX, e.clientY, canvas, vg.minRowHeight, vg.rowGap, vg.columnGap);
+              var movingIt = vg.layoutItems.find(function(it) { return it.id === activeMove.itemId; });
+              if (movingIt) {
+                var mRes = resolvePlacementTarget(vg.layoutItems, mCell.col, mCell.row, movingIt.columnSpan, true, movingIt.id);
+                if (mRes.valid) {
+                  if (commitBlockMove(sec, movingIt, mRes.columnStart, mRes.rowStart)) {
+                    exitMoveMode();
+                    return;
+                  }
+                }
+              }
+            }
+            if (secActiveSlotIds[sec.id]) {
+              secActiveSlotIds[sec.id] = null;
+              renderSections();
+            }
+          }
+        });
+
+        var dragRafId = null;
+        var lastDragTargetState = null;
+        var cachedDragCanvasRect = null;
+        var latestDragClientX = 0;
+        var latestDragClientY = 0;
+
+        function cleanupDragPreview() {
+          if (dragRafId) {
+            cancelAnimationFrame(dragRafId);
+            dragRafId = null;
+          }
+          cachedDragCanvasRect = null;
+          lastDragTargetState = null;
+          canvas.classList.remove('is-dragging-active');
+          document.body.classList.remove('is-grid-dragging');
+          var ghost = canvas.querySelector('.grid-placement-preview');
+          if (ghost) ghost.remove();
+        }
+
+        canvas.addEventListener('dragenter', function() {
+          cachedDragCanvasRect = canvas.getBoundingClientRect();
+          canvas.classList.add('is-dragging-active');
+          document.body.classList.add('is-grid-dragging');
+        });
+
+        canvas.addEventListener('dragover', function(e) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          var curPayload = draggedBlockData || window.draggedBlockData;
+          var bType = (curPayload && curPayload.source === 'library') ? curPayload.type : null;
+          if (!bType && e.dataTransfer) {
+            try { bType = e.dataTransfer.getData('text/coven-block-type'); } catch(err) {}
+            if (!bType && e.dataTransfer.types && e.dataTransfer.types.includes('text/plain')) {
+              bType = 'pending';
+            }
+          }
+          if (!bType && !curPayload) return;
+
+          if (e.dataTransfer) {
+            try { e.dataTransfer.dropEffect = 'copy'; } catch(err) {}
+          }
+          latestDragClientX = e.clientX;
+          latestDragClientY = e.clientY;
+
+          if (dragRafId) return;
+          dragRafId = requestAnimationFrame(function() {
+            dragRafId = null;
+            if (!cachedDragCanvasRect) {
+              cachedDragCanvasRect = canvas.getBoundingClientRect();
+            }
+
+            var cell = resolvePointerToGridCell(latestDragClientX, latestDragClientY, canvas, vg.minRowHeight, vg.rowGap, vg.columnGap, cachedDragCanvasRect);
+            var reqSpan = (curPayload && curPayload.widthSpan) || 1;
+            var isExplicit = Boolean(curPayload && curPayload.explicitWidth);
+
+            var res = resolvePlacementTarget(vg.layoutItems, cell.col, cell.row, reqSpan, isExplicit);
+
+            if (lastDragTargetState &&
+                lastDragTargetState.colStart === res.columnStart &&
+                lastDragTargetState.colSpan === res.columnSpan &&
+                lastDragTargetState.rowStart === res.rowStart &&
+                lastDragTargetState.valid === res.valid &&
+                lastDragTargetState.reason === res.reason) {
+              return;
+            }
+            lastDragTargetState = {
+              colStart: res.columnStart,
+              colSpan: res.columnSpan,
+              rowStart: res.rowStart,
+              valid: res.valid,
+              reason: res.reason
+            };
+
+            var ghost = canvas.querySelector('.grid-placement-preview');
+            if (!ghost) {
+              ghost = document.createElement('div');
+              ghost.className = 'grid-placement-preview';
+              canvas.appendChild(ghost);
+            }
+
+            ghost.style.gridColumn = res.columnStart + ' / span ' + res.columnSpan;
+            ghost.style.gridRow = res.rowStart + ' / span 1';
+
+            if (res.valid) {
+              ghost.className = 'grid-placement-preview is-valid' + (res.autoFitApplied ? ' is-autofit' : '');
+              ghost.textContent = '+ Place (' + getSpanPercentageLabel(res.columnSpan) + (res.autoFitApplied ? ' · Auto-fit' : '') + ')';
+            } else {
+              ghost.className = 'grid-placement-preview is-invalid-drop';
+              ghost.textContent = '⚠ ' + (res.reason || 'Space Occupied');
+            }
+          });
+        });
+
+        canvas.addEventListener('dragleave', function(e) {
+          if (e.relatedTarget && canvas.contains(e.relatedTarget)) return;
+          cleanupDragPreview();
+        });
+
+        canvas.addEventListener('drop', function(e) {
+          e.preventDefault();
+
+          var payload = draggedBlockData || window.draggedBlockData;
+          if (!payload && e.dataTransfer) {
+            try { payload = JSON.parse(e.dataTransfer.getData('text/plain')); } catch(err) {}
+            if (!payload) {
+              var testType = e.dataTransfer.getData('text/coven-block-type');
+              if (testType) payload = { source: 'library', type: testType };
+            }
+          }
+
+          var targetToCommit = null;
+          if (lastDragTargetState && lastDragTargetState.valid) {
+            targetToCommit = {
+              columnStart: lastDragTargetState.colStart,
+              columnSpan: lastDragTargetState.colSpan,
+              rowStart: lastDragTargetState.rowStart
+            };
+          } else {
+            var cell = resolvePointerToGridCell(e.clientX, e.clientY, canvas, vg.minRowHeight, vg.rowGap, vg.columnGap);
+            var reqSpan = (payload && payload.widthSpan) || 1;
+            var isExplicit = Boolean(payload && payload.explicitWidth);
+            var res = resolvePlacementTarget(vg.layoutItems, cell.col, cell.row, reqSpan, isExplicit);
+            if (res.valid) {
+              targetToCommit = {
+                columnStart: res.columnStart,
+                columnSpan: res.columnSpan,
+                rowStart: res.rowStart
+              };
+            }
+          }
+
+          cleanupDragPreview();
+
+          if (!payload || payload.source !== 'library') return;
+
+          if (!targetToCommit) {
+            showToast('Choose a valid Grid location.', 'warning');
+            return;
+          }
+
+          commitBlockPlacement(sec, payload.type, targetToCommit.columnStart, targetToCommit.columnSpan, targetToCommit.rowStart);
+        });
+
+        var highestOccupied = getRequiredRowsForItems(vg.layoutItems);
+        var visibleRows = Math.max(MIN_GRID_ROWS, highestOccupied + 1);
+        vg.rows = clampVal(visibleRows, MIN_GRID_ROWS, MAX_GRID_ROWS);
+
+        function isCellOccupied(c, r) {
+          for (var i = 0; i < vg.layoutItems.length; i++) {
+            var it = vg.layoutItems[i];
+            var colS = it.columnStart || 1;
+            var colE = colS + (it.columnSpan || 1);
+            var rowS = it.rowStart || 1;
+            var rowE = rowS + (it.rowSpan || 1);
+            if (c >= colS && c < colE && r >= rowS && r < rowE) {
+              return true;
+            }
+          }
+          return false;
+        }
+
+        for (var r = 1; r <= visibleRows; r++) {
+          for (var c = 1; c <= 4; c++) {
+            if (!isCellOccupied(c, r)) {
+              (function(colIdx, rowIdx) {
+                var cellSlot = document.createElement('div');
+                cellSlot.className = 'grid-cell-slot is-available';
+                cellSlot.style.gridColumn = colIdx + ' / span 1';
+                cellSlot.style.gridRow = rowIdx + ' / span 1';
+                cellSlot.setAttribute('data-col', colIdx);
+                cellSlot.setAttribute('data-row', rowIdx);
+                cellSlot.innerHTML =
+                  '<div class="grid-cell-slot-inner">' +
+                    (vg.showCoordinates ? '<span class="grid-cell-slot-coord">' + colIdx + ',' + rowIdx + '</span>' : '') +
+                    '<span class="grid-cell-slot-label">+ Available (25%)</span>' +
+                  '</div>';
+
+                cellSlot.addEventListener('pointerenter', function() {
+                  if (activePlacement) {
+                    var reqSpan = activePlacement.widthSpan || 4;
+                    var isExplicit = Boolean(activePlacement.explicitWidth);
+                    var res = resolvePlacementTarget(vg.layoutItems, colIdx, rowIdx, reqSpan, isExplicit);
+
+                    var ghost = canvas.querySelector('.grid-placement-preview');
+                    if (!ghost) {
+                      ghost = document.createElement('div');
+                      ghost.className = 'grid-placement-preview';
+                      canvas.appendChild(ghost);
+                    }
+                    ghost.style.gridColumn = res.columnStart + ' / span ' + res.columnSpan;
+                    ghost.style.gridRow = res.rowStart + ' / span 1';
+                    if (res.valid) {
+                      ghost.className = 'grid-placement-preview is-valid' + (res.autoFitApplied ? ' is-autofit' : '');
+                      ghost.textContent = '✦ Place ' + escapeHtml(activePlacement.label) + ' (' + getSpanPercentageLabel(res.columnSpan) + (res.autoFitApplied ? ' · Auto-fit' : '') + ') — Click to Confirm';
+                    } else {
+                      ghost.className = 'grid-placement-preview is-invalid-drop';
+                      ghost.textContent = '⚠ ' + (res.reason || 'Space Occupied');
+                    }
+                  } else if (activeMove && activeMove.secId === sec.id) {
+                    var mItem = vg.layoutItems.find(function(it) { return it.id === activeMove.itemId; }) || activeMove.item;
+                    if (mItem) {
+                      var mSpan = mItem.columnSpan || 4;
+                      var mRes = resolvePlacementTarget(vg.layoutItems, colIdx, rowIdx, mSpan, true, mItem.id);
+
+                      var mGhost = canvas.querySelector('.grid-placement-preview');
+                      if (!mGhost) {
+                        mGhost = document.createElement('div');
+                        mGhost.className = 'grid-placement-preview';
+                        canvas.appendChild(mGhost);
+                      }
+                      mGhost.style.gridColumn = mRes.columnStart + ' / span ' + mRes.columnSpan;
+                      mGhost.style.gridRow = mRes.rowStart + ' / span 1';
+                      if (mRes.valid) {
+                        mGhost.className = 'grid-placement-preview is-valid';
+                        mGhost.textContent = '✦ Move ' + escapeHtml(getItemLabel(mItem)) + ' (' + getSpanPercentageLabel(mRes.columnSpan) + ') — Click to Move';
+                      } else {
+                        mGhost.className = 'grid-placement-preview is-invalid-drop';
+                        mGhost.textContent = '⚠ ' + (mRes.reason || 'Space Occupied');
+                      }
+                    }
+                  }
+                });
+
+                cellSlot.addEventListener('click', function(e) {
+                  e.stopPropagation();
+                  if (activePlacement) {
+                    var reqSpan = activePlacement.widthSpan || 4;
+                    var isExplicit = Boolean(activePlacement.explicitWidth);
+                    var res = resolvePlacementTarget(vg.layoutItems, colIdx, rowIdx, reqSpan, isExplicit);
+                    if (!res.valid) {
+                      showToast(res.reason || 'Space occupied — please choose an open cell', 'warning');
+                      return;
+                    }
+                    commitBlockPlacement(sec, activePlacement.blockType, res.columnStart, res.columnSpan, res.rowStart);
+                    exitPlacementMode();
+                  } else if (activeMove && activeMove.secId === sec.id) {
+                    var movingIt = vg.layoutItems.find(function(it) { return it.id === activeMove.itemId; });
+                    if (movingIt) {
+                      var mRes = resolvePlacementTarget(vg.layoutItems, colIdx, rowIdx, movingIt.columnSpan, true, movingIt.id);
+                      if (!mRes.valid) {
+                        showToast(mRes.reason || 'Space occupied', 'warning');
+                        return;
+                      }
+                      if (commitBlockMove(sec, movingIt, mRes.columnStart, mRes.rowStart)) {
+                        exitMoveMode();
+                      }
+                    }
+                  } else {
+                    showToast('Click a block pattern in the Library on the left to enter Placement Mode', 'info');
+                  }
+                });
+
+                canvas.appendChild(cellSlot);
+              })(c, r);
+            }
+          }
+        }
+
+        vg.layoutItems.forEach(function(item) {
+          var isSel = item.id === activeItemId;
+          var isMov = inter.mode === 'moving' && inter.itemId === item.id;
+          var isRes = inter.mode === 'resizing' && inter.itemId === item.id;
+          var isBeingMoved = activeMove && activeMove.itemId === item.id;
+          var blk = item.block;
+          var blkDef = blk ? (window.STUDIO_REGISTRY[blk.type] || { label: blk.type }) : { label: 'Block' };
+          var glyph = blk ? (BLOCK_GLYPHS[blk.type] || '✦') : '✧';
+          var spanCols = clampVal(item.columnSpan || 4, 1, 4);
+
+          var itemEl = document.createElement('div');
+          var vAlign = item.verticalAlign || 'start';
+          itemEl.className = 'grid-block-item section-grid-slot is-occupied' +
+            (isSel ? ' is-selected' : '') +
+            (isMov ? ' is-moving' : '') +
+            (isBeingMoved ? ' is-being-moved' : '') +
+            (isRes ? ' is-resizing' : '');
+          itemEl.setAttribute('data-item-id', item.id);
+          itemEl.setAttribute('data-slot-id', item.id);
+          itemEl.setAttribute('data-block-type', blk ? blk.type : '');
+          itemEl.setAttribute('data-span', spanCols);
+          itemEl.setAttribute('data-valign', vAlign);
+          itemEl.setAttribute('data-row-start', item.rowStart);
+          itemEl.style.gridColumn = item.columnStart + ' / span ' + spanCols;
+          itemEl.style.gridRow = item.rowStart + ' / span 1';
+          itemEl.style.alignSelf = vAlign;
+
+          var itemHeader = document.createElement('div');
+          itemHeader.className = 'grid-block-header slot-header';
+          itemHeader.innerHTML =
+            '<div class="grid-block-header-top">' +
+              '<div class="grid-block-header-left slot-header-left">' +
+                '<div class="grid-block-move-handle slot-drag-handle" title="Drag to reposition on 4-column grid">⠿ Move</div>' +
+                '<button type="button" class="grid-block-btn grid-block-btn--move" data-act="click-move" title="Click-to-Move">Move</button>' +
+                '<div class="grid-block-title slot-title">' +
+                  '<span class="grid-block-glyph slot-glyph">' + glyph + '</span>' +
+                  '<span class="slot-label-text">' + escapeHtml(getItemLabel(item)) + '</span>' +
+                  '<span class="grid-block-span-badge">' + getSpanPercentageLabel(spanCols) + '</span>' +
+                '</div>' +
+              '</div>' +
+              '<div class="grid-block-header-actions">' +
+                '<button type="button" class="grid-block-btn btn-focus-editor" data-act="toggle-focus" title="Expand to comfortable authoring width (640px)">⛶ Edit</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="grid-block-header-bottom">' +
+              '<div class="grid-width-buttons" title="Change block width">' +
+                '<span class="grid-width-label">Width:</span>' +
+                '<button type="button" class="grid-width-btn' + (spanCols === 1 ? ' is-active' : '') + '" data-w="1" title="25% (1 column)">25%</button>' +
+                '<button type="button" class="grid-width-btn' + (spanCols === 2 ? ' is-active' : '') + '" data-w="2" title="50% (2 columns)">50%</button>' +
+                '<button type="button" class="grid-width-btn' + (spanCols === 3 ? ' is-active' : '') + '" data-w="3" title="75% (3 columns)">75%</button>' +
+                '<button type="button" class="grid-width-btn' + (spanCols === 4 ? ' is-active' : '') + '" data-w="4" title="100% (4 columns)">100%</button>' +
+              '</div>' +
+              '<div class="grid-valign-buttons" title="Vertical alignment inside row">' +
+                '<span class="grid-valign-label">Align:</span>' +
+                '<button type="button" class="grid-valign-btn' + (vAlign === 'start' ? ' is-active' : '') + '" data-valign="start" title="Align Top">Top</button>' +
+                '<button type="button" class="grid-valign-btn' + (vAlign === 'center' ? ' is-active' : '') + '" data-valign="center" title="Align Center">Center</button>' +
+                '<button type="button" class="grid-valign-btn' + (vAlign === 'end' ? ' is-active' : '') + '" data-valign="end" title="Align Bottom">Bottom</button>' +
+              '</div>' +
+              '<div class="grid-block-header-actions slot-actions">' +
+                '<button type="button" class="grid-block-btn btn-slot-dup" data-act="dup-item" title="Duplicate block">⧉</button>' +
+                '<button type="button" class="grid-block-btn grid-block-btn--danger btn-slot-del" data-act="del-item" title="Delete block">×</button>' +
+              '</div>' +
+            '</div>';
+
+          itemHeader.addEventListener('click', function(e) {
+            if (e.target.closest('[data-act="dup-item"], [data-act="del-item"], [data-act="click-move"], [data-act="toggle-focus"], .grid-width-btn, .grid-valign-btn')) return;
+            secActiveSlotIds[sec.id] = item.id;
+            renderSections();
+          });
+
+          var focusBtn = itemHeader.querySelector('[data-act="toggle-focus"]');
+          if (focusBtn) {
+            focusBtn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              if (activeFocusedBlock && activeFocusedBlock.itemId === item.id) {
+                closeBlockFocusEditor();
+              } else {
+                openBlockFocusEditor(sec, item, itemEl, canvas);
+              }
+            });
+          }
+
+          itemHeader.querySelector('[data-act="click-move"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            enterMoveMode(sec, item);
+          });
+
+          itemHeader.querySelectorAll('.grid-width-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var targetW = parseInt(btn.getAttribute('data-w'), 10) || 4;
+              setBlockItemWidth(sec, item, targetW);
+            });
+          });
+
+          itemHeader.querySelectorAll('.grid-valign-btn').forEach(function(btn) {
+            btn.addEventListener('click', function(e) {
+              e.stopPropagation();
+              var targetV = btn.getAttribute('data-valign') || 'start';
+              pushSectionHistory(sec);
+              item.verticalAlign = targetV;
+              itemEl.setAttribute('data-valign', targetV);
+              itemEl.style.alignSelf = targetV;
+              itemHeader.querySelectorAll('.grid-valign-btn').forEach(function(b) {
+                b.classList.toggle('is-active', b.getAttribute('data-valign') === targetV);
+              });
+              triggerAutosave();
+            });
+          });
+
+          itemHeader.querySelector('[data-act="dup-item"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            duplicateGridItem(sec, item.id);
+          });
+
+          itemHeader.querySelector('[data-act="del-item"]').addEventListener('click', function(e) {
+            e.stopPropagation();
+            deleteGridItem(sec, item.id, false);
+          });
+
+          var moveHandle = itemHeader.querySelector('.grid-block-move-handle');
+          if (moveHandle) {
+            moveHandle.addEventListener('pointerdown', function(e) {
+              if (e.button !== 0) return;
+              e.preventDefault();
+              e.stopPropagation();
+              secActiveSlotIds[sec.id] = item.id;
+              startBlockMoveAction(sec, item, canvas, e);
+            });
+          }
+
+          itemEl.appendChild(itemHeader);
+
+          var itemBody = document.createElement('div');
+          itemBody.className = 'grid-block-content slot-body';
+
+          itemBody.addEventListener('pointerdown', function(e) {
+            e.stopPropagation();
+          });
+
+          itemBody.addEventListener('click', function() {
+            if (item.columnSpan === 1 && (!activeFocusedBlock || activeFocusedBlock.itemId !== item.id)) {
+              openBlockFocusEditor(sec, item, itemEl, canvas);
+            }
+          });
+
+          if (blk) {
+            var bCard = createBlockCardElement(sec, blk, 0, 1, {
+              isSlotChild: true,
+              slotId: item.id
+            });
+            itemBody.appendChild(bCard);
+          }
+          itemEl.appendChild(itemBody);
+
+          var westHandle = document.createElement('div');
+          westHandle.className = 'grid-resize-handle grid-resize-handle--w';
+          westHandle.title = 'Drag left edge to resize (snaps to 25%, 50%, 75%, 100%)';
+          westHandle.addEventListener('pointerdown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            secActiveSlotIds[sec.id] = item.id;
+            startBlockResizeAction(sec, item, 'w', canvas, e);
+          });
+          itemEl.appendChild(westHandle);
+
+          var eastHandle = document.createElement('div');
+          eastHandle.className = 'grid-resize-handle grid-resize-handle--e';
+          eastHandle.title = 'Drag right edge to resize (snaps to 25%, 50%, 75%, 100%)';
+          eastHandle.addEventListener('pointerdown', function(e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            e.stopPropagation();
+            secActiveSlotIds[sec.id] = item.id;
+            startBlockResizeAction(sec, item, 'e', canvas, e);
+          });
+          itemEl.appendChild(eastHandle);
+
+          canvas.appendChild(itemEl);
+        });
+
+        if (inter.mode !== 'idle' && inter.previewRect) {
+          var pr = inter.previewRect;
+          var ghost = document.createElement('div');
+          ghost.className = 'grid-placement-preview ' + (inter.hasCollision ? 'is-invalid-drop' : 'is-valid');
+          ghost.style.gridColumn = pr.columnStart + ' / span ' + (pr.columnSpan || 1);
+          ghost.style.gridRow = pr.rowStart + ' / span 1';
+          ghost.textContent = inter.hasCollision ? '⚠ Space Occupied' : '✦ Place Here (' + getSpanPercentageLabel(pr.columnSpan) + ')';
+          canvas.appendChild(ghost);
+        }
+
+        canvasWrap.appendChild(canvas);
+        wrap.appendChild(canvasWrap);
+        computeCanvasRowGeometry(canvas, visibleRows, vg.rowGap, vg.minRowHeight);
+
+        var activeItem = vg.layoutItems.find(function(it) { return it.id === activeItemId; });
+        if (activeItem && inter.mode === 'idle') {
+          var propBar = renderItemPropertiesBar(sec, activeItem);
+          wrap.appendChild(propBar);
+        }
+
+        return wrap;
+      }
+
+      function renderItemPropertiesBar(sec, item) {
+        var vg = sec.visualGrid;
+        var bar = document.createElement('div');
+        bar.className = 'slot-properties-bar section-slot-properties-bar';
+
+        var spanCols = item.columnSpan || 4;
+        var blk = item.block;
+        var blkDef = blk ? (window.STUDIO_REGISTRY[blk.type] || { label: blk.type }) : null;
+
+        bar.innerHTML =
+          '<div class="slot-prop-field">' +
+            '<span class="slot-prop-label">Block:</span>' +
+            '<span class="slot-prop-value-pill" style="font-size:12px;font-weight:600;padding:2px 8px;border-radius:4px;background:var(--bg-tertiary);color:var(--text-primary);display:inline-block;">' + escapeHtml(getItemLabel(item)) + '</span>' +
+          '</div>' +
+          '<div class="slot-prop-field">' +
+            '<span class="slot-prop-label">Col:</span>' +
+            '<input type="number" class="slot-prop-input" value="' + item.columnStart + '" min="1" max="4" data-prop="colStart" />' +
+          '</div>' +
+          '<div class="slot-prop-field">' +
+            '<span class="slot-prop-label">Width:</span>' +
+            '<div class="grid-width-buttons" style="margin-left:0">' +
+              '<button type="button" class="grid-width-btn' + (spanCols === 1 ? ' is-active' : '') + '" data-prop-w="1">25%</button>' +
+              '<button type="button" class="grid-width-btn' + (spanCols === 2 ? ' is-active' : '') + '" data-prop-w="2">50%</button>' +
+              '<button type="button" class="grid-width-btn' + (spanCols === 3 ? ' is-active' : '') + '" data-prop-w="3">75%</button>' +
+              '<button type="button" class="grid-width-btn' + (spanCols === 4 ? ' is-active' : '') + '" data-prop-w="4">100%</button>' +
+            '</div>' +
+          '</div>' +
+          '<div class="slot-prop-field">' +
+            '<span class="slot-prop-label">Row:</span>' +
+            '<input type="number" class="slot-prop-input" value="' + item.rowStart + '" min="1" max="' + vg.rows + '" data-prop="rowStart" />' +
+          '</div>' +
+          '<div class="slot-prop-field" style="margin-left:auto;display:flex;gap:6px">' +
+            '<button type="button" class="grid-btn" data-act="dup-bar-item" title="Duplicate block">Duplicate</button>' +
+            '<button type="button" class="grid-btn grid-btn--danger" data-act="del-bar-item" title="Delete block">Delete</button>' +
+            '<button type="button" class="grid-btn" data-act="close-bar-props" title="Close properties">✕</button>' +
+          '</div>';
+
+        bar.querySelectorAll('[data-prop-w]').forEach(function(btn) {
+          btn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var targetW = parseInt(btn.getAttribute('data-prop-w'), 10) || 4;
+            setBlockItemWidth(sec, item, targetW);
+          });
+        });
+
+        var colStartInput = bar.querySelector('[data-prop="colStart"]');
+        var rowStartInput = bar.querySelector('[data-prop="rowStart"]');
+
+        function applyGeometryChange() {
+          var cs = parseInt(colStartInput.value, 10) || item.columnStart;
+          var rs = parseInt(rowStartInput.value, 10) || item.rowStart;
+          cs = clampVal(cs, 1, 4 - item.columnSpan + 1);
+          rs = clampVal(rs, 1, MAX_GRID_ROWS);
+
+          var cand = {
+            columnStart: cs,
+            columnSpan: item.columnSpan,
+            rowStart: rs,
+            rowSpan: 1
+          };
+
+          if (checkSlotCollisionState(vg.layoutItems, item.id, cand)) {
+            showToast('Position collides with an existing block', 'warning');
+            colStartInput.value = item.columnStart;
+            rowStartInput.value = item.rowStart;
+            return;
+          }
+
+          pushSectionHistory(sec);
+          item.columnStart = cand.columnStart;
+          delete item.columnEnd;
+          item.rowStart = cand.rowStart;
+          item.rowSpan = 1;
+          delete item.rowEnd;
+
+          normalizeSectionRows(sec);
+          renderSections();
+          triggerAutosave();
+        }
+
+        colStartInput.addEventListener('change', applyGeometryChange);
+        rowStartInput.addEventListener('change', applyGeometryChange);
+
+        bar.querySelector('[data-act="dup-bar-item"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          duplicateGridItem(sec, item.id);
+        });
+
+        bar.querySelector('[data-act="del-bar-item"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          deleteGridItem(sec, item.id, false);
+        });
+
+        bar.querySelector('[data-act="close-bar-props"]').addEventListener('click', function(e) {
+          e.stopPropagation();
+          secActiveSlotIds[sec.id] = null;
+          renderSections();
+        });
+
+        return bar;
+      }
+
+      window.undoSectionVisualGrid = undoSectionVisualGrid;
+      window.redoSectionVisualGrid = redoSectionVisualGrid;
+      window.getSecHistory = getSecHistory;
+
+      // ── Render Sections & Blocks (Center Column — Dual Mode: Grid + Legacy) ──
       function renderSections() {
+        if (activeFocusedBlock) {
+          activeFocusedBlock = null;
+          window.activeFocusedBlock = null;
+        }
         var container = document.getElementById('sections-container');
         var trailingZone = document.getElementById('trailing-add-section-zone');
         var counterBadge = document.getElementById('section-counter-badge');
@@ -6408,11 +8729,13 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           var isLast = sIndex === totalSections - 1;
           var isActive = sec.id === activeSectionId;
           var formattedNum = String(sIndex + 1).padStart(2, '0');
+          var isGridMode = hasVisualGridSection(sec);
 
           var card = document.createElement('div');
           card.className = 'section-card' + (isActive ? ' active-section' : '');
           card.id = 'section-card-' + sec.id;
           card.setAttribute('data-sec-id', sec.id);
+          card.setAttribute('data-section-mode', isGridMode ? 'grid' : 'legacy');
 
           // Section Card Header
           var header = document.createElement('div');
@@ -6525,56 +8848,60 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
           card.appendChild(header);
 
-          // Blocks Container
-          var blocksWrap = document.createElement('div');
-          blocksWrap.className = 'section-blocks-wrap';
-
-          if (sec.blocks.length === 0) {
-            // Empty Dropzone
-            var dropzone = document.createElement('div');
-            dropzone.className = 'section-empty-dropzone';
-            dropzone.innerHTML =
-              '<div class="dropzone-icon">✧</div>' +
-              '<div class="dropzone-text">+ DROP BLOCK HERE</div>' +
-              '<div class="dropzone-sub">or choose one from Block Library</div>';
-
-            dropzone.addEventListener('dragover', function(e) {
-              e.preventDefault();
-              e.stopPropagation();
-              dropzone.classList.add('drag-over');
-            });
-            dropzone.addEventListener('dragleave', function(e) {
-              e.stopPropagation();
-              dropzone.classList.remove('drag-over');
-            });
-            dropzone.addEventListener('drop', function(e) {
-              e.preventDefault();
-              e.stopPropagation();
-              dropzone.classList.remove('drag-over');
-              handleBlockDrop(e, { type: 'section', secId: sec.id, insertIdx: 0 });
-            });
-
-            blocksWrap.appendChild(dropzone);
+          if (isGridMode) {
+            // ── GRID SECTION: 4-Column Grid Composer V2 ──
+            var gridWrap = renderSectionVisualGridElement(sec);
+            card.appendChild(gridWrap);
           } else {
-            // Render Block Cards
-            sec.blocks.forEach(function(b, bIndex) {
-              var bCard = createBlockCardElement(sec, b, bIndex, sec.blocks.length, null);
-              blocksWrap.appendChild(bCard);
-            });
+            // ── LEGACY SECTION: Linear section.blocks[] Editor (Untouched) ──
+            var blocksWrap = document.createElement('div');
+            blocksWrap.className = 'section-blocks-wrap';
 
-            // Container-level drop listener to append at end
-            blocksWrap.addEventListener('dragover', function(e) {
-              e.preventDefault();
-            });
-            blocksWrap.addEventListener('drop', function(e) {
-              if (e.target === blocksWrap) {
+            if (!Array.isArray(sec.blocks) || sec.blocks.length === 0) {
+              var dropzone = document.createElement('div');
+              dropzone.className = 'section-empty-dropzone';
+              dropzone.innerHTML =
+                '<div class="dropzone-icon">✧</div>' +
+                '<div class="dropzone-text">+ DROP BLOCK HERE</div>' +
+                '<div class="dropzone-sub">or choose one from Block Library</div>';
+
+              dropzone.addEventListener('dragover', function(e) {
                 e.preventDefault();
-                handleBlockDrop(e, { type: 'section', secId: sec.id, insertIdx: sec.blocks.length });
-              }
-            });
+                e.stopPropagation();
+                dropzone.classList.add('drag-over');
+              });
+              dropzone.addEventListener('dragleave', function(e) {
+                e.stopPropagation();
+                dropzone.classList.remove('drag-over');
+              });
+              dropzone.addEventListener('drop', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzone.classList.remove('drag-over');
+                handleBlockDrop(e, { type: 'section', secId: sec.id, insertIdx: 0 });
+              });
+
+              blocksWrap.appendChild(dropzone);
+            } else {
+              sec.blocks.forEach(function(b, bIndex) {
+                var bCard = createBlockCardElement(sec, b, bIndex, sec.blocks.length, null);
+                blocksWrap.appendChild(bCard);
+              });
+
+              blocksWrap.addEventListener('dragover', function(e) {
+                e.preventDefault();
+              });
+              blocksWrap.addEventListener('drop', function(e) {
+                if (e.target === blocksWrap) {
+                  e.preventDefault();
+                  handleBlockDrop(e, { type: 'section', secId: sec.id, insertIdx: sec.blocks.length });
+                }
+              });
+            }
+
+            card.appendChild(blocksWrap);
           }
 
-          card.appendChild(blocksWrap);
           container.appendChild(card);
         });
         updateAllSavedSwatchesUI();
@@ -6583,14 +8910,15 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
       function createBlockCardElement(sec, b, bIndex, totalCount, context) {
         var isFlexChild = context && context.isFlexChild;
         var isCalloutChild = context && context.isCalloutChild;
+        var isSlotChild = context && context.isSlotChild;
         var isFirstBlock = bIndex === 0;
         var isLastBlock = bIndex === totalCount - 1;
         var blkDef = window.STUDIO_REGISTRY[b.type] || { label: b.type };
         var glyph = BLOCK_GLYPHS[b.type] || '✦';
 
         var bCard = document.createElement('div');
-        bCard.className = 'block-editor-card' + (isFlexChild ? ' is-flex-child' : '') + (isCalloutChild ? ' is-callout-child' : '');
-        bCard.setAttribute('draggable', 'true');
+        bCard.className = 'block-editor-card' + (isFlexChild ? ' is-flex-child' : '') + (isCalloutChild ? ' is-callout-child' : '') + (isSlotChild ? ' is-slot-child' : '');
+        bCard.setAttribute('draggable', isSlotChild ? 'false' : 'true');
         bCard.setAttribute('data-sec-id', sec.id);
         bCard.setAttribute('data-block-id', b.id);
         bCard.setAttribute('data-block-type', b.type);
@@ -6600,6 +8928,9 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         }
         if (isCalloutChild) {
           bCard.setAttribute('data-callout-id', context.calloutBlockId);
+        }
+        if (isSlotChild) {
+          bCard.setAttribute('data-slot-id', context.slotId);
         }
 
         var bHeader = document.createElement('div');
@@ -6660,6 +8991,10 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
         // Block Drag & Drop
         bCard.addEventListener('dragstart', function(e) {
+          if (isSlotChild) {
+            e.preventDefault();
+            return;
+          }
           if (e.target && e.target.closest('input, textarea, select, [contenteditable="true"]')) {
             return;
           }
@@ -8235,10 +10570,34 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         }
       });
 
+      function sanitizeDocumentGridContract(doc) {
+        if (!doc || !Array.isArray(doc.sections)) return;
+        doc.sections.forEach(function(sec) {
+          if (sec.visualGrid && typeof sec.visualGrid === 'object') {
+            if (!isAmbiguousSectionClient(sec)) {
+              sec.blocks = [];
+            }
+            delete sec.visualGrid.showCoordinates;
+            delete sec.visualGrid.minRowHeight;
+            if (Array.isArray(sec.visualGrid.layoutItems)) {
+              sec.visualGrid.layoutItems.forEach(function(it) {
+                if (it && typeof it === 'object') {
+                  delete it.columnEnd;
+                  delete it.rowEnd;
+                  delete it.label;
+                }
+              });
+            }
+          }
+        });
+      }
+
       // ── Autosave & Persistence ──────────────────────────
       function saveDraft(quiet) {
         syncMetaStateFromInputs();
         setStatus('Saving…', 'saving');
+
+        sanitizeDocumentGridContract(currentDoc);
 
         return fetch('/__article-studio/draft', {
           method: 'POST',
@@ -8479,8 +10838,35 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
       // ── Duplicate Article ───────────────────────────────
       document.getElementById('btn-duplicate-article').addEventListener('click', function() {
-        var copyDoc = JSON.parse(JSON.stringify(currentDoc));
-        copyDoc.studioId = uid('draft');
+        var newDraftId = uid('draft');
+        var copyDoc;
+        if (typeof window.deepCloneAndRegenerateIds === 'function') {
+          copyDoc = window.deepCloneAndRegenerateIds(currentDoc, newDraftId);
+        } else {
+          copyDoc = JSON.parse(JSON.stringify(currentDoc));
+          copyDoc.studioId = newDraftId;
+          (copyDoc.sections || []).forEach(function(sec) {
+            sec.id = uid('sec');
+            if (hasVisualGridSection(sec) && sec.visualGrid && Array.isArray(sec.visualGrid.layoutItems)) {
+              sec.blocks = [];
+              sec.visualGrid.layoutItems.forEach(function(it) {
+                if (it && typeof it === 'object') {
+                  it.id = uid('grid_item');
+                  if (it.block) {
+                    it.block.id = uid('blk');
+                    regenerateBlockNestedIds(it.block);
+                  }
+                }
+              });
+            } else if (Array.isArray(sec.blocks)) {
+              sec.blocks.forEach(function(blk) {
+                blk.id = uid('blk');
+                regenerateBlockNestedIds(blk);
+              });
+            }
+          });
+        }
+        delete copyDoc.sourceArticleSlug;
         var rawBase = (copyDoc.slug || 'untitled').replace(/-copy(-\d+)?$/i, '');
         copyDoc.slug = normalizeSlugClient(rawBase + '-copy', false);
         copyDoc.meta.title = (copyDoc.meta.title || 'Untitled Scroll') + ' (Copy)';
@@ -8497,6 +10883,17 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         showToast('Article duplicated as new draft', 'success');
       });
 
+      // ── Focus Canvas Toggle ──────────────────────────────
+      var btnFocus = document.getElementById('btn-focus-canvas');
+      if (btnFocus) {
+        btnFocus.addEventListener('click', function() {
+          var isFocused = document.body.classList.toggle('is-canvas-focused');
+          btnFocus.textContent = isFocused ? '⛶ Normal View' : '⛶ Focus Canvas';
+          btnFocus.setAttribute('title', isFocused ? 'Restore normal 3-column workspace' : 'Toggle full-width canvas workspace');
+          showToast(isFocused ? 'Focus Canvas mode enabled' : 'Normal workspace view restored', 'info');
+        });
+      }
+
       // ── Save Draft Button ───────────────────────────────
       document.getElementById('btn-save-draft').addEventListener('click', function() {
         saveDraft(false);
@@ -8505,6 +10902,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
       // ── Single-Tab Reusable Live Preview ────────────────
       document.getElementById('btn-preview').addEventListener('click', function() {
         syncMetaStateFromInputs();
+        sanitizeDocumentGridContract(currentDoc);
         showToast('Preparing preview…', 'saving');
 
         fetch('/__article-studio/preview', {
@@ -8527,7 +10925,13 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
       });
 
       // ── Publish Action ──────────────────────────────────
-      document.getElementById('btn-publish').addEventListener('click', function() {
+      var isPublishing = false;
+      var btnPublishEl = document.getElementById('btn-publish');
+      btnPublishEl.addEventListener('click', function() {
+        if (isPublishing) {
+          showToast('Publish already in progress…', 'info');
+          return;
+        }
         syncMetaStateFromInputs();
 
         // Validation
@@ -8577,42 +10981,83 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
           showToast('Add at least one section before publishing', 'error');
           return;
         }
+        if (currentDoc.meta.coverImageSrc && String(currentDoc.meta.coverImageSrc).trim()) {
+          if (!currentDoc.meta.coverImageAlt || !String(currentDoc.meta.coverImageAlt).trim()) {
+            showToast('Cover image requires alt text for accessibility.', 'error');
+            return;
+          }
+        }
 
-        // Validate image alt texts and table minimums
+        // Validate active blocks in both Legacy and Grid sections (alt texts, table minimums, Embed safety, ambiguous sections)
         var errors = [];
-        function validateBlockRecursive(blk, sIdx) {
-          if (!blk || !blk.data) return;
+        function validateBlockRecursive(blk, sIdx, secTitle) {
+          if (!blk || !blk.data) {
+            errors.push('Section ' + (sIdx + 1) + ': Malformed block encountered.');
+            return;
+          }
           var d = blk.data;
-          if ((d.src || d.imageSrc) && !d.alt) {
-            errors.push('Section ' + (sIdx + 1) + ' (' + blk.type + '): Alt text is required for image.');
+          var labelPrefix = 'Section ' + (sIdx + 1) + (secTitle ? ' ("' + secTitle + '")' : '') + ' — Block "' + (blk.id || 'unknown') + '" (' + blk.type + ')';
+          if ((d.src || d.imageSrc) && (!d.alt || !String(d.alt).trim())) {
+            errors.push(labelPrefix + ': Alt text is required for image.');
           }
           if (blk.type === 'technical-table') {
             if (!d.columns || d.columns.length === 0) {
-              errors.push('Section ' + (sIdx + 1) + ' (technical-table): At least 1 column is required.');
+              errors.push(labelPrefix + ': At least 1 column is required.');
+            }
+          }
+          if (blk.type === 'embed') {
+            if (typeof window.validateEmbedBlockData === 'function') {
+              var embedRes = window.validateEmbedBlockData(d, labelPrefix);
+              if (!embedRes.valid) {
+                errors.push(embedRes.error);
+              }
+            } else {
+              var rawUrl = String(d.url || '').trim();
+              if (!rawUrl || /^(javascript|data|vbscript|file):/i.test(rawUrl)) {
+                errors.push(labelPrefix + ': Valid safe Embed URL is required.');
+              }
             }
           }
           if (Array.isArray(d.blocks)) {
-            d.blocks.forEach(function(cb) { validateBlockRecursive(cb, sIdx); });
+            d.blocks.forEach(function(cb) { validateBlockRecursive(cb, sIdx, secTitle); });
           }
           if (Array.isArray(d.columns)) {
             d.columns.forEach(function(col) {
-              if (Array.isArray(col.blocks)) {
-                col.blocks.forEach(function(cb) { validateBlockRecursive(cb, sIdx); });
+              if (col && Array.isArray(col.blocks)) {
+                col.blocks.forEach(function(cb) { validateBlockRecursive(cb, sIdx, secTitle); });
               }
             });
           }
         }
+
         currentDoc.sections.forEach(function(sec, sIdx) {
-          (sec.blocks || []).forEach(function(blk) {
-            validateBlockRecursive(blk, sIdx);
+          var secTitle = sec && sec.title ? sec.title : '';
+          if (isAmbiguousSectionClient(sec)) {
+            errors.push('Section ' + (sIdx + 1) + (secTitle ? ' ("' + secTitle + '")' : '') + ': Ambiguous section contains both legacy blocks and Grid layoutItems.');
+            return;
+          }
+          var activeBlocks = getActiveSectionBlocksClient(sec);
+          activeBlocks.forEach(function(blk) {
+            validateBlockRecursive(blk, sIdx, secTitle);
           });
         });
+
+        if (errors.length === 0 && typeof window.validateDocumentForPublish === 'function') {
+          var sharedCheck = window.validateDocumentForPublish(currentDoc);
+          if (!sharedCheck.valid && sharedCheck.error) {
+            errors.push(sharedCheck.error);
+          }
+        }
 
         if (errors.length > 0) {
           showToast(errors[0], 'error');
           return;
         }
 
+        sanitizeDocumentGridContract(currentDoc);
+
+        isPublishing = true;
+        btnPublishEl.disabled = true;
         showToast('Publishing scroll to archives…', 'saving');
         fetch('/__article-studio/publish', {
           method: 'POST',
@@ -8625,6 +11070,7 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
             isDirty = false;
             isExistingPublished = true;
             originalPublishedSlug = data.slug;
+            currentDoc.sourceArticleSlug = data.slug;
             setStatus('Published', 'saved');
             showToast('✦ Scroll published successfully: ' + data.slug, 'success');
             setTimeout(function() {
@@ -8636,55 +11082,79 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
         })
         .catch(function(err) {
           showToast('Publish error: ' + err.message, 'error');
+        })
+        .finally(function() {
+          isPublishing = false;
+          btnPublishEl.disabled = false;
         });
       });
 
       // ── Initial Boot ────────────────────────────────────
-      initLibrary();
-      initCategoryCombobox();
-      initDifficultyDropdown();
-      initTagsCombobox();
-      initCustomColorPicker();
+      function bootStudio() {
+        initLibrary();
+        initCategoryCombobox();
+        initDifficultyDropdown();
+        initTagsCombobox();
+        initCustomColorPicker();
 
-      // Restore draft from URL query, lastDraftId, or create new
-      var urlParams = new URLSearchParams(window.location.search);
-      var paramDraftId = urlParams.get('draft');
-      var paramNew = urlParams.get('new');
+        // Restore draft from URL query, lastDraftId, or create new
+        var urlParams = new URLSearchParams(window.location.search);
+        var paramDraftId = urlParams.get('draft');
+        var paramNew = urlParams.get('new');
 
-      if (paramDraftId) {
-        openDraft(paramDraftId);
-      } else if (paramNew === '1') {
-        createNewArticle();
-      } else {
-        var lastDraftId = null;
-        try {
-          lastDraftId = localStorage.getItem('covenArticleStudio:lastDraftId');
-        } catch (e) {}
-
-        if (lastDraftId) {
-          fetch('/__article-studio/drafts/' + lastDraftId)
-            .then(function(res) {
-              if (res.ok) return res.json();
-              throw new Error('Not found');
-            })
-            .then(function(doc) {
-              normalizeDocument(doc);
-              currentDoc = doc;
-              activeSectionId = doc.sections.length > 0 ? doc.sections[0].id : null;
-              renderSections();
-              syncMetaInputsFromState();
-              setStatus('Draft restored', 'saved');
-            })
-            .catch(function() {
-              createNewArticle();
-            });
-        } else {
+        if (paramDraftId) {
+          openDraft(paramDraftId);
+        } else if (paramNew === '1') {
           createNewArticle();
+        } else {
+          var lastDraftId = null;
+          try {
+            lastDraftId = localStorage.getItem('covenArticleStudio:lastDraftId');
+          } catch (e) {}
+
+          if (lastDraftId) {
+            fetch('/__article-studio/drafts/' + lastDraftId)
+              .then(function(res) {
+                if (res.ok) return res.json();
+                throw new Error('Not found');
+              })
+              .then(function(doc) {
+                normalizeDocument(doc);
+                currentDoc = doc;
+                activeSectionId = doc.sections.length > 0 ? doc.sections[0].id : null;
+                renderSections();
+                syncMetaInputsFromState();
+                setStatus('Draft restored', 'saved');
+              })
+              .catch(function() {
+                createNewArticle();
+              });
+          } else {
+            createNewArticle();
+          }
         }
       }
 
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bootStudio);
+      } else {
+        bootStudio();
+      }
+
       // Expose state globally for browser QA automation
-      window.currentDoc = currentDoc;
+      try {
+        Object.defineProperty(window, 'currentDoc', {
+          configurable: true,
+          enumerable: true,
+          get: function() { return currentDoc; },
+          set: function(v) { currentDoc = v; }
+        });
+      } catch (e) {
+        window.currentDoc = currentDoc;
+      }
+      window.openDraft = openDraft;
+      window.createNewArticle = createNewArticle;
+      window.triggerAutosave = triggerAutosave;
       window.resolveBlockLocation = resolveBlockLocation;
       window.renderSections = renderSections;
       window.renderMetadata = syncMetaInputsFromState;

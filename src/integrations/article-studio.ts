@@ -5,8 +5,17 @@ import path from 'node:path';
 import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ArticleDocument } from '../types/article-document';
 import { normalizeSlug, isValidSlug } from '../lib/article-taxonomy';
+import {
+  getActiveSectionBlocks,
+  normalizeCanonicalDocument,
+  validateDocumentForPublish,
+  isPublishCopyCandidateUrl,
+  deepCloneAndRegenerateIds,
+} from '../lib/article-grid/geometry';
 import { getAdminCenterHtml } from './article-admin-html';
 import { handleMemeStudioRequest, copyMemeImagesToDist } from './meme-studio';
+
+const activePublishLocks = new Set<string>();
 
 function isSafeSlugPath(baseDir: string, slug: string): boolean {
   if (!isValidSlug(slug)) return false;
@@ -450,10 +459,11 @@ export default function articleStudioIntegration(): AstroIntegration {
 
                       // 3. POST /__article-studio/draft
                       if (pathname === '/__article-studio/draft' && req.method === 'POST') {
-                        const doc: ArticleDocument = await readJsonBody(req);
-                        if (!doc || !doc.studioId) {
+                        const rawDoc: ArticleDocument = await readJsonBody(req);
+                        if (!rawDoc || !rawDoc.studioId) {
                           return sendJson(res, 400, { error: 'studioId is required.' });
                         }
+                        const doc = normalizeCanonicalDocument(rawDoc);
                         if (doc.meta) {
                           if (!doc.meta.coverImageSrc && doc.meta.cover) doc.meta.coverImageSrc = doc.meta.cover;
                           if (!doc.meta.coverImageAlt && doc.meta.coverCaption) doc.meta.coverImageAlt = doc.meta.coverCaption;
@@ -461,6 +471,7 @@ export default function articleStudioIntegration(): AstroIntegration {
                           delete doc.meta.coverCaption;
                         }
                         const safeId = sanitizeFilename(doc.studioId);
+                        doc.studioId = safeId;
                         const targetFile = path.join(draftsDir, `${safeId}.json`);
                         await fsp.writeFile(targetFile, JSON.stringify(doc, null, 2), 'utf-8');
                         return sendJson(res, 200, { success: true, studioId: safeId });
@@ -479,10 +490,11 @@ export default function articleStudioIntegration(): AstroIntegration {
 
                       // 5. POST /__article-studio/preview
                       if (pathname === '/__article-studio/preview' && req.method === 'POST') {
-                        const doc: ArticleDocument = await readJsonBody(req);
-                        if (!doc) {
+                        const rawDoc: ArticleDocument = await readJsonBody(req);
+                        if (!rawDoc || typeof rawDoc !== 'object') {
                           return sendJson(res, 400, { error: 'Invalid ArticleDocument.' });
                         }
+                        const doc = normalizeCanonicalDocument(rawDoc);
                         await fsp.writeFile(previewFile, JSON.stringify(doc, null, 2), 'utf-8');
                         return sendJson(res, 200, { success: true, previewUrl: '/template-preview/article' });
                       }
@@ -551,7 +563,7 @@ export default function articleStudioIntegration(): AstroIntegration {
                       // 9. POST /__article-studio/publish
                       if (pathname === '/__article-studio/publish' && req.method === 'POST') {
                         const doc: ArticleDocument = await readJsonBody(req);
-                        if (!doc || !doc.studioId) {
+                        if (!doc || typeof doc !== 'object' || !doc.studioId) {
                           return sendJson(res, 400, { error: 'Valid studioId is required to publish.' });
                         }
                         if (doc.meta?.status !== 'published') {
@@ -579,9 +591,30 @@ export default function articleStudioIntegration(): AstroIntegration {
                           });
                         }
                         const slug = normalizeSlug(rawSlug);
-                        if (!validateSlug(slug)) {
+                        if (!validateSlug(slug) || !isSafeSlugPath(articlesDir, slug)) {
                           return sendJson(res, 400, {
                             error: 'Invalid slug. Must be lowercase alphanumeric characters and single hyphens.',
+                          });
+                        }
+                        doc.slug = slug;
+
+                        // Normalize legacy cover/caption before running full publish validation
+                        if (!doc.meta.coverImageSrc && doc.meta.cover) {
+                          doc.meta.coverImageSrc = doc.meta.cover;
+                        }
+                        if (!doc.meta.coverImageAlt && doc.meta.coverCaption) {
+                          doc.meta.coverImageAlt = doc.meta.coverCaption;
+                        }
+
+                        // Full server-side canonical document, Grid geometry, active block, and Embed validation
+                        // Executed BEFORE creating any directory or touching disk
+                        const publishValidation = validateDocumentForPublish(doc);
+                        if (!publishValidation.valid) {
+                          return sendJson(res, 400, {
+                            error: publishValidation.error || 'Document failed publish validation.',
+                            sectionId: publishValidation.sectionId,
+                            itemId: publishValidation.itemId,
+                            blockId: publishValidation.blockId,
                           });
                         }
 
@@ -592,139 +625,172 @@ export default function articleStudioIntegration(): AstroIntegration {
                           });
                         }
 
+                        // Guard against concurrent/repeated publish requests for the same slug or studioId
+                        const safeStudioId = sanitizeFilename(doc.studioId);
+                        if (!safeStudioId) {
+                          return sendJson(res, 400, { error: 'Invalid studioId.' });
+                        }
+                        if (activePublishLocks.has(slug) || activePublishLocks.has(safeStudioId)) {
+                          return sendJson(res, 409, {
+                            error: 'A publish operation is already in progress for this scroll.',
+                          });
+                        }
+
+                        activePublishLocks.add(slug);
+                        activePublishLocks.add(safeStudioId);
+
                         const articleFolder = path.join(articlesDir, slug);
                         const contentJsonPath = path.join(articleFolder, 'content.json');
+                        const existedBefore = fs.existsSync(articleFolder);
 
-                        // Collision check
-                        if (fs.existsSync(articleFolder)) {
-                          if (!fs.existsSync(contentJsonPath)) {
-                            return sendJson(res, 409, {
-                              error: 'This article URL is already in use.',
-                            });
-                          }
-                          try {
-                            const existingContent = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
-                            const isSelfUpdate = (doc.sourceArticleSlug && doc.sourceArticleSlug === slug) ||
-                                                 existingContent.studioId === doc.studioId;
-                            if (!isSelfUpdate) {
+                        try {
+                          // Collision check before writing anything
+                          if (existedBefore) {
+                            if (!fs.existsSync(contentJsonPath)) {
                               return sendJson(res, 409, {
                                 error: 'This article URL is already in use.',
                               });
                             }
-                          } catch (e) {
-                            return sendJson(res, 409, {
-                              error: 'This article URL is already in use.',
-                            });
-                          }
-                        }
-
-                        // Create destination article folders
-                        const articleImagesDir = path.join(articleFolder, 'images');
-                        await fsp.mkdir(articleImagesDir, { recursive: true });
-
-                        // Process referenced uploaded images
-                        const processedDoc: ArticleDocument = JSON.parse(JSON.stringify(doc));
-                        processedDoc.slug = slug;
-                        processedDoc.meta.status = 'published';
-
-                        async function processImageString(srcVal: string): Promise<string> {
-                          if (srcVal && srcVal.includes('/__article-studio/uploads/')) {
-                            const filename = path.basename(srcVal);
-                            const sourcePath = path.join(uploadsDir, filename);
-                            if (fs.existsSync(sourcePath)) {
-                              const destPath = path.join(articleImagesDir, filename);
-                              await fsp.copyFile(sourcePath, destPath);
-                              return `/articles/${slug}/images/${filename}`;
+                            try {
+                              const existingContent = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
+                              const isSelfUpdate =
+                                (doc.sourceArticleSlug && doc.sourceArticleSlug === slug) ||
+                                existingContent.studioId === doc.studioId;
+                              if (!isSelfUpdate) {
+                                return sendJson(res, 409, {
+                                  error: 'This article URL is already in use.',
+                                });
+                              }
+                            } catch (e) {
+                              return sendJson(res, 409, {
+                                error: 'This article URL is already in use.',
+                              });
                             }
                           }
-                          return srcVal;
-                        }
 
-                        // Normalize legacy cover/caption into canonical fields
-                        if (!processedDoc.meta.coverImageSrc && processedDoc.meta.cover) {
-                          processedDoc.meta.coverImageSrc = processedDoc.meta.cover;
-                        }
-                        if (!processedDoc.meta.coverImageAlt && processedDoc.meta.coverCaption) {
-                          processedDoc.meta.coverImageAlt = processedDoc.meta.coverCaption;
-                        }
+                          // Normalize through canonical contract (preserves legacy sections, strips transient Grid metadata)
+                          const processedDoc: ArticleDocument = normalizeCanonicalDocument(doc);
+                          processedDoc.studioId = safeStudioId;
+                          processedDoc.slug = slug;
+                          processedDoc.meta.status = 'published';
 
-                        // Remove legacy fields on write so only canonical fields are persisted
-                        delete processedDoc.meta.cover;
-                        delete processedDoc.meta.coverCaption;
+                          // Remove legacy cover fields on write so only canonical fields are persisted
+                          delete processedDoc.meta.cover;
+                          delete processedDoc.meta.coverCaption;
 
-                        // Cover rewrite
-                        if (processedDoc.meta.coverImageSrc) {
-                          processedDoc.meta.coverImageSrc = await processImageString(processedDoc.meta.coverImageSrc);
-                        }
+                          // Create destination article folders after all validations pass
+                          const articleImagesDir = path.join(articleFolder, 'images');
+                          await fsp.mkdir(articleImagesDir, { recursive: true });
 
-                        // Walk sections and blocks (including nested container blocks) to migrate upload paths
-                        async function migrateBlockImages(blk: any) {
-                          if (!blk || !blk.data) return;
-                          const d = blk.data;
-                          if (d.imageSrc) d.imageSrc = await processImageString(d.imageSrc);
-                          if (d.src) d.src = await processImageString(d.src);
-                          if (d.img1Src) d.img1Src = await processImageString(d.img1Src);
-                          if (d.img2Src) d.img2Src = await processImageString(d.img2Src);
-                          if (d.img3Src) d.img3Src = await processImageString(d.img3Src);
-                          if (Array.isArray(d.cards)) {
-                            for (const c of d.cards) {
-                              if (c.src) c.src = await processImageString(c.src);
+                          async function processImageString(srcVal: string): Promise<string> {
+                            if (srcVal && isPublishCopyCandidateUrl(srcVal)) {
+                              const rawBasename = path.basename(srcVal.trim());
+                              const filename = sanitizeFilename(rawBasename);
+                              if (!filename) return srcVal;
+                              const sourcePath = path.resolve(uploadsDir, filename);
+                              const relSource = path.relative(uploadsDir, sourcePath);
+                              if (relSource.startsWith('..') || path.isAbsolute(relSource)) {
+                                return srcVal;
+                              }
+                              if (fs.existsSync(sourcePath)) {
+                                const destPath = path.join(articleImagesDir, filename);
+                                await fsp.copyFile(sourcePath, destPath);
+                                return `/articles/${slug}/images/${filename}`;
+                              }
                             }
+                            return srcVal;
                           }
-                          if (Array.isArray(d.blocks)) {
-                            for (const childBlk of d.blocks) {
-                              await migrateBlockImages(childBlk);
+
+                          // Cover rewrite (only if managed draft upload)
+                          if (processedDoc.meta.coverImageSrc) {
+                            processedDoc.meta.coverImageSrc = await processImageString(processedDoc.meta.coverImageSrc);
+                          }
+
+                          // Walk active blocks in each section (including nested container blocks) to migrate managed upload paths
+                          // External HTTP/HTTPS URLs (including remote Embed images/videos/links/iframes) are NEVER fetched or rewritten
+                          async function migrateBlockImages(blk: any) {
+                            if (!blk || !blk.data) return;
+                            const d = blk.data;
+                            if (d.imageSrc) d.imageSrc = await processImageString(d.imageSrc);
+                            if (d.src) d.src = await processImageString(d.src);
+                            if (d.img1Src) d.img1Src = await processImageString(d.img1Src);
+                            if (d.img2Src) d.img2Src = await processImageString(d.img2Src);
+                            if (d.img3Src) d.img3Src = await processImageString(d.img3Src);
+                            if (blk.type === 'embed' && d.embedType === 'image' && typeof d.url === 'string' && d.url) {
+                              d.url = await processImageString(d.url);
                             }
-                          }
-                          if (Array.isArray(d.columns)) {
-                            for (const col of d.columns) {
-                              if (Array.isArray(col.blocks)) {
-                                for (const childBlk of col.blocks) {
-                                  await migrateBlockImages(childBlk);
+                            if (Array.isArray(d.cards)) {
+                              for (const c of d.cards) {
+                                if (c && c.src) c.src = await processImageString(c.src);
+                              }
+                            }
+                            if (Array.isArray(d.blocks)) {
+                              for (const childBlk of d.blocks) {
+                                await migrateBlockImages(childBlk);
+                              }
+                            }
+                            if (Array.isArray(d.columns)) {
+                              for (const col of d.columns) {
+                                if (col && Array.isArray(col.blocks)) {
+                                  for (const childBlk of col.blocks) {
+                                    await migrateBlockImages(childBlk);
+                                  }
                                 }
                               }
                             }
                           }
-                        }
 
-                        for (const sec of processedDoc.sections) {
-                          for (const blk of sec.blocks) {
-                            await migrateBlockImages(blk);
+                          // One per-section active content rule via getActiveSectionBlocks(sec)
+                          for (const sec of processedDoc.sections) {
+                            const activeBlocks = getActiveSectionBlocks(sec);
+                            for (const blk of activeBlocks) {
+                              await migrateBlockImages(blk);
+                            }
                           }
-                        }
 
-                        // Write content.json (persisted copy must NOT contain local authoring sourceArticleSlug)
-                        const persistedDoc: ArticleDocument = JSON.parse(JSON.stringify(processedDoc));
-                        delete persistedDoc.sourceArticleSlug;
-                        await fsp.writeFile(contentJsonPath, JSON.stringify(persistedDoc, null, 2), 'utf-8');
+                          // Write content.json (persisted copy must NOT contain local authoring sourceArticleSlug)
+                          const persistedDoc: ArticleDocument = JSON.parse(JSON.stringify(processedDoc));
+                          delete persistedDoc.sourceArticleSlug;
+                          await fsp.writeFile(contentJsonPath, JSON.stringify(persistedDoc, null, 2), 'utf-8');
 
-                        // Write index.astro
-                        const indexAstroPath = path.join(articleFolder, 'index.astro');
-                        const indexAstroContent = `---
+                          // Write index.astro
+                          const indexAstroPath = path.join(articleFolder, 'index.astro');
+                          const indexAstroContent = `---
 import ArticleRenderer from '../../components/article/ArticleRenderer.astro';
 import content from './content.json';
 ---
 
 <ArticleRenderer document={content} />
 `;
-                        await fsp.writeFile(indexAstroPath, indexAstroContent, 'utf-8');
+                          await fsp.writeFile(indexAstroPath, indexAstroContent, 'utf-8');
 
-                        // Write meta.ts
-                        const metaTsPath = path.join(articleFolder, 'meta.ts');
-                        const metaTsContent = generateMetaTs(processedDoc.meta, slug);
-                        await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
+                          // Write meta.ts
+                          const metaTsPath = path.join(articleFolder, 'meta.ts');
+                          const metaTsContent = generateMetaTs(processedDoc.meta, slug);
+                          await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
 
-                        // Record sourceArticleSlug so this draft is linked to its persisted article
-                        processedDoc.sourceArticleSlug = slug;
-                        const draftPath = path.join(draftsDir, `${processedDoc.studioId}.json`);
-                        await fsp.writeFile(draftPath, JSON.stringify(processedDoc, null, 2), 'utf-8');
+                          // Record sourceArticleSlug so this draft is linked to its persisted article
+                          processedDoc.sourceArticleSlug = slug;
+                          const draftPath = path.join(draftsDir, `${processedDoc.studioId}.json`);
+                          await fsp.writeFile(draftPath, JSON.stringify(processedDoc, null, 2), 'utf-8');
 
-                        return sendJson(res, 200, {
-                          success: true,
-                          slug,
-                          articleUrl: `/article/${slug}`,
-                          libraryUrl: '/library',
-                        });
+                          return sendJson(res, 200, {
+                            success: true,
+                            slug,
+                            articleUrl: `/article/${slug}`,
+                            libraryUrl: '/library',
+                          });
+                        } catch (publishErr: any) {
+                          if (!existedBefore && fs.existsSync(articleFolder)) {
+                            try {
+                              await fsp.rm(articleFolder, { recursive: true, force: true });
+                            } catch {}
+                          }
+                          throw publishErr;
+                        } finally {
+                          activePublishLocks.delete(slug);
+                          activePublishLocks.delete(safeStudioId);
+                        }
                       }
 
                       // 10. POST /__article-studio/duplicate
@@ -735,8 +801,8 @@ import content from './content.json';
                           return sendJson(res, 400, { error: 'Document is required to duplicate.' });
                         }
                         const newStudioId = `studio_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
-                        const duplicatedDoc: ArticleDocument = JSON.parse(JSON.stringify(originalDoc));
-                        duplicatedDoc.studioId = newStudioId;
+                        const duplicatedDoc: ArticleDocument = deepCloneAndRegenerateIds(originalDoc, newStudioId);
+                        delete duplicatedDoc.sourceArticleSlug;
 
                         // Intelligent title and slug duplication:
                         const rawTitle = (originalDoc.meta?.title || 'Untitled').trim();

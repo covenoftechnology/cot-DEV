@@ -1,5 +1,6 @@
 import type { Article, ArticleMeta, ArticleNavigation } from '../types/article';
 import type { ArticleDocument, ArticleBlock } from '../types/article-document';
+import { getActiveSectionBlocks } from './article-grid/geometry';
 
 // Automatically discover all article metadata files using Vite's import.meta.glob
 const metaModules = import.meta.glob<{ default?: ArticleMeta; meta?: ArticleMeta }>(
@@ -330,7 +331,7 @@ export function countDocumentTrials(doc: ArticleDocument | undefined | null): nu
   if (!doc || !Array.isArray(doc.sections)) return 0;
   let count = 0;
   for (const section of doc.sections) {
-    traverseArticleBlocks(section?.blocks, (block) => {
+    traverseArticleBlocks(getActiveSectionBlocks(section), (block) => {
       if (block.type === 'article-trial') {
         count += 1;
       }
