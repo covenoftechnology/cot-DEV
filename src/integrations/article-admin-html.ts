@@ -5,6 +5,7 @@ export function getAdminCenterHtml(): string {
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Coven Article Center — Local Admin</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -766,8 +767,8 @@ export function getAdminCenterHtml(): string {
       function loadData() {
         state.loading = true;
         Promise.all([
-          fetch('/__article-studio/articles').then(function(r) { return r.json(); }),
-          fetch('/__article-studio/drafts').then(function(r) { return r.json(); })
+          fetch('/__article-studio/articles', { cache: 'no-store' }).then(function(r) { return r.json(); }),
+          fetch('/__article-studio/drafts', { cache: 'no-store' }).then(function(r) { return r.json(); })
         ])
         .then(function(results) {
           state.persistedArticles = results[0].articles || [];
@@ -1181,13 +1182,30 @@ export function getAdminCenterHtml(): string {
           btn.classList.toggle('active', btn === tabBtn);
         });
 
-        renderList();
+        // Always re-fetch inventory when switching tabs to ensure freshest data
+        loadData();
       });
 
       document.getElementById('article-search').addEventListener('input', function(e) {
         state.searchQuery = e.target.value;
         renderList();
       });
+
+      // Refetch on tab focus, page visibility change, and browser back/forward (bfcache)
+      window.addEventListener('pageshow', function() {
+        loadData();
+      });
+      window.addEventListener('focus', function() {
+        loadData();
+      });
+      document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+          loadData();
+        }
+      });
+
+      // Expose manual refresh globally for programmatic QA
+      window.refreshArticleCenter = loadData;
 
       // Initial load
       loadData();

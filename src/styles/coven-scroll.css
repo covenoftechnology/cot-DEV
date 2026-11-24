@@ -1,0 +1,279 @@
+/* ==========================================================================
+   COVEN OF TECHNOLOGY — CANONICAL UNIFIED SCROLLBAR & EMBED SHELL SYSTEM
+   Single source of truth for all project-owned scrollbars across Reader &
+   Article Studio. Intentionally scoped (NO global *::-webkit-scrollbar).
+   Horizontal Gallery (.horizontal-scroll) intentionally excluded.
+   ========================================================================== */
+
+:root {
+  --coven-scroll-size: 8px;
+  --coven-scroll-size-sm: 6px;
+  --coven-scroll-track: #120d1e;
+  --coven-scroll-track-subtle: rgba(18, 13, 30, 0.78);
+  --coven-scroll-thumb: rgba(155, 118, 214, 0.52);
+  --coven-scroll-thumb-hover: rgba(216, 181, 107, 0.8);
+  --coven-scroll-thumb-active: rgba(232, 207, 149, 0.94);
+  --coven-scroll-thumb-border: #120d1e;
+  --coven-scroll-radius: 999px;
+}
+
+/* ── Canonical Opt-In Scroll Surface Utility & Project-Owned Containers ── */
+/* Standard scrollbar-width/color for Firefox (browsers without ::-webkit-scrollbar) so Chromium/WebKit keep full rounded thumb + Aether Gold hover/active states */
+@supports not selector(::-webkit-scrollbar) {
+  .coven-scroll,
+  .article-template .table-wrap,
+  .article-template .table-wrap.coven-table-scroll,
+  .article-template .toc-scroll-area,
+  .article-template .mobile-toc-content,
+  .article-template .code-block-wrap,
+  .article-template pre,
+  .coven-studio .studio-library-pane,
+  .coven-studio .studio-center-pane,
+  .coven-studio .studio-settings-pane,
+  .coven-studio .studio-workspace,
+  .coven-studio .studio-table-builder,
+  .coven-studio .studio-multi-image-scroll,
+  .coven-studio .studio-flex-canvas-wrap,
+  .coven-studio .combobox-options,
+  .coven-studio .custom-icon-saved-scroll,
+  .coven-studio .grid-composer-viewport,
+  .coven-studio .grid-composer-canvas-wrap,
+  .coven-studio .grid-block-content {
+    scrollbar-width: thin;
+    scrollbar-color: var(--coven-scroll-thumb) var(--coven-scroll-track);
+  }
+}
+
+/* In Chromium/WebKit, explicitly reset inherited scrollbar-color/width from third-party/legacy rules (e.g. composer.css) so sleek ::-webkit-scrollbar + Aether Gold hover/active always win */
+@supports selector(::-webkit-scrollbar) {
+  .coven-scroll,
+  .coven-studio .studio-table-builder,
+  .coven-studio .grid-composer-viewport,
+  .coven-studio .grid-composer-canvas-wrap,
+  .coven-studio .grid-block-content {
+    scrollbar-width: auto;
+    scrollbar-color: auto;
+  }
+}
+
+.coven-scroll::-webkit-scrollbar,
+.article-template .table-wrap::-webkit-scrollbar,
+.article-template .table-wrap.coven-table-scroll::-webkit-scrollbar,
+.article-template .toc-scroll-area::-webkit-scrollbar,
+.article-template .mobile-toc-content::-webkit-scrollbar,
+.article-template .code-block-wrap::-webkit-scrollbar,
+.article-template pre::-webkit-scrollbar,
+.coven-studio .studio-library-pane::-webkit-scrollbar,
+.coven-studio .studio-center-pane::-webkit-scrollbar,
+.coven-studio .studio-settings-pane::-webkit-scrollbar,
+.coven-studio .studio-workspace::-webkit-scrollbar,
+.coven-studio .studio-table-builder::-webkit-scrollbar,
+.coven-studio .studio-multi-image-scroll::-webkit-scrollbar,
+.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar,
+.coven-studio .combobox-options::-webkit-scrollbar,
+.coven-studio .custom-icon-saved-scroll::-webkit-scrollbar,
+.coven-studio .grid-composer-viewport::-webkit-scrollbar,
+.coven-studio .grid-composer-canvas-wrap::-webkit-scrollbar,
+.coven-studio .grid-block-content::-webkit-scrollbar {
+  width: var(--coven-scroll-size);
+  height: var(--coven-scroll-size);
+}
+
+.coven-scroll::-webkit-scrollbar-track,
+.article-template .table-wrap::-webkit-scrollbar-track,
+.article-template .table-wrap.coven-table-scroll::-webkit-scrollbar-track,
+.article-template .toc-scroll-area::-webkit-scrollbar-track,
+.article-template .mobile-toc-content::-webkit-scrollbar-track,
+.article-template .code-block-wrap::-webkit-scrollbar-track,
+.article-template pre::-webkit-scrollbar-track,
+.coven-studio .studio-library-pane::-webkit-scrollbar-track,
+.coven-studio .studio-center-pane::-webkit-scrollbar-track,
+.coven-studio .studio-settings-pane::-webkit-scrollbar-track,
+.coven-studio .studio-workspace::-webkit-scrollbar-track,
+.coven-studio .studio-table-builder::-webkit-scrollbar-track,
+.coven-studio .studio-multi-image-scroll::-webkit-scrollbar-track,
+.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar-track,
+.coven-studio .combobox-options::-webkit-scrollbar-track,
+.coven-studio .custom-icon-saved-scroll::-webkit-scrollbar-track,
+.coven-studio .grid-composer-viewport::-webkit-scrollbar-track,
+.coven-studio .grid-composer-canvas-wrap::-webkit-scrollbar-track,
+.coven-studio .grid-block-content::-webkit-scrollbar-track {
+  background: var(--coven-scroll-track);
+  border-radius: 0 0 5px 5px;
+}
+
+.coven-scroll::-webkit-scrollbar-thumb,
+.article-template .table-wrap::-webkit-scrollbar-thumb,
+.article-template .table-wrap.coven-table-scroll::-webkit-scrollbar-thumb,
+.article-template .toc-scroll-area::-webkit-scrollbar-thumb,
+.article-template .mobile-toc-content::-webkit-scrollbar-thumb,
+.article-template .code-block-wrap::-webkit-scrollbar-thumb,
+.article-template pre::-webkit-scrollbar-thumb,
+.coven-studio .studio-library-pane::-webkit-scrollbar-thumb,
+.coven-studio .studio-center-pane::-webkit-scrollbar-thumb,
+.coven-studio .studio-settings-pane::-webkit-scrollbar-thumb,
+.coven-studio .studio-workspace::-webkit-scrollbar-thumb,
+.coven-studio .studio-table-builder::-webkit-scrollbar-thumb,
+.coven-studio .studio-multi-image-scroll::-webkit-scrollbar-thumb,
+.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar-thumb,
+.coven-studio .combobox-options::-webkit-scrollbar-thumb,
+.coven-studio .custom-icon-saved-scroll::-webkit-scrollbar-thumb,
+.coven-studio .grid-composer-viewport::-webkit-scrollbar-thumb,
+.coven-studio .grid-composer-canvas-wrap::-webkit-scrollbar-thumb,
+.coven-studio .grid-block-content::-webkit-scrollbar-thumb {
+  background: var(--coven-scroll-thumb);
+  border-radius: var(--coven-scroll-radius);
+  border: 2px solid var(--coven-scroll-thumb-border);
+}
+
+.coven-scroll::-webkit-scrollbar-thumb:hover,
+.article-template .table-wrap::-webkit-scrollbar-thumb:hover,
+.article-template .table-wrap.coven-table-scroll::-webkit-scrollbar-thumb:hover,
+.article-template .toc-scroll-area::-webkit-scrollbar-thumb:hover,
+.article-template .mobile-toc-content::-webkit-scrollbar-thumb:hover,
+.article-template .code-block-wrap::-webkit-scrollbar-thumb:hover,
+.article-template pre::-webkit-scrollbar-thumb:hover,
+.coven-studio .studio-library-pane::-webkit-scrollbar-thumb:hover,
+.coven-studio .studio-center-pane::-webkit-scrollbar-thumb:hover,
+.coven-studio .studio-settings-pane::-webkit-scrollbar-thumb:hover,
+.coven-studio .studio-workspace::-webkit-scrollbar-thumb:hover,
+.coven-studio .studio-table-builder::-webkit-scrollbar-thumb:hover,
+.coven-studio .studio-multi-image-scroll::-webkit-scrollbar-thumb:hover,
+.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar-thumb:hover,
+.coven-studio .combobox-options::-webkit-scrollbar-thumb:hover,
+.coven-studio .custom-icon-saved-scroll::-webkit-scrollbar-thumb:hover,
+.coven-studio .grid-composer-viewport::-webkit-scrollbar-thumb:hover,
+.coven-studio .grid-composer-canvas-wrap::-webkit-scrollbar-thumb:hover,
+.coven-studio .grid-block-content::-webkit-scrollbar-thumb:hover {
+  background: var(--coven-scroll-thumb-hover);
+}
+
+.coven-scroll::-webkit-scrollbar-thumb:active,
+.article-template .table-wrap::-webkit-scrollbar-thumb:active,
+.article-template .table-wrap.coven-table-scroll::-webkit-scrollbar-thumb:active,
+.article-template .toc-scroll-area::-webkit-scrollbar-thumb:active,
+.article-template .mobile-toc-content::-webkit-scrollbar-thumb:active,
+.article-template .code-block-wrap::-webkit-scrollbar-thumb:active,
+.article-template pre::-webkit-scrollbar-thumb:active,
+.coven-studio .studio-library-pane::-webkit-scrollbar-thumb:active,
+.coven-studio .studio-center-pane::-webkit-scrollbar-thumb:active,
+.coven-studio .studio-settings-pane::-webkit-scrollbar-thumb:active,
+.coven-studio .studio-workspace::-webkit-scrollbar-thumb:active,
+.coven-studio .studio-table-builder::-webkit-scrollbar-thumb:active,
+.coven-studio .studio-multi-image-scroll::-webkit-scrollbar-thumb:active,
+.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar-thumb:active,
+.coven-studio .combobox-options::-webkit-scrollbar-thumb:active,
+.coven-studio .custom-icon-saved-scroll::-webkit-scrollbar-thumb:active,
+.coven-studio .grid-composer-viewport::-webkit-scrollbar-thumb:active,
+.coven-studio .grid-composer-canvas-wrap::-webkit-scrollbar-thumb:active,
+.coven-studio .grid-block-content::-webkit-scrollbar-thumb:active {
+  background: var(--coven-scroll-thumb-active);
+}
+
+.coven-scroll::-webkit-scrollbar-corner,
+.article-template .table-wrap::-webkit-scrollbar-corner,
+.article-template .code-block-wrap::-webkit-scrollbar-corner,
+.article-template pre::-webkit-scrollbar-corner,
+.coven-studio .studio-library-pane::-webkit-scrollbar-corner,
+.coven-studio .studio-center-pane::-webkit-scrollbar-corner,
+.coven-studio .studio-settings-pane::-webkit-scrollbar-corner,
+.coven-studio .studio-table-builder::-webkit-scrollbar-corner,
+.coven-studio .grid-composer-viewport::-webkit-scrollbar-corner,
+.coven-studio .grid-block-content::-webkit-scrollbar-corner {
+  background: var(--coven-scroll-track);
+}
+
+/* Compact variant for narrow utility drawers (e.g., Article TOC) */
+.coven-scroll--compact,
+.article-template .toc-scroll-area {
+  --coven-scroll-size: var(--coven-scroll-size-sm);
+}
+
+/* ── Canonical Coven Embed Shell ────────────────────────────────────────── */
+.article-template .coven-embed-shell {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  border-radius: 8px;
+  border: 1px solid rgba(216, 181, 107, 0.24);
+  background: #0d0b14;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.36), inset 0 1px 0 rgba(216, 181, 107, 0.08);
+  overflow: hidden;
+  transition: border-color 0.2s ease;
+}
+
+.article-template .coven-embed-shell:focus-within {
+  border-color: rgba(216, 181, 107, 0.52);
+}
+
+.article-template .coven-embed-frame {
+  position: relative;
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+  background: #0b0812;
+  border: none;
+  border-radius: 0;
+  box-sizing: border-box;
+}
+
+.article-template .coven-embed-frame.embed-iframe-wrap {
+  border: none;
+  border-radius: 0;
+  min-height: 380px;
+}
+
+.article-template .coven-embed-frame.embed-video-wrap {
+  border: none;
+  border-radius: 0;
+}
+
+.article-template .coven-embed-loading {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    110deg,
+    rgba(18, 13, 30, 0.65) 25%,
+    rgba(155, 118, 214, 0.14) 50%,
+    rgba(18, 13, 30, 0.65) 75%
+  );
+  background-size: 200% 100%;
+  animation: covenEmbedShimmer 1.6s linear infinite;
+  opacity: 0.7;
+  transition: opacity 0.25s ease;
+  z-index: 1;
+}
+
+.article-template .coven-embed-shell[data-embed-state="loaded"] .coven-embed-loading {
+  opacity: 0;
+  animation: none;
+}
+
+@keyframes covenEmbedShimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.article-template .coven-embed-frame iframe.embed-iframe-element {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  height: 100%;
+  border: none;
+  display: block;
+  background: transparent;
+}
+
+.article-template .coven-embed-shell .embed-caption {
+  padding: 10px 14px;
+  border-top: 1px solid rgba(216, 181, 107, 0.14);
+  background: rgba(14, 10, 22, 0.92);
+}
+
+@media (max-width: 768px) {
+  .article-template .coven-embed-frame.embed-iframe-wrap {
+    min-height: 320px;
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -25,7 +25,7 @@ const leaderboardHtml = `<!-- ════════════════�
       <span onclick="{{ toTerms }}" style="cursor:pointer">Mystic Terms &amp; Privacy</span>
     </nav>
     <div style="display:flex;align-items:center;gap:12px">
-      <div onclick="{{ toProfile }}" style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px;cursor:pointer">{{ profileInitial }}</div>
+      <div onclick="{{ toProfile }}" role="button" tabIndex="0" aria-label="Profile — Coming Soon" data-coven-profile="true" style="width:36px;height:36px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:Cinzel,serif;font-size:14px;cursor:pointer">{{ profileInitial }}</div>
       <button class="cov-mobile-toggle" aria-label="Toggle navigation menu" type="button">☰</button>
     </div>
     <div class="cov-mobile-drawer">

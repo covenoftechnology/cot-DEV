@@ -44,6 +44,8 @@
   font-family: var(--font-body);
   font-size: 16px;
   line-height: 1.5;
+  margin: 0;
+  box-sizing: border-box;
   height: 100vh;
   width: 100vw;
   overflow: hidden;
@@ -70,29 +72,17 @@
   cursor: pointer;
 }
 
-/* ── Custom Scrollbars ────────────────────────────────────── */
-.coven-studio *::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.coven-studio *::-webkit-scrollbar-track {
-  background: rgba(8, 6, 14, 0.6);
-}
-.coven-studio *::-webkit-scrollbar-thumb {
-  background: rgba(216, 181, 107, 0.2);
-  border-radius: 3px;
-}
-.coven-studio *::-webkit-scrollbar-thumb:hover {
-  background: rgba(216, 181, 107, 0.4);
-}
+/* ── Custom Scrollbars: Scoped via canonical src/styles/coven-scroll.css ── */
 
 /* ── Top Bar ──────────────────────────────────────────────── */
 .coven-studio .studio-topbar {
-  height: 64px;
+  min-height: 64px;
+  height: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 24px;
+  padding: 8px 24px;
+  box-sizing: border-box;
   background: rgba(16, 13, 22, 0.98);
   border-bottom: 1px solid var(--studio-border);
   flex-shrink: 0;
@@ -102,14 +92,20 @@
 }
 
 .coven-studio .studio-brand {
+  text-decoration: none;
+  color: inherit;
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .coven-studio .brand-icon {
   width: 34px;
   height: 34px;
+  flex-shrink: 0;
   border-radius: 50%;
   border: 1px solid var(--studio-gold-dim);
   display: flex;
@@ -128,6 +124,9 @@
   color: var(--studio-gold-bright);
   text-transform: uppercase;
   font-weight: 600;
+  white-space: nowrap;
+  flex-shrink: 0;
+  line-height: 1.2;
 }
 
 .coven-studio .brand-badge {
@@ -139,6 +138,8 @@
   border: 1px solid var(--studio-border-purple);
   color: var(--studio-purple);
   letter-spacing: 1px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .coven-studio .status-indicator {
@@ -152,14 +153,51 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .coven-studio .status-dot {
   width: 6px;
   height: 6px;
+  flex-shrink: 0;
   border-radius: 50%;
   background: var(--studio-gold-dim);
   box-shadow: 0 0 6px var(--studio-gold-dim);
+}
+
+.coven-studio .editing-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--studio-gold-bright);
+  background: rgba(216, 181, 107, 0.1);
+  border: 1px solid rgba(216, 181, 107, 0.25);
+  padding: 4px 10px;
+  border-radius: 4px;
+  margin-left: 4px;
+  flex: 0 1 auto;
+  min-width: 84px;
+  max-width: 440px;
+  overflow: hidden;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.coven-studio .editing-indicator-prefix {
+  flex-shrink: 0;
+  color: var(--studio-gold);
+}
+
+.coven-studio #editing-source-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
 
 .coven-studio .status-dot.saving {
@@ -187,10 +225,13 @@
   display: flex;
   align-items: center;
   gap: 8px;
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 /* ── Coven Buttons (`studio-btn`) ─────────────────────────── */
 .coven-studio .studio-btn {
+  box-sizing: border-box;
   font-family: var(--font-display);
   font-size: 11px;
   font-weight: 600;
@@ -333,8 +374,8 @@
 .coven-studio .studio-workspace {
   display: grid;
   grid-template-columns: 310px minmax(0, 1fr) 370px;
-  flex: 1;
-  height: calc(100vh - 64px);
+  flex: 1 1 0%;
+  min-height: 0;
   overflow: hidden;
 }
 
@@ -360,6 +401,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   background: var(--studio-surface);
   border-right: 1px solid var(--studio-border);
   overflow-y: auto;
+  min-height: 0;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -593,6 +635,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
 .coven-studio .studio-center-pane {
   background: var(--studio-bg);
   overflow-y: auto;
+  min-height: 0;
   padding: 26px 40px 72px;
   display: flex;
   flex-direction: column;
@@ -1007,6 +1050,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   background: var(--studio-surface);
   border-left: 1px solid var(--studio-border);
   overflow-y: auto;
+  min-height: 0;
   padding: 18px 22px;
   display: flex;
   flex-direction: column;
@@ -1474,6 +1518,183 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   height: 16px;
 }
 
+/* ── Cover Image Visibility Toggle Switch ─────────────────── */
+.coven-studio .cover-visibility-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 12px;
+}
+
+.coven-studio .cover-visibility-toggle-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 9px 11px;
+  border-radius: 5px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on {
+  background: linear-gradient(135deg, rgba(216, 181, 107, 0.11) 0%, rgba(22, 18, 34, 0.94) 100%);
+  border: 1px solid rgba(216, 181, 107, 0.46);
+  box-shadow: 0 0 14px rgba(216, 181, 107, 0.13), inset 0 1px 0 rgba(216, 181, 107, 0.14);
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on:hover {
+  border-color: rgba(216, 181, 107, 0.68);
+  box-shadow: 0 0 16px rgba(216, 181, 107, 0.2), inset 0 1px 0 rgba(216, 181, 107, 0.2);
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off {
+  background: rgba(14, 11, 21, 0.88);
+  border: 1px solid rgba(145, 113, 199, 0.22);
+  box-shadow: none;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off:hover {
+  border-color: rgba(145, 113, 199, 0.4);
+  background: rgba(20, 16, 30, 0.92);
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on:has(.cover-visibility-switch-input:focus-visible) {
+  outline: none;
+  border-color: var(--studio-gold-bright, #e8cf95);
+  box-shadow: 0 0 0 2px rgba(216, 181, 107, 0.34), 0 0 16px rgba(216, 181, 107, 0.22);
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off:has(.cover-visibility-switch-input:focus-visible) {
+  outline: none;
+  border-color: rgba(176, 144, 230, 0.72);
+  box-shadow: 0 0 0 2px rgba(145, 113, 199, 0.32);
+}
+
+.coven-studio .cover-visibility-switch-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.coven-studio .cover-visibility-toggle-label {
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  line-height: 1.3;
+  transition: color 0.18s ease;
+  flex: 1;
+  min-width: 0;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on .cover-visibility-toggle-label {
+  color: var(--studio-text, #ece6dd);
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off .cover-visibility-toggle-label {
+  color: var(--studio-text-dim, #b7ad9f);
+}
+
+.coven-studio .cover-visibility-switch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  transition: background 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on .cover-visibility-switch-pill {
+  background: rgba(216, 181, 107, 0.16);
+  border: 1px solid rgba(216, 181, 107, 0.62);
+  box-shadow: 0 0 10px rgba(216, 181, 107, 0.18);
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off .cover-visibility-switch-pill {
+  background: rgba(24, 19, 36, 0.92);
+  border: 1px solid rgba(145, 113, 199, 0.34);
+  box-shadow: none;
+}
+
+.coven-studio .cover-visibility-switch-state {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  min-width: 22px;
+  text-align: center;
+  transition: color 0.18s ease;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on .cover-visibility-switch-state {
+  color: var(--studio-gold-bright, #e8cf95);
+  order: 1;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off .cover-visibility-switch-state {
+  color: #a395be;
+  order: 2;
+}
+
+.coven-studio .cover-visibility-switch-track {
+  position: relative;
+  width: 28px;
+  height: 14px;
+  border-radius: 999px;
+  box-sizing: border-box;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on .cover-visibility-switch-track {
+  background: rgba(216, 181, 107, 0.28);
+  border: 1px solid rgba(216, 181, 107, 0.68);
+  order: 2;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off .cover-visibility-switch-track {
+  background: rgba(11, 9, 18, 0.95);
+  border: 1px solid rgba(145, 113, 199, 0.38);
+  order: 1;
+}
+
+.coven-studio .cover-visibility-switch-thumb {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  transition: transform 0.18s cubic-bezier(0.22, 1, 0.36, 1), background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.coven-studio .cover-visibility-toggle-row.is-on .cover-visibility-switch-thumb {
+  transform: translateX(14px);
+  background: var(--studio-gold-bright, #e8cf95);
+  box-shadow: 0 0 7px rgba(232, 207, 149, 0.85);
+}
+
+.coven-studio .cover-visibility-toggle-row.is-off .cover-visibility-switch-thumb {
+  transform: translateX(0);
+  background: #8474a1;
+  box-shadow: none;
+}
+
+.coven-studio .cover-visibility-helper-text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  line-height: 1.45;
+  color: var(--studio-text-muted);
+}
+
 .coven-studio .image-picker-row {
   display: flex;
   gap: 8px;
@@ -1632,14 +1853,6 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
 }
 
 /* ── Structured Block Editors V3 Styles ───────────────────── */
-.coven-studio .studio-brand {
-  text-decoration: none;
-  color: inherit;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
 .coven-studio .studio-btn--add-field {
   background: transparent;
   border: 1px dashed rgba(216, 181, 107, 0.3);
@@ -1878,7 +2091,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   gap: 12px;
 }
 
-/* Multi-Image Studio Editor Local Horizontal Scroll */
+/* Multi-Image Studio Editor Local Horizontal Scroll (scrollbar via coven-scroll.css) */
 .coven-studio .studio-multi-image-scroll {
   width: 100%;
   max-width: 100%;
@@ -1886,24 +2099,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   overflow-y: hidden;
   padding-bottom: 10px;
   -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(216, 181, 107, 0.4) rgba(8, 6, 14, 0.7);
   box-sizing: border-box;
-}
-
-.coven-studio .studio-multi-image-scroll::-webkit-scrollbar {
-  height: 8px;
-}
-.coven-studio .studio-multi-image-scroll::-webkit-scrollbar-track {
-  background: rgba(8, 6, 14, 0.7);
-  border-radius: 4px;
-}
-.coven-studio .studio-multi-image-scroll::-webkit-scrollbar-thumb {
-  background: rgba(216, 181, 107, 0.35);
-  border-radius: 4px;
-}
-.coven-studio .studio-multi-image-scroll::-webkit-scrollbar-thumb:hover {
-  background: rgba(216, 181, 107, 0.65);
 }
 
 .coven-studio .studio-multi-image-scroll .studio-multi-image-grid {
@@ -1942,6 +2138,67 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 8px;
+}
+
+/* Callout 10-Style Selector Grid */
+.coven-studio .callout-styles-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 6px;
+  width: 100%;
+}
+
+@media (max-width: 680px) {
+  .coven-studio .callout-styles-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.coven-studio .callout-style-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 6px;
+  background: rgba(18, 14, 26, 0.75);
+  border: 1px solid rgba(216, 181, 107, 0.2);
+  border-radius: 4px;
+  color: var(--studio-text-dim, #b9b0a4);
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  min-height: 36px;
+}
+
+.coven-studio .callout-style-btn:hover {
+  background: rgba(216, 181, 107, 0.12);
+  border-color: rgba(216, 181, 107, 0.45);
+  color: #fff;
+}
+
+.coven-studio .callout-style-btn.is-active {
+  background: rgba(216, 181, 107, 0.22);
+  border-color: var(--studio-gold, #d8b56b);
+  color: var(--studio-gold-bright, #ffd580);
+  box-shadow: 0 0 10px rgba(216, 181, 107, 0.35);
+  font-weight: 600;
+}
+
+.coven-studio .callout-style-sigil {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--studio-gold, #d8b56b);
+}
+
+.coven-studio .callout-style-btn.is-active .callout-style-sigil {
+  color: var(--studio-gold-bright, #ffd580);
+}
+
+.coven-studio .callout-style-name {
+  line-height: 1;
 }
 
 .coven-studio .callout-swatch-item {
@@ -1991,51 +2248,525 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   font-weight: 600;
 }
 
-/* Excel-like Table Builder */
+/* Visual Table Builder V2 */
+.coven-studio .studio-table-v2-root {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 6px;
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.coven-studio .table-builder-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.coven-studio .table-style-toggle-btn.is-active {
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
+  background: rgba(216, 181, 107, 0.16);
+}
+
+.coven-studio .table-design-panel {
+  background: rgba(15, 11, 24, 0.96);
+  border: 1px solid rgba(216, 181, 107, 0.28);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.coven-studio .table-design-section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.9px;
+  color: var(--studio-gold-dim);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.coven-studio .table-preset-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(112px, 1fr));
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.coven-studio .table-preset-thumb {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 6px;
+  border-radius: 5px;
+  border: 1px solid rgba(216, 181, 107, 0.16);
+  background: rgba(11, 8, 18, 0.9);
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.12s ease;
+}
+
+.coven-studio .table-preset-thumb:hover {
+  border-color: rgba(216, 181, 107, 0.48);
+  transform: translateY(-1px);
+}
+
+.coven-studio .table-preset-thumb.is-active {
+  border-color: var(--studio-gold);
+  box-shadow: 0 0 0 1px rgba(216, 181, 107, 0.42), 0 0 12px rgba(216, 181, 107, 0.18);
+  background: rgba(216, 181, 107, 0.1);
+}
+
+.coven-studio .table-preset-mini {
+  width: 100%;
+  height: 36px;
+  border-radius: 3px;
+  border: 1px solid;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.coven-studio .table-preset-mini .tpm-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  flex: 1;
+}
+
+.coven-studio .table-preset-mini .tpm-cell {
+  display: block;
+  height: 100%;
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.coven-studio .table-preset-mini .tpm-cell:last-child {
+  border-right: none;
+}
+
+.coven-studio .table-preset-mini .tpm-head .tpm-cell {
+  margin: 3px 4px;
+  height: 4px;
+  border-radius: 2px;
+  border-right: none;
+}
+
+.coven-studio .table-preset-name {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--studio-text-dim);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.coven-studio .table-preset-thumb.is-active .table-preset-name {
+  color: var(--studio-gold-bright);
+  font-weight: 600;
+}
+
+.coven-studio .table-style-options-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.coven-studio .table-style-opt-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 4px;
+  border: 1px solid rgba(185, 143, 216, 0.24);
+  background: rgba(19, 15, 30, 0.85);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--studio-text-dim);
+  cursor: pointer;
+  user-select: none;
+}
+
+.coven-studio .table-style-opt-chip input[type="checkbox"] {
+  appearance: auto;
+  -webkit-appearance: checkbox;
+  width: 13px;
+  height: 13px;
+  accent-color: var(--studio-gold-dim);
+  cursor: pointer;
+}
+
+/* Contextual Selection Toolbar */
+.coven-studio .table-selection-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 6px 8px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+  background: rgba(20, 15, 32, 0.94);
+  border: 1px solid rgba(185, 143, 216, 0.3);
+}
+
+.coven-studio .table-selection-toolbar.is-empty {
+  border-style: dashed;
+  border-color: rgba(216, 181, 107, 0.16);
+  background: rgba(14, 10, 22, 0.65);
+}
+
+.coven-studio .table-sel-hint {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--studio-text-muted);
+}
+
+.coven-studio .table-sel-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: var(--studio-gold-bright);
+  background: rgba(216, 181, 107, 0.16);
+  border: 1px solid rgba(216, 181, 107, 0.4);
+  border-radius: 3px;
+  padding: 2px 7px;
+  white-space: nowrap;
+}
+
+.coven-studio .table-ctx-btn {
+  height: 24px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.coven-studio .table-ctx-btn--accent {
+  border-color: rgba(216, 181, 107, 0.45);
+  color: var(--studio-gold-bright);
+  background: rgba(216, 181, 107, 0.14);
+}
+
+.coven-studio .table-ctx-btn--reset {
+  margin-left: auto;
+  color: var(--studio-text-muted);
+}
+
+.coven-studio .table-ctx-align-group {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.coven-studio .table-style-dropdown-wrap {
+  position: relative;
+}
+
+.coven-studio .table-style-popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 175px;
+  background: #14101f;
+  border: 1px solid rgba(216, 181, 107, 0.42);
+  border-radius: 5px;
+  padding: 6px;
+  z-index: 9500;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.coven-studio .table-style-menu-title,
+.coven-studio .table-style-menu-section-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.9px;
+  color: var(--studio-gold-dim);
+  padding: 2px 4px;
+  text-transform: uppercase;
+}
+
+.coven-studio .table-style-menu-divider {
+  height: 1px;
+  background: rgba(216, 181, 107, 0.16);
+  margin: 4px 0;
+}
+
+.coven-studio .table-style-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 5px 7px;
+  border-radius: 3px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--studio-text);
+  text-align: left;
+  cursor: pointer;
+}
+
+.coven-studio .table-style-menu-item:hover {
+  background: rgba(216, 181, 107, 0.15);
+  color: var(--studio-gold-bright);
+}
+
+.coven-studio .table-bg-swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  flex-shrink: 0;
+}
+
+.coven-studio .table-saved-color-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  padding: 3px 4px;
+}
+
+.coven-studio .table-saved-color-chip {
+  width: 18px;
+  height: 18px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  cursor: pointer;
+}
+
+.coven-studio .table-saved-color-chip:hover {
+  transform: scale(1.1);
+  border-color: var(--studio-gold-bright);
+}
+
+/* Table Wrapper (horizontal scrollbar via canonical src/styles/coven-scroll.css) */
 .coven-studio .studio-table-builder {
   overflow-x: auto;
   border: 1px solid var(--studio-border);
   border-radius: 5px;
   background: #09070f;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .coven-studio .studio-table-grid {
   width: 100%;
+  min-width: calc(38px + var(--table-cols, 3) * 140px);
   border-collapse: collapse;
+  table-layout: fixed;
 }
 
 .coven-studio .studio-table-grid th {
   background: #14101e;
-  border: 1px solid rgba(216, 181, 107, 0.18);
-  padding: 6px 8px;
+  border: 1px solid rgba(216, 181, 107, 0.22);
+  padding: 0;
   font-family: var(--font-mono);
   font-size: 11px;
   color: var(--studio-gold);
+  position: relative;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
 .coven-studio .studio-table-grid td {
-  border: 1px solid rgba(216, 181, 107, 0.1);
-  padding: 4px 6px;
+  border: 1px solid rgba(216, 181, 107, 0.14);
+  padding: 0;
   background: #0d0b14;
+  position: relative;
+  vertical-align: middle;
+  box-sizing: border-box;
 }
 
-.coven-studio .studio-table-cell-input {
+.coven-studio .studio-table-grid .studio-table-data-cell:focus-within {
+  box-shadow: inset 0 0 0 1px rgba(216, 181, 107, 0.65);
+}
+
+/* Editor-Only Row & Column Selection Handles */
+.coven-studio .studio-table-grid .studio-table-corner-cell,
+.coven-studio .studio-table-grid .studio-table-row-handle {
+  width: 38px;
+  min-width: 38px;
+  max-width: 38px;
+  padding: 4px 4px;
+  text-align: center;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: #120e1c !important;
+  color: var(--studio-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  user-select: none;
+  border-color: rgba(185, 143, 216, 0.18);
+}
+
+.coven-studio .studio-table-grid .studio-table-col-handle {
+  padding: 4px 6px;
+  height: 26px;
+  text-align: center;
+  vertical-align: middle;
+  background: #120e1c !important;
+  color: var(--studio-text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  cursor: pointer;
+  user-select: none;
+  border-color: rgba(185, 143, 216, 0.18);
+}
+
+.coven-studio .studio-table-grid .studio-table-col-handle:hover,
+.coven-studio .studio-table-grid .studio-table-row-handle:hover {
+  background: rgba(185, 143, 216, 0.18) !important;
+  color: var(--studio-gold-bright);
+}
+
+.coven-studio .studio-table-grid .studio-table-col-handle.is-handle-active,
+.coven-studio .studio-table-grid .studio-table-row-handle.is-handle-active {
+  background: rgba(216, 181, 107, 0.24) !important;
+  color: var(--studio-gold-bright);
+  font-weight: 700;
+}
+
+.coven-studio .row-handle-grip {
+  opacity: 0.65;
+  margin-right: 2px;
+}
+
+/* Non-Shifting Selection Overlay & Outer Gold Boundary */
+.coven-studio .studio-table-data-cell.is-table-cell-selected::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(168, 120, 232, 0.16);
+  pointer-events: none;
+  z-index: 2;
+  box-sizing: border-box;
+}
+
+.coven-studio .studio-table-data-cell.is-table-cell-selected.is-sel-top::after {
+  border-top: 2px solid var(--studio-gold);
+}
+.coven-studio .studio-table-data-cell.is-table-cell-selected.is-sel-bottom::after {
+  border-bottom: 2px solid var(--studio-gold);
+}
+.coven-studio .studio-table-data-cell.is-table-cell-selected.is-sel-left::after {
+  border-left: 2px solid var(--studio-gold);
+}
+.coven-studio .studio-table-data-cell.is-table-cell-selected.is-sel-right::after {
+  border-right: 2px solid var(--studio-gold);
+}
+
+.coven-studio .table-merge-badge {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  line-height: 1.3;
+  color: var(--studio-gold);
+  background: rgba(216, 181, 107, 0.16);
+  border: 1px solid rgba(216, 181, 107, 0.34);
+  border-radius: 3px;
+  padding: 0 4px;
+  pointer-events: none;
+  z-index: 3;
+}
+
+/* WYSIWYG Studio Preview for Table Style Presets & Options */
+.coven-studio .studio-table-grid.coven-table--preset-aether-header .studio-table-header-row th.studio-table-data-cell {
+  background: linear-gradient(135deg, rgba(145, 96, 214, 0.32), rgba(216, 181, 107, 0.2));
+  border-bottom: 2px solid rgba(216, 181, 107, 0.48);
+}
+.coven-studio .studio-table-grid.coven-table--preset-banded-rows tbody tr:nth-child(even) td.studio-table-data-cell,
+.coven-studio .studio-table-grid.coven-table--banded-rows tbody tr:nth-child(even) td.studio-table-data-cell {
+  background: rgba(185, 143, 216, 0.09);
+}
+.coven-studio .studio-table-grid.coven-table--preset-banded-columns .studio-table-data-cell.coven-col-band-even,
+.coven-studio .studio-table-grid.coven-table--banded-cols .studio-table-data-cell.coven-col-band-even {
+  background: rgba(216, 181, 107, 0.075);
+}
+.coven-studio .studio-table-grid.coven-table--preset-grimoire .studio-table-header-row th.studio-table-data-cell {
+  background: rgba(196, 154, 78, 0.18);
+  border-bottom: 3px double rgba(216, 181, 107, 0.48);
+}
+.coven-studio .studio-table-grid.coven-table--preset-moonlight .studio-table-header-row th.studio-table-data-cell {
+  background: rgba(154, 180, 232, 0.16);
+  color: #dce9ff;
+}
+.coven-studio .studio-table-grid.coven-table--preset-void td.studio-table-data-cell {
+  background: #07050c;
+}
+.coven-studio .studio-table-grid.coven-table--no-header .studio-table-header-row th.studio-table-data-cell {
+  background: #0d0b14;
+  font-weight: 400;
+  color: var(--studio-text);
+}
+.coven-studio .studio-table-grid.coven-table--emph-first-col tbody td.studio-table-data-cell.coven-col-first {
+  font-weight: 600;
+  background: rgba(216, 181, 107, 0.07);
+}
+.coven-studio .studio-table-grid.coven-table--emph-last-col tbody td.studio-table-data-cell.coven-col-last {
+  font-weight: 600;
+  background: rgba(185, 143, 216, 0.08);
+}
+
+/* Inner Rich Text Surface: transparent content-only layer owned by logical <th>/<td> */
+.coven-studio .studio-table-grid .studio-table-cell-input,
+.coven-studio .studio-table-grid .studio-table-cell-input.rich-text-surface {
+  display: block;
   width: 100%;
+  min-height: 36px;
+  box-sizing: border-box;
   background: transparent;
   border: none;
-  color: #ece6dd;
+  border-radius: 0;
+  box-shadow: none;
+  margin: 0;
+  padding: 8px 10px;
+  color: inherit;
   font-family: var(--font-body);
   font-size: 13px;
+  line-height: 1.5;
   outline: none;
-  padding: 4px;
+  position: relative;
+  z-index: 1;
+  cursor: text;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
-.coven-studio .studio-table-cell-input:focus {
-  background: rgba(216, 181, 107, 0.1);
+.coven-studio .studio-table-grid th.studio-table-data-cell .studio-table-cell-input.rich-text-surface {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 10px;
+}
+
+.coven-studio .studio-table-grid td[rowspan] .studio-table-cell-input.rich-text-surface,
+.coven-studio .studio-table-grid td[colspan] .studio-table-cell-input.rich-text-surface,
+.coven-studio .studio-table-grid th[colspan] .studio-table-cell-input.rich-text-surface {
+  padding-top: 18px;
+}
+
+.coven-studio .studio-table-grid .studio-table-cell-input:focus,
+.coven-studio .studio-table-grid .studio-table-cell-input.rich-text-surface:focus {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  outline: none;
 }
 
 .coven-studio .table-contextual-bar {
-  margin-bottom: 8px;
+  margin-bottom: 6px;
 }
 
 .coven-studio .table-contextual-bar .rich-text-toolbar {
@@ -2044,14 +2775,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   opacity: 1;
 }
 
-.coven-studio .studio-table-cell-input.rich-text-surface {
-  min-height: 24px;
-  cursor: text;
-  white-space: pre-wrap;
-  word-break: break-word;
-}
-
-.coven-studio .studio-table-cell-input.rich-text-surface:empty::before {
+.coven-studio .studio-table-grid .studio-table-cell-input.rich-text-surface:empty::before {
   content: '...';
   color: var(--studio-text-muted);
   opacity: 0.5;
@@ -2108,6 +2832,165 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
 }
 
 /* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 1840px) {
+  .coven-studio .studio-topbar {
+    padding: 8px 16px;
+    gap: 12px;
+  }
+  .coven-studio .studio-brand {
+    gap: 9px;
+  }
+  .coven-studio .brand-title {
+    font-size: 12.5px;
+    letter-spacing: 1.4px;
+  }
+  .coven-studio .brand-badge {
+    padding: 3px 7px;
+    font-size: 9.5px;
+  }
+  .coven-studio .status-indicator {
+    padding: 4px 10px;
+    font-size: 10.5px;
+    gap: 6px;
+  }
+  .coven-studio .editing-indicator {
+    padding: 4px 8px;
+    margin-left: 2px;
+    max-width: 380px;
+  }
+  .coven-studio .studio-actions {
+    gap: 6px;
+  }
+  .coven-studio .studio-topbar .studio-btn {
+    padding: 0 11px;
+    height: 34px;
+    font-size: 10.5px;
+    letter-spacing: 0.7px;
+  }
+}
+
+@media (max-width: 1640px) {
+  .coven-studio .studio-topbar {
+    padding: 8px 14px;
+    gap: 10px;
+  }
+  .coven-studio .studio-brand {
+    gap: 8px;
+  }
+  .coven-studio .brand-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+  .coven-studio .brand-title {
+    font-size: 12px;
+    letter-spacing: 1.15px;
+  }
+  .coven-studio .brand-badge {
+    padding: 2px 6px;
+    font-size: 9.5px;
+    letter-spacing: 0.6px;
+  }
+  .coven-studio .status-indicator {
+    padding: 4px 8px;
+    font-size: 10px;
+    gap: 6px;
+  }
+  .coven-studio .editing-indicator {
+    padding: 3px 8px;
+    font-size: 10.5px;
+    gap: 5px;
+    margin-left: 0;
+  }
+  .coven-studio .studio-actions {
+    gap: 5px;
+  }
+  .coven-studio .studio-topbar .studio-btn {
+    padding: 0 9.5px;
+    height: 32px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+}
+
+@media (max-width: 1490px) {
+  .coven-studio .studio-topbar {
+    padding: 6px 12px;
+    gap: 8px;
+  }
+  .coven-studio .studio-brand {
+    gap: 7px;
+  }
+  .coven-studio .brand-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 13px;
+  }
+  .coven-studio .brand-title {
+    white-space: normal;
+    max-width: 126px;
+    font-size: 11px;
+    letter-spacing: 1px;
+    line-height: 1.15;
+  }
+  .coven-studio .studio-actions {
+    gap: 4px;
+  }
+  .coven-studio .studio-topbar .studio-btn {
+    padding: 0 8px;
+    height: 31px;
+    font-size: 10px;
+    letter-spacing: 0.4px;
+  }
+}
+
+@media (max-width: 1390px) {
+  .coven-studio .studio-topbar {
+    flex-wrap: wrap;
+    padding: 8px 14px;
+    row-gap: 7px;
+    column-gap: 12px;
+  }
+  .coven-studio .studio-brand {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 0;
+    gap: 10px;
+  }
+  .coven-studio .brand-icon {
+    width: 30px;
+    height: 30px;
+    font-size: 14px;
+  }
+  .coven-studio .brand-title {
+    white-space: nowrap;
+    max-width: none;
+    font-size: 12px;
+    letter-spacing: 1.3px;
+  }
+  .coven-studio .editing-indicator {
+    max-width: none;
+    flex: 0 1 auto;
+    min-width: 0;
+  }
+  .coven-studio .studio-actions {
+    flex: 1 1 100%;
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+  .coven-studio .studio-topbar .studio-btn {
+    height: 31px;
+    padding: 0 10.5px;
+    font-size: 10px;
+    letter-spacing: 0.5px;
+  }
+  .coven-studio .studio-topbar #btn-publish {
+    margin-left: auto;
+  }
+}
+
 @media (max-width: 1100px) {
   .coven-studio .studio-workspace {
     grid-template-columns: 270px minmax(0, 1fr) 320px;
@@ -2215,6 +3098,21 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   opacity: 0.8;
 }
 
+/* ── Canonical Studio Overlay Root for Floating Popovers ── */
+.coven-studio .coven-studio-overlay-root {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 0;
+  height: 0;
+  z-index: 90000;
+  pointer-events: none;
+}
+
+.coven-studio .coven-studio-overlay-root > * {
+  pointer-events: auto;
+}
+
 .coven-studio .rich-color-menu {
   position: absolute;
   top: calc(100% + 4px);
@@ -2223,7 +3121,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   border: 1px solid rgba(216, 181, 107, 0.4);
   border-radius: 4px;
   padding: 6px;
-  z-index: 250;
+  z-index: 90000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
   min-width: 145px;
   display: flex;
@@ -2312,7 +3210,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   border: 1px solid rgba(216, 181, 107, 0.4);
   border-radius: 4px;
   padding: 6px;
-  z-index: 250;
+  z-index: 90000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
   min-width: 155px;
   display: flex;
@@ -2407,6 +3305,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   font-size: 14px;
   line-height: 1.6;
   word-break: break-word;
+  white-space: pre-line;
 }
 
 .coven-studio .rich-text-surface:focus {
@@ -2486,12 +3385,76 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   border: 1px solid rgba(216, 181, 107, 0.4);
   border-radius: 4px;
   padding: 10px 12px;
-  z-index: 250;
+  z-index: 90000;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.9);
-  width: 290px;
+  width: 320px;
+  max-width: calc(100vw - 16px);
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.coven-studio .rich-link-type-tabs {
+  display: flex;
+  background: rgba(8, 6, 14, 0.9);
+  border: 1px solid var(--studio-border);
+  border-radius: 4px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.coven-studio .rich-link-type-tabs .segment-btn {
+  flex: 1;
+  font-family: var(--font-display);
+  font-size: 10px;
+  letter-spacing: 0.8px;
+  padding: 5px 8px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--studio-text-muted);
+  cursor: pointer;
+  text-transform: uppercase;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.coven-studio .rich-link-type-tabs .segment-btn:hover {
+  color: var(--studio-text);
+  background: rgba(216, 181, 107, 0.08);
+}
+
+.coven-studio .rich-link-type-tabs .segment-btn.active {
+  background: rgba(216, 181, 107, 0.18);
+  color: var(--studio-gold-bright);
+  border-color: var(--studio-border-active);
+  box-shadow: 0 0 10px rgba(216, 181, 107, 0.15);
+}
+
+.coven-studio .rich-link-panel-internal,
+.coven-studio .rich-link-panel-external {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coven-studio .rich-link-internal-select {
+  width: 100%;
+  font-size: 12px;
+  padding: 5px 28px 5px 8px;
+  background: var(--studio-surface-input);
+  border: 1px solid var(--studio-border);
+  color: var(--studio-text);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.coven-studio .rich-link-internal-select:focus {
+  border-color: var(--studio-gold);
 }
 
 .coven-studio .rich-link-popover__label {
@@ -2766,15 +3729,25 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   background: #14101e;
   border: 1px solid rgba(216, 181, 107, 0.45);
   border-radius: 6px;
-  padding: 10px 12px;
+  padding: 12px 14px;
   z-index: 100000;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.92), 0 0 12px rgba(196, 90, 255, 0.12);
-  width: 216px;
+  width: 330px;
+  max-width: calc(100vw - 20px);
   display: flex;
   flex-direction: column;
   gap: 8px;
   color: var(--studio-text);
   font-family: var(--font-body);
+  box-sizing: border-box;
+}
+
+@media (max-width: 480px) {
+  .coven-studio .coven-custom-color-popover {
+    width: calc(100vw - 20px);
+    max-width: 330px;
+    padding: 10px;
+  }
 }
 
 .coven-studio .coven-custom-color-popover.is-flipped-above {
@@ -2785,17 +3758,51 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 4px;
+  padding-bottom: 6px;
   border-bottom: 1px solid rgba(216, 181, 107, 0.15);
 }
 
 .coven-studio .custom-color-popover-title {
   font-family: var(--font-mono);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--studio-gold);
   letter-spacing: 0.8px;
   text-transform: uppercase;
+}
+
+.coven-studio .custom-color-current-tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--studio-gold-bright, #ffd580);
+  letter-spacing: 0.5px;
+}
+
+.coven-studio .custom-color-preview-banner {
+  width: 100%;
+  height: 40px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 2px 0 6px 0;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.45);
+  transition: background-color 0.15s ease;
+}
+
+.coven-studio .custom-color-preview-banner-hex {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: #ffffff;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 3px 10px;
+  border-radius: 4px;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+  backdrop-filter: blur(2px);
 }
 
 .coven-studio .custom-color-swatch-badge {
@@ -2809,16 +3816,32 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
 }
 
 .coven-studio .custom-color-picker-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 12px;
+  align-items: end;
   margin-top: 2px;
+}
+
+.coven-studio .custom-color-picker-trigger-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.coven-studio .custom-color-input-sublabel {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(216, 181, 107, 0.7);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
 }
 
 .coven-studio .custom-color-trigger-btn {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 100%;
+  height: 34px;
   background: #1c162b;
   border: 1px solid rgba(216, 181, 107, 0.35);
   border-radius: 4px;
@@ -2826,10 +3849,11 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   cursor: pointer;
   display: flex;
   align-items: center;
-  justify-content: center;
-  padding: 0;
+  justify-content: space-between;
+  padding: 0 8px;
   flex-shrink: 0;
   transition: all 0.15s ease;
+  box-sizing: border-box;
 }
 
 .coven-studio .custom-color-trigger-btn:hover {
@@ -2838,14 +3862,20 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   color: var(--studio-gold-bright);
 }
 
+.coven-studio .custom-color-trigger-text {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: #f5f0e6;
+  letter-spacing: 0.3px;
+}
+
 .coven-studio .custom-color-trigger-indicator {
-  position: absolute;
-  bottom: 2px;
-  left: 3px;
-  right: 3px;
-  height: 3px;
-  border-radius: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
   box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+  flex-shrink: 0;
   transition: background-color 0.15s ease;
 }
 
@@ -2862,34 +3892,32 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
 }
 
 .coven-studio .custom-color-hex-group {
-  flex: 1;
   display: flex;
-  align-items: center;
-  background: #0d0a14;
-  border: 1px solid rgba(216, 181, 107, 0.3);
-  border-radius: 4px;
-  padding: 0 8px;
-  height: 32px;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
-}
-
-.coven-studio .custom-color-hex-group:focus-within {
-  border-color: var(--studio-gold);
-  box-shadow: 0 0 0 2px rgba(216, 181, 107, 0.2);
+  flex-direction: column;
+  gap: 4px;
 }
 
 .coven-studio .custom-color-hex-field {
   width: 100%;
-  background: transparent;
-  border: none;
-  outline: none;
+  height: 34px;
+  background: #0d0a14;
+  border: 1px solid rgba(216, 181, 107, 0.3);
+  border-radius: 4px;
+  padding: 0 10px;
   color: #f5f0e6;
   font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  padding: 0;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  box-sizing: border-box;
+}
+
+.coven-studio .custom-color-hex-field:focus {
+  border-color: var(--studio-gold);
+  box-shadow: 0 0 0 2px rgba(216, 181, 107, 0.2);
 }
 
 .coven-studio .custom-color-hex-field::placeholder {
@@ -2902,56 +3930,63 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   color: var(--studio-danger, #ef4444);
   letter-spacing: 0.4px;
   padding-left: 2px;
-  margin-top: -3px;
+  margin-top: -2px;
 }
 
 .coven-studio .custom-color-popover-actions {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 6px;
-  margin-top: 2px;
+  gap: 8px;
+  margin-top: 4px;
 }
 
 .coven-studio .custom-color-btn-cancel {
-  padding: 4px 10px;
+  padding: 4px 12px;
   font-size: 11px;
-  height: 26px;
+  height: 28px;
 }
 
 .coven-studio .custom-color-btn-apply {
-  padding: 4px 12px;
+  padding: 4px 14px;
   font-size: 11px;
-  height: 26px;
+  height: 28px;
+}
+
+.coven-studio .custom-color-popover-divider {
+  height: 1px;
+  background: rgba(216, 181, 107, 0.15);
+  margin: 4px 0 2px 0;
 }
 
 .coven-studio .custom-color-save-row {
-  margin-top: 2px;
-  padding-top: 6px;
-  border-top: 1px dashed rgba(216, 181, 107, 0.2);
   display: flex;
   justify-content: center;
+  margin-top: 2px;
 }
 
 .coven-studio .custom-color-save-action {
-  background: transparent;
-  border: none;
-  color: var(--studio-gold-dim);
+  background: rgba(216, 181, 107, 0.08);
+  border: 1px solid rgba(216, 181, 107, 0.25);
+  border-radius: 4px;
+  color: var(--studio-gold);
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.5px;
   cursor: pointer;
-  padding: 3px 6px;
-  border-radius: 3px;
+  padding: 6px 16px;
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
   transition: all 0.15s ease;
+  width: 100%;
+  justify-content: center;
 }
 
 .coven-studio .custom-color-save-action:hover:not(:disabled) {
   color: var(--studio-gold-bright);
-  background: rgba(216, 181, 107, 0.1);
+  background: rgba(216, 181, 107, 0.18);
+  border-color: var(--studio-gold);
 }
 
 .coven-studio .custom-color-save-action:disabled {
@@ -2960,7 +3995,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
 }
 
 .coven-studio .custom-color-save-star {
-  font-size: 11px;
+  font-size: 12px;
   color: var(--studio-gold);
 }
 
@@ -3003,7 +4038,7 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   border: 1px solid rgba(216, 181, 107, 0.4);
   border-radius: 4px;
   padding: 4px;
-  z-index: 100;
+  z-index: 90000;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.85);
   display: flex;
   flex-direction: column;
@@ -3036,11 +4071,293 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   color: var(--studio-gold);
 }
 
-/* ── Callout Accent Color Row ── */
+/* ── Flexible Item Marker Controls (Per-item overrides for Nested Bullets & Numbered Steps) ── */
+.coven-studio .studio-marker-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(18, 14, 25, 0.85);
+  border: 1px solid rgba(216, 181, 107, 0.22);
+  border-radius: 4px;
+  padding: 2px 6px;
+  margin-left: auto;
+  box-sizing: border-box;
+}
+
+.coven-studio .studio-marker-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 20px;
+  padding: 0 6px;
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 11px;
+  font-weight: 700;
+  color: #e8cf95;
+  background: rgba(216, 181, 107, 0.16);
+  border: 1px solid rgba(216, 181, 107, 0.35);
+  border-radius: 3px;
+  user-select: none;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.coven-studio .studio-marker-select {
+  height: 22px;
+  padding: 0 4px;
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 11px;
+  background: #110e1a;
+  color: #cdc3b6;
+  border: 1px solid rgba(216, 181, 107, 0.25);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+
+.coven-studio .studio-marker-select:focus {
+  border-color: var(--studio-gold);
+}
+
+.coven-studio .studio-marker-input {
+  width: 58px;
+  height: 22px;
+  padding: 0 4px;
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 11px;
+  text-align: center;
+  background: #0d0a14;
+  color: #ece6dd;
+  border: 1px solid rgba(216, 181, 107, 0.25);
+  border-radius: 3px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.coven-studio .studio-marker-input:focus {
+  border-color: var(--studio-gold);
+  box-shadow: 0 0 4px rgba(216, 181, 107, 0.3);
+}
+
+.coven-studio .studio-marker-reset {
+  height: 20px;
+  padding: 0 5px;
+  font-size: 10px;
+  font-family: var(--font-mono, Consolas, monospace);
+  color: #b98fd8;
+  background: rgba(185, 143, 216, 0.12);
+  border: 1px solid rgba(185, 143, 216, 0.28);
+  border-radius: 3px;
+  cursor: pointer;
+  line-height: 18px;
+  box-sizing: border-box;
+}
+
+.coven-studio .studio-marker-reset:hover {
+  background: rgba(185, 143, 216, 0.22);
+  color: #dfc5f5;
+}
+
+/* ── Shared Accent Palette Chips (Callout & Pullquote) ── */
+.coven-studio .coven-accent-palette-control {
+  margin: 12px 0 14px;
+}
+
+.coven-studio .coven-accent-palette-label {
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 1.5px;
+  color: var(--studio-gold, #d8b56b);
+  text-transform: uppercase;
+  margin-bottom: 7px;
+}
+
+.coven-studio .coven-accent-palette-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.coven-studio .accent-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  background: rgba(18, 14, 26, 0.75);
+  border: 1px solid rgba(216, 181, 107, 0.22);
+  border-radius: 20px;
+  color: #c7beaf;
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+  line-height: 1;
+}
+
+.coven-studio .accent-chip:hover {
+  background: rgba(216, 181, 107, 0.12);
+  border-color: rgba(216, 181, 107, 0.45);
+  color: #fff;
+}
+
+.coven-studio .accent-chip.is-active {
+  background: rgba(216, 181, 107, 0.22);
+  border-color: var(--studio-gold, #d8b56b);
+  color: var(--studio-gold-bright, #ffd580);
+  box-shadow: 0 0 10px rgba(216, 181, 107, 0.35);
+  font-weight: 600;
+}
+
+.coven-studio .accent-chip-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+}
+
+.coven-studio .accent-chip-dot--default {
+  background: transparent;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  line-height: 1;
+  color: var(--studio-gold, #d8b56b);
+}
+
+.coven-studio .accent-chip-check {
+  font-size: 10px;
+  color: var(--studio-gold-bright, #ffd580);
+  margin-left: 2px;
+  font-weight: 700;
+}
+
+.coven-studio .accent-chip--custom {
+  position: relative;
+}
+
+.coven-studio .accent-chip-icon {
+  font-size: 11px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+}
+
+.coven-studio .accent-chip-hex {
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  color: #e5ded2;
+  margin-left: 1px;
+}
+
+.coven-studio .accent-chip--custom.is-active .accent-chip-hex {
+  color: var(--studio-gold-bright, #ffd580);
+}
+
+/* ── Accent Palette Groups & Sublabels ── */
+.coven-studio .coven-accent-palette-group {
+  margin-bottom: 8px;
+}
+
+.coven-studio .coven-accent-palette-group:last-child {
+  margin-bottom: 0;
+}
+
+.coven-studio .coven-accent-palette-sublabel {
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 9px;
+  font-weight: 600;
+  color: rgba(216, 181, 107, 0.65);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+/* ── Saved Color Chip in My Colors ── */
+.coven-studio .accent-chip--saved {
+  display: inline-flex;
+  align-items: center;
+  padding: 0;
+  background: rgba(18, 14, 26, 0.85);
+  border: 1px solid rgba(216, 181, 107, 0.25);
+  border-radius: 20px;
+  overflow: hidden;
+  transition: all 0.15s ease;
+}
+
+.coven-studio .accent-chip--saved:hover {
+  border-color: rgba(216, 181, 107, 0.5);
+  background: rgba(26, 20, 38, 0.95);
+}
+
+.coven-studio .accent-chip--saved.is-active {
+  background: rgba(216, 181, 107, 0.22);
+  border-color: var(--studio-gold, #d8b56b);
+  box-shadow: 0 0 10px rgba(216, 181, 107, 0.35);
+}
+
+.coven-studio .accent-chip-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  color: #c7beaf;
+  font-family: var(--font-mono, Consolas, monospace);
+  font-size: 11px;
+  cursor: pointer;
+  line-height: 1;
+  transition: color 0.15s ease;
+}
+
+.coven-studio .accent-chip-select-btn:hover {
+  color: #fff;
+}
+
+.coven-studio .accent-chip--saved.is-active .accent-chip-select-btn {
+  color: var(--studio-gold-bright, #ffd580);
+  font-weight: 600;
+}
+
+.coven-studio .accent-chip-del-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 100%;
+  min-height: 22px;
+  padding: 0 4px 0 2px;
+  background: rgba(0, 0, 0, 0.2);
+  border: none;
+  border-left: 1px solid rgba(216, 181, 107, 0.2);
+  color: rgba(216, 181, 107, 0.5);
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.coven-studio .accent-chip-del-btn:hover {
+  background: rgba(239, 68, 68, 0.35);
+  color: #ff9999;
+  border-left-color: rgba(239, 68, 68, 0.5);
+}
+
+/* ── Legacy Callout Accent Row Support ── */
 .coven-studio .callout-accent-color-wrap {
   margin-bottom: 12px;
 }
-.coven-studio .callout-accent-row {
+.coven-studio .callout-accent-row,
+.coven-studio .callout-accent-controls-row {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -3085,6 +4402,140 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   color: var(--studio-gold-bright);
 }
 
+/* ── Composable Callout Surface, Fade Direction & Border Controls ── */
+.coven-studio .callout-visual-controls-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: rgba(13, 10, 22, 0.55);
+  border: 1px solid rgba(216, 181, 107, 0.14);
+  border-radius: 5px;
+}
+
+.coven-studio .callout-mod-section {
+  gap: 5px;
+}
+
+.coven-studio .callout-mod-label-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.coven-studio .callout-mod-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.coven-studio .callout-mod-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 9px;
+  border-radius: 4px;
+  border: 1px solid rgba(216, 181, 107, 0.18);
+  background: rgba(18, 14, 28, 0.85);
+  color: var(--studio-text-dim);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.4px;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.coven-studio .callout-mod-btn:hover {
+  border-color: rgba(216, 181, 107, 0.48);
+  color: var(--studio-text);
+  background: rgba(28, 22, 42, 0.92);
+}
+
+.coven-studio .callout-mod-btn.is-active {
+  border-color: var(--studio-gold);
+  color: var(--studio-gold-bright);
+  background: rgba(216, 181, 107, 0.15);
+  box-shadow: 0 0 0 1px rgba(216, 181, 107, 0.25);
+}
+
+/* Mini Surface Swatch Previews */
+.coven-studio .callout-surface-swatch {
+  width: 18px;
+  height: 12px;
+  border-radius: 2px;
+  flex-shrink: 0;
+  border: 1px solid rgba(var(--callout-preview-rgb, 216, 181, 107), 0.35);
+}
+
+.coven-studio .callout-surface-swatch--solid {
+  background: linear-gradient(90deg, rgba(var(--callout-preview-rgb, 216, 181, 107), 0.28) 0%, rgba(16, 12, 26, 0.96) 100%);
+}
+
+.coven-studio .callout-surface-swatch--faded {
+  background: linear-gradient(90deg, rgba(var(--callout-preview-rgb, 216, 181, 107), 0.65) 0%, rgba(var(--callout-preview-rgb, 216, 181, 107), 0.18) 55%, transparent 100%);
+}
+
+.coven-studio .callout-surface-swatch--transparent {
+  background: repeating-conic-gradient(rgba(255, 255, 255, 0.08) 0% 25%, transparent 0% 50%) 50% / 6px 6px;
+  border-style: dashed;
+}
+
+/* Fade Direction Arrow */
+.coven-studio .callout-fade-arrow {
+  font-size: 12px;
+  line-height: 1;
+  color: var(--callout-preview-accent, var(--studio-gold));
+}
+
+/* Mini Border Diagram Previews */
+.coven-studio .callout-border-icon {
+  position: relative;
+  width: 16px;
+  height: 12px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.04);
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.coven-studio .callout-border-icon--none {
+  border: 1px dotted rgba(255, 255, 255, 0.2);
+}
+
+.coven-studio .callout-border-icon--frame {
+  border: 1.5px solid var(--callout-preview-accent, var(--studio-gold));
+}
+
+.coven-studio .callout-border-icon--left-line {
+  border-left: 3px solid var(--callout-preview-accent, var(--studio-gold));
+  background: linear-gradient(90deg, rgba(var(--callout-preview-rgb, 216, 181, 107), 0.2), transparent);
+}
+
+.coven-studio .callout-border-icon--right-line {
+  border-right: 3px solid var(--callout-preview-accent, var(--studio-gold));
+  background: linear-gradient(270deg, rgba(var(--callout-preview-rgb, 216, 181, 107), 0.2), transparent);
+}
+
+.coven-studio .callout-border-icon--top-bottom {
+  border-top: 1.5px solid var(--callout-preview-accent, var(--studio-gold));
+  border-bottom: 1.5px solid var(--callout-preview-accent, var(--studio-gold));
+  border-radius: 0;
+}
+
+.coven-studio .callout-border-icon--corners {
+  background:
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) left top / 5px 1.5px no-repeat,
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) left top / 1.5px 5px no-repeat,
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) right top / 5px 1.5px no-repeat,
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) right top / 1.5px 5px no-repeat,
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) left bottom / 5px 1.5px no-repeat,
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) left bottom / 1.5px 5px no-repeat,
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) right bottom / 5px 1.5px no-repeat,
+    linear-gradient(var(--callout-preview-accent, var(--studio-gold)), var(--callout-preview-accent, var(--studio-gold))) right bottom / 1.5px 5px no-repeat;
+}
+
 /* ── FLEXIBLE LAYOUT COMPOSER STUDIO STYLES ── */
 .coven-studio .studio-flex-toolbar {
   display: flex;
@@ -3120,26 +4571,6 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   padding: 6px 2px 14px 2px;
   margin-top: 10px;
   box-sizing: border-box;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(216, 181, 107, 0.4) #0d0914;
-}
-
-.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar {
-  height: 8px;
-}
-
-.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar-track {
-  background: #0d0914;
-  border-radius: 4px;
-}
-
-.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar-thumb {
-  background: rgba(216, 181, 107, 0.35);
-  border-radius: 4px;
-}
-
-.coven-studio .studio-flex-canvas-wrap::-webkit-scrollbar-thumb:hover {
-  background: rgba(216, 181, 107, 0.55);
 }
 
 .coven-studio .studio-flex-cols-row {
@@ -3456,4 +4887,114 @@ body.coven-studio.is-canvas-focused #btn-focus-canvas {
   gap: 8px;
   width: 100%;
   justify-content: center;
+}
+
+/* ── Custom Icon Modal ("MY ICONS") ───────────────────────── */
+.coven-studio .coven-custom-icon-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 3, 7, 0.85);
+  backdrop-filter: blur(8px);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100010;
+  padding: 20px;
+}
+
+.coven-studio .coven-custom-icon-modal .custom-icon-modal-box {
+  background: #140f21;
+  border: 1px solid rgba(216, 181, 107, 0.35);
+  border-radius: 8px;
+  padding: 24px;
+  width: 440px;
+  max-width: 100%;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(216, 181, 107, 0.12);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+}
+
+.coven-studio .custom-icon-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(216, 181, 107, 0.15);
+  padding-bottom: 12px;
+}
+
+.coven-studio .custom-icon-modal-title {
+  font-family: var(--font-display, "Metamorphous", serif);
+  font-size: 16px;
+  color: var(--studio-gold, #e8cf95);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.coven-studio .custom-icon-form-grid {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.coven-studio .custom-icon-glyph-input {
+  text-align: center;
+  font-size: 24px;
+  height: 44px;
+  padding: 2px 6px;
+  background: #0d0a16;
+  border: 1px solid rgba(216, 181, 107, 0.25);
+  color: #fff;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.coven-studio .custom-icon-glyph-input:focus {
+  outline: 2px solid #e3c47e;
+  border-color: #e3c47e;
+}
+
+.coven-studio .custom-icon-saved-scroll {
+  max-height: 150px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding-right: 4px;
+}
+
+.coven-studio .custom-icon-item-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 4px;
+  border: 1px solid rgba(216, 181, 107, 0.1);
+  transition: background 0.15s ease;
+}
+
+.coven-studio .custom-icon-item-row:hover {
+  background: rgba(216, 181, 107, 0.08);
+  border-color: rgba(216, 181, 107, 0.25);
+}
+
+.coven-studio .custom-icon-item-glyph {
+  font-size: 18px;
+  min-width: 28px;
+  text-align: center;
+  display: inline-block;
+}
+
+.coven-studio .custom-icon-item-label {
+  font-family: var(--font-mono, "IBM Plex Mono", monospace);
+  font-size: 12px;
+  color: #e8cf95;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

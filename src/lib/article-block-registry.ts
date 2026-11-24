@@ -359,11 +359,6 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       col1Items: [
         { id: 'cmp_1', text: '' },
       ],
-      col2Icon: 'diamond',
-      col2Header: 'SIDE B',
-      col2Items: [
-        { id: 'cmp_2', text: '' },
-      ],
     },
   },
   'stats-metrics': {
@@ -377,12 +372,6 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
       stat1Num: '',
       stat1Label: '',
       stat1Sub: '',
-      stat2Num: '',
-      stat2Label: '',
-      stat2Sub: '',
-      stat3Num: '',
-      stat3Label: '',
-      stat3Sub: '',
     },
   },
 
@@ -396,11 +385,13 @@ export const ARTICLE_BLOCK_REGISTRY: Record<string, BlockDefinition> = {
     gridEligible: true,
     defaultData: {
       columns: [
-        { id: 'col_feat', label: 'Feature' },
-        { id: 'col_status', label: 'Status' },
+        { id: 'col_1', label: 'Column 1' },
+        { id: 'col_2', label: 'Column 2' },
+        { id: 'col_3', label: 'Column 3' },
       ],
       rows: [
-        { id: 'row_1', cells: { col_feat: '', col_status: '' } },
+        { id: 'row_1', cells: { col_1: '', col_2: '', col_3: '' } },
+        { id: 'row_2', cells: { col_1: '', col_2: '', col_3: '' } },
       ],
     },
   },

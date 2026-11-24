@@ -2,6 +2,14 @@
 import BaseLayout from './BaseLayout.astro';
 import SpiritProgress from '../components/article/SpiritProgress.astro';
 import ArticleImageLightbox from '../components/article/ArticleImageLightbox.astro';
+import {
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_SOCIAL_IMAGE_ALT,
+  getArticleCanonicalUrl,
+  isValidSocialCoverUrl,
+  getAuthorProfileUrl
+} from '../lib/seo';
+import { getArticleResolvedDescription } from '../lib/articles';
 import type { Article, ArticleMeta } from '../types/article';
 
 interface Props {
@@ -10,6 +18,7 @@ interface Props {
     meta: ArticleMeta;
   };
   meta?: ArticleMeta;
+  document?: any;
   previousArticle?: Article | null;
   nextArticle?: Article | null;
   relatedArticles?: Article[];
@@ -33,7 +42,10 @@ if (!meta) {
 }
 
 const slug = article?.slug || '';
-const authorInitial = (meta.author || 'O').charAt(0).toUpperCase();
+const authorName = meta.author || 'Oracle of Orgs';
+const rawAuthor = typeof authorName === 'string' ? authorName.trim() : '';
+const authorInitial = (rawAuthor || 'O').charAt(0).toUpperCase();
+const isMich = rawAuthor.toLowerCase() === 'mich alvarez' || rawAuthor.toLowerCase() === 'mich';
 const tagDisplay = (meta.tags && meta.tags.length > 0)
   ? meta.tags.join(' · ').toUpperCase()
   : (meta.category || '').toUpperCase();
@@ -73,19 +85,61 @@ const formattedUpdatedDate = formatDate(meta.updatedDate);
 
 const isWide = Boolean(wide || meta.wide);
 const containerMaxWidth = isWide ? '1220px' : '820px';
-const canonicalUrl = slug ? `https://covenoftechnology.cloud/article/${slug}` : undefined;
+// 1. Canonical URL & og:url (Section 10 & 26)
+// Only published articles have canonical URL to production article.
+// In preview, we do not claim it is published at canonical URL.
+const canonicalUrl = (!isPreview && slug) ? getArticleCanonicalUrl(slug, Astro.site) : undefined;
 
-const coverSrc = meta.coverImageSrc || meta.cover;
+// 2. Cover & Social Image Resolution (Section 4, 5, 6, 14, 18, 32)
+const rawCover = (meta.coverImageSrc && typeof meta.coverImageSrc === 'string' && meta.coverImageSrc.trim())
+  ? meta.coverImageSrc.trim()
+  : ((meta.cover && typeof meta.cover === 'string' && meta.cover.trim()) ? meta.cover.trim() : '');
+
+const hasValidCover = isValidSocialCoverUrl(rawCover);
+
+// CRITICAL (Section 5 & 32): showCoverImageOnArticle controls ONLY whether cover is rendered
+// inside the Reader article body. It does NOT affect social sharing / og:image!
+const socialImage = hasValidCover ? rawCover : DEFAULT_SOCIAL_IMAGE;
+
+const socialImageAlt = hasValidCover
+  ? (meta.coverImageAlt || meta.coverCaption || `Cover image for ${meta.title}`)
+  : DEFAULT_SOCIAL_IMAGE_ALT;
+
+// In-reader hero display (remains dependent on showCoverImageOnArticle !== false)
+const coverSrc = rawCover;
 const coverAlt = meta.coverImageAlt || meta.coverCaption || meta.title || '';
 const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== false;
+
+// 3. Description Guarantee (Section 3, 4, 5, 6, 7)
+const resolvedArticleDesc = getArticleResolvedDescription(slug, meta.description, Astro.props.document);
+
+// 4. Publication Date ISO format for article:published_time (Section 24)
+let publishedIsoDate: string | undefined = undefined;
+if (meta.publishedDate) {
+  try {
+    const rawDateStr = String(meta.publishedDate);
+    const parsedD = new Date(rawDateStr.includes('T') ? rawDateStr : `${rawDateStr}T00:00:00Z`);
+    if (!isNaN(parsedD.getTime())) {
+      publishedIsoDate = parsedD.toISOString();
+    }
+  } catch (e) {}
+}
+
+// 5. Open Graph article:author profile URL (Section 5-8)
+const authorProfileUrl = getAuthorProfileUrl(rawAuthor, Astro.site);
 ---
 
 <BaseLayout
   title={`Coven of Technology — ${meta.title}`}
-  description={meta.description}
+  description={resolvedArticleDesc}
   canonical={canonicalUrl}
-  ogImage={coverSrc || meta.cover}
+  ogTitle={meta.title}
+  ogDescription={resolvedArticleDesc}
+  ogImage={socialImage}
+  ogImageAlt={socialImageAlt}
   ogType="article"
+  articlePublishedTime={publishedIsoDate}
+  articleAuthor={authorProfileUrl}
   disableDc={true}
 >
   <div class="cov-article-page" style="position:relative;background:transparent">
@@ -132,7 +186,13 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
       <div style="display:flex;align-items:center;gap:14px;margin-bottom:34px;padding-bottom:26px;border-bottom:1px solid rgba(216,181,107,.12);flex-wrap:wrap">
         <div style="width:42px;height:42px;border-radius:50%;background:radial-gradient(circle,#3a2a52,#1a1326);border:1px solid rgba(216,181,107,.4);display:flex;align-items:center;justify-content:center;color:#e8cf95;font-family:var(--font-display, 'Metamorphous', serif);flex-shrink:0">{authorInitial}</div>
         <div>
-          <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:16px;color:#ece6dd">Inscribed by the {meta.author}</div>
+          <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:16px;color:#ece6dd">
+            Inscribed by {isMich ? (
+              <a href="/about"  class="article-author-link">{authorName}</a>
+            ) : (
+              authorName
+            )}
+          </div>
           <div style="font-family:var(--font-body, 'Helvetica Neue Roman', serif);font-size:13px;color:#8f857a;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             <span>{readingTime}</span>
             {formattedPublishedDate && (
@@ -209,14 +269,13 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
         </div>
 
         <!-- Sticky Sidebar: ON THIS SCROLL (Desktop) -->
-        <aside class="article-sidebar" id="article-desktop-sidebar" aria-label="Table of contents and scroll progress" data-progress-ready="false">
+        <aside class="article-sidebar" id="article-desktop-sidebar" aria-label="Table of contents" data-progress-ready="false">
           <div class="toc-panel">
             <div class="toc-header">
               <span class="toc-title">
                 <span>✦</span>
                 <span>ON THIS SCROLL</span>
               </span>
-              <span class="toc-progress-indicator" id="reading-pct">0%</span>
             </div>
 
             <div class="toc-progress-bar-wrap" aria-hidden="true">
@@ -279,11 +338,7 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
       var sidebarBar = document.getElementById('reading-bar');
       if (sidebarBar) sidebarBar.style.width = progress + '%';
 
-      // 3. Sidebar percentage indicator
-      var sidebarPct = document.getElementById('reading-pct');
-      if (sidebarPct) sidebarPct.textContent = progress + '%';
-
-      // 4. Arcane Spirits of Progress activation (numerical threshold comparison, 0 geometry reads)
+      // 3. Arcane Spirits of Progress activation (numerical threshold comparison, 0 geometry reads)
       var sp = getSpiritProgress();
       if (sp && typeof sp.update === 'function') {
         sp.update(progress);
@@ -690,6 +745,24 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
     transition: none;
   }
 
+  .article-author-link {
+    color: var(--cov-purple, #b98fd8);
+    text-decoration: none;
+    transition: color 0.2s ease, text-decoration-color 0.2s ease;
+  }
+
+  .article-author-link:hover {
+    color: #dfc2f5;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .article-author-link:focus-visible {
+    outline: 2px solid rgba(185, 143, 216, 0.6);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
   .article-top-header {
     display: flex;
     align-items: center;
@@ -734,9 +807,6 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
     transition: none !important;
     opacity: 0;
   }
-  [data-progress-ready="false"] .toc-progress-indicator {
-    opacity: 0;
-  }
   [data-progress-ready="false"] .toc-link.active {
     transition: none !important;
   }
@@ -745,10 +815,6 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
   [data-progress-ready="true"] .toc-progress-bar-fill {
     opacity: 1;
     transition: width 0.08s linear, opacity 0.15s ease;
-  }
-  [data-progress-ready="true"] .toc-progress-indicator {
-    opacity: 1;
-    transition: opacity 0.15s ease;
   }
 
   /* ── Hero Lead & Cover ────────────────────────────────────────── */
@@ -884,7 +950,7 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
     flex-shrink: 0;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     margin-bottom: 12px;
     padding-bottom: 10px;
     border-bottom: 1px solid rgba(216, 181, 107, 0.14);
@@ -900,12 +966,6 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
     display: flex;
     align-items: center;
     gap: 8px;
-  }
-
-  .toc-progress-indicator {
-    font-family: var(--font-mono, Consolas, monospace);
-    font-size: 11px;
-    color: #b98fd8;
   }
 
   .toc-progress-bar-wrap {
@@ -931,16 +991,6 @@ const showHeroCover = Boolean(coverSrc) && meta.showCoverImageOnArticle !== fals
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 4px;
-    scrollbar-width: thin;
-    scrollbar-color: rgba(216, 181, 107, 0.3) transparent;
-  }
-
-  .toc-scroll-area::-webkit-scrollbar {
-    width: 4px;
-  }
-  .toc-scroll-area::-webkit-scrollbar-thumb {
-    background: rgba(216, 181, 107, 0.3);
-    border-radius: 2px;
   }
 
   .toc-nav-list {

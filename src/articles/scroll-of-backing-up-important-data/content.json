@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "studioId": "draft_mvtycvem_zuk03",
+  "studioId": "draft_mwcq0ftv_ko3c9",
   "slug": "scroll-of-backing-up-important-data",
   "meta": {
     "title": "Incantation of Backing Up Important Data",
     "description": "",
-    "author": "Oracle of Orgs",
+    "author": "Mich Alvarez",
     "category": "Salesforce",
     "difficulty": "Lv. 1 - Incantation",
     "tags": [],
@@ -15,10 +15,8 @@
     "status": "published",
     "featured": false,
     "wide": true,
-    "cover": "/articles/scroll-of-backing-up-important-data/images/1793389811613_CoT_BackUpImportantData.webp",
-    "coverCaption": "",
     "coverImageSrc": "/articles/scroll-of-backing-up-important-data/images/1793389811613_CoT_BackUpImportantData.webp",
-    "coverImageAlt": "",
+    "coverImageAlt": "image",
     "showCoverImageOnArticle": false
   },
   "sections": [

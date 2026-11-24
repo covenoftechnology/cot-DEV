@@ -103,9 +103,7 @@ window.CovenComponentFactory = function (DCLogic, StreamableLogic, React) {
   }
 
   openProfile() {
-    var isLogged = this.state.loggedIn || getStoredLoggedIn();
-    if (isLogged) this.go('profile');
-    else this.triggerComingSoon();
+    this.triggerComingSoon();
   }
 
   // ══════════════════════════════════════════════════════════════════

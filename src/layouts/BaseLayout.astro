@@ -2,25 +2,86 @@
 import { getPublishedArticles, getHomeStats } from '../lib/articles';
 import Footer from '../components/Footer.astro';
 import CovenAmbientBackground from '../components/CovenAmbientBackground.astro';
+import {
+  SITE_NAME,
+  DEFAULT_SITE_DESCRIPTION,
+  DEFAULT_SOCIAL_IMAGE,
+  DEFAULT_SOCIAL_IMAGE_ALT,
+  FALLBACK_IMAGE_WIDTH,
+  FALLBACK_IMAGE_HEIGHT,
+  toAbsoluteUrl,
+  isValidSocialCoverUrl
+} from '../lib/seo';
 import '../styles/styles.css';
+import '../styles/coven-scroll.css';
 
 interface Props {
   title?: string;
   description?: string;
   canonical?: string;
+  ogTitle?: string;
+  ogDescription?: string;
   ogImage?: string;
+  ogImageAlt?: string;
+  ogImageWidth?: number | string;
+  ogImageHeight?: number | string;
   ogType?: string;
+  ogSiteName?: string;
+  twitterCard?: string;
+  articlePublishedTime?: string;
+  articleAuthor?: string;
   disableDc?: boolean;
 }
 
 const {
-  title = "Coven of Technology",
-  description,
+  title = SITE_NAME,
+  description = DEFAULT_SITE_DESCRIPTION,
   canonical,
+  ogTitle,
+  ogDescription,
   ogImage,
+  ogImageAlt,
+  ogImageWidth,
+  ogImageHeight,
   ogType = "website",
+  ogSiteName = SITE_NAME,
+  twitterCard = "summary_large_image",
+  articlePublishedTime,
+  articleAuthor,
   disableDc = false,
 } = Astro.props;
+
+// Canonical site origin derived solely from astro.config.mjs via Astro.site
+const siteOrigin = Astro.site;
+
+// Determine absolute canonical / OG URL
+const canonicalUrl = canonical ? toAbsoluteUrl(canonical, siteOrigin) : undefined;
+
+// Determine social image resolution with strict HTTPS enforcement (Section 1-3)
+const isCoverValid = Boolean(ogImage && isValidSocialCoverUrl(ogImage));
+const effectiveSocialImage = isCoverValid ? (ogImage as string) : DEFAULT_SOCIAL_IMAGE;
+const absoluteSocialImage = toAbsoluteUrl(effectiveSocialImage, siteOrigin);
+const isFallbackImage = !isCoverValid || effectiveSocialImage === DEFAULT_SOCIAL_IMAGE;
+const isHttpsImage = /^https:\/\//i.test(absoluteSocialImage);
+
+// Open Graph article:author requires a valid profile URL, never plain author name text (Section 5-8)
+const resolvedAuthorProfile = (articleAuthor && typeof articleAuthor === 'string' && /^https?:\/\//i.test(articleAuthor.trim()))
+  ? articleAuthor.trim()
+  : undefined;
+
+// Determine social image alt
+const resolvedImageAlt = ogImageAlt || (isFallbackImage ? DEFAULT_SOCIAL_IMAGE_ALT : `Cover image for ${ogTitle || title}`);
+
+// Determine image dimensions (dimensions emitted only when known / controlled, e.g. fallback)
+const resolvedImageWidth = ogImageWidth || (isFallbackImage ? FALLBACK_IMAGE_WIDTH : undefined);
+const resolvedImageHeight = ogImageHeight || (isFallbackImage ? FALLBACK_IMAGE_HEIGHT : undefined);
+
+// Resolved title & description for OG / Twitter
+const resolvedOgTitle = ogTitle || title;
+const rawDesc = ogDescription || description;
+const resolvedDescription = (rawDesc && typeof rawDesc === 'string' && rawDesc.trim())
+  ? rawDesc.trim()
+  : DEFAULT_SITE_DESCRIPTION;
 
 const publishedArticles = getPublishedArticles();
 const homeStats = getHomeStats();
@@ -48,16 +109,38 @@ const isAboutPage = currentPath === '/about' || currentPath === '/about/' || cur
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{title}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <script is:inline>
+    try {
+      if (window.self !== window.top) {
+        document.documentElement.classList.add('coven-scroll');
+      }
+    } catch (_e) {}
+  </script>
 
-  {description && <meta name="description" content={description} />}
-  {canonical && <link rel="canonical" href={canonical} />}
+  <meta name="description" content={resolvedDescription} />
+  {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
 
   <!-- Open Graph -->
-  <meta property="og:title" content={title} />
-  {description && <meta property="og:description" content={description} />}
-  {canonical && <meta property="og:url" content={canonical} />}
-  {ogImage && <meta property="og:image" content={ogImage} />}
   <meta property="og:type" content={ogType} />
+  <meta property="og:site_name" content={ogSiteName} />
+  <meta property="og:title" content={resolvedOgTitle} />
+  <meta property="og:description" content={resolvedDescription} />
+  {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+  <meta property="og:image" content={absoluteSocialImage} />
+  {isHttpsImage && <meta property="og:image:secure_url" content={absoluteSocialImage} />}
+  <meta property="og:image:alt" content={resolvedImageAlt} />
+  {resolvedImageWidth && <meta property="og:image:width" content={String(resolvedImageWidth)} />}
+  {resolvedImageHeight && <meta property="og:image:height" content={String(resolvedImageHeight)} />}
+  {articlePublishedTime && <meta property="article:published_time" content={articlePublishedTime} />}
+  {resolvedAuthorProfile && <meta property="article:author" content={resolvedAuthorProfile} />}
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card" content={twitterCard} />
+  <meta name="twitter:title" content={resolvedOgTitle} />
+  <meta name="twitter:description" content={resolvedDescription} />
+  <meta name="twitter:image" content={absoluteSocialImage} />
+  <meta name="twitter:image:alt" content={resolvedImageAlt} />
 
   <!-- Google Fonts prefetch -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -122,6 +205,7 @@ const isAboutPage = currentPath === '/about' || currentPath === '/about/' || cur
       user-select: none;
     }
     [data-coven-coming-soon="true"]:focus-visible,
+    [data-coven-profile="true"]:focus-visible,
     .cov-cta-coming-soon:focus-visible {
       outline: 2px solid #e3c47e;
       outline-offset: 3px;
@@ -269,6 +353,14 @@ const isAboutPage = currentPath === '/about' || currentPath === '/about/' || cur
             e.preventDefault();
             e.stopPropagation();
             window.showCovenComingSoonToast("This ritual is still being prepared.");
+            return;
+          }
+          // Standard keyboard activation for custom role="button" elements (e.g. Profile control)
+          var roleButton = e.target && e.target.closest && e.target.closest('[role="button"]:not(button):not(a)');
+          if (roleButton) {
+            e.preventDefault();
+            e.stopPropagation();
+            roleButton.click();
           }
         }
       }, true);

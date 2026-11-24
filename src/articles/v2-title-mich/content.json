@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "studioId": "draft_mwco56xt_krek3",
+  "slug": "v2-title-mich",
+  "meta": {
+    "title": "Incantation of Connecting With Your Team",
+    "description": "",
+    "author": "Mich Alvarez",
+    "category": "Mentoring",
+    "difficulty": "Lv. 1 - Incantation",
+    "tags": [],
+    "rank": "Mechanic",
+    "readingTime": "5 min",
+    "aetherReward": 120,
+    "status": "published",
+    "featured": false,
+    "wide": true,
+    "coverImageSrc": "/articles/v2-title-mich/images/1795041852233_Incantation_of_Connecting_With_Your_Team.webp",
+    "coverImageAlt": "Incantation of Connecting With Your Team",
+    "showCoverImageOnArticle": false
+  },
+  "sections": [
+    {
+      "id": "sec_mwmmt3ou_r0dmx",
+      "title": "Intro",
+      "kicker": "",
+      "heading": "",
+      "blocks": [],
+      "visualGrid": {
+        "columns": 4,
+        "rows": 3,
+        "columnGap": 16,
+        "rowGap": 16,
+        "layoutItems": [
+          {
+            "id": "grid_item_mwmmw787_s0mgl",
+            "columnStart": 1,
+            "columnSpan": 4,
+            "rowStart": 1,
+            "rowSpan": 1,
+            "verticalAlign": "start",
+            "block": {
+              "id": "blk_mwmmw787_l8a5o",
+              "type": "solo-text",
+              "data": {
+                "paragraphs": [
+                  {
+                    "text": "Perhaps my experiences teaching languages, or getting to know different cultures, or just being an extrovert are helpful when it comes to talk to people. I’m not a scientist in this timeline (🤷🏻‍♂️) so I’m not really sure, however, what I do know is that on a frequent basis I identify the strengths and areas of opportunity of my team and focus on improving their ‘least-developed’ skill as well as leveraging their best ones when it comes to assigning activities within a project.",
+                    "align": "left"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sec_mwmmwjni_0xu47",
+      "title": "Strategies to Connect",
+      "kicker": "",
+      "heading": "",
+      "blocks": [],
+      "visualGrid": {
+        "columns": 4,
+        "rows": 6,
+        "columnGap": 16,
+        "rowGap": 16,
+        "layoutItems": [
+          {
+            "id": "grid_item_mwmmwrji_r7y8q",
+            "columnStart": 1,
+            "columnSpan": 4,
+            "rowStart": 1,
+            "rowSpan": 1,
+            "verticalAlign": "start",
+            "block": {
+              "id": "blk_mwmmwrji_uv6xq",
+              "type": "title-text",
+              "data": {
+                "heading": {
+                  "text": "1) 🫶🏻&nbsp;Be Genuine and Kind",
+                  "align": "left"
+                },
+                "paragraphs": [
+                  {
+                    "text": "It’s a common saying that our coworkers are our second families —and it is true! (ish). We spend at least a third of our day probably talking to the same people. Society states we are not meant to make friends at work, but we can definitely make it light/fun for the team and ourselves to get to know each other in meetings other than the Daily, Review, Retrospective (looking directly at you, Scrum) or any other working session.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "Be yourself —don’t pretend to be something you are not (it is okay not to know something. We all started at the base of the mountain)— <u><span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#50946E;color:#50946E\">be kind and respect others</span></u>.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "You cannot imagine how far a ‘Good morning’, ‘Please’, ‘Thank you’, ‘You’re welcome’ can take you in life. People will not remember you because you stayed late everyday, or because you monitor incessantly activities (please don’t do this); they will remember you because of those little details when you were <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#50946E;color:#50946E\"><u>kind</u></span>, when you <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#50946E;color:#50946E\"><u>listened</u></span>, when you thanked them and gave <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#50946E;color:#50946E\"><u>recognition</u></span> for their fantastic job.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "In these days it is not that common to be nice to others —when it doesn’t cost a penny to be a decent person.",
+                    "align": "left"
+                  }
+                ],
+                "showText": true
+              }
+            }
+          },
+          {
+            "id": "grid_item_mwmpb3yt_7vrcy",
+            "columnStart": 1,
+            "columnSpan": 4,
+            "rowStart": 2,
+            "rowSpan": 1,
+            "verticalAlign": "start",
+            "block": {
+              "id": "blk_mwmpb3yt_bej4y",
+              "type": "title-text",
+              "data": {
+                "heading": {
+                  "text": "2) 🤯&nbsp;Start Discussions w/Curiosity",
+                  "align": "left"
+                },
+                "paragraphs": [
+                  {
+                    "text": "When having discussions with your team, do so with an open and curious mindset instead of walking into the room ego-first. Yes, we are the leaders, and allegedly we are supposed to solve all problems and maintain a great harmony within the team, however, consider that each member has a different perspective and approach on how to solve issues. <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#CF5148;color:#CF5148\"><u>It should never be about us, but about them</u></span>.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "Once you start having these discussions, you start acknowledging your own limitations. Be open to learn from others. The moment your mindset adapts to working with more people and asking for their input on ‘X’ topic you start fostering humility, and it encourages everybody to view others’ perspectives and experiences as valuable contributions, boosting our understanding and strengthening our relationships with one another.",
+                    "align": "left"
+                  }
+                ],
+                "showText": true
+              }
+            }
+          },
+          {
+            "id": "grid_item_mwmpdekt_diur8",
+            "columnStart": 1,
+            "columnSpan": 4,
+            "rowStart": 3,
+            "rowSpan": 1,
+            "verticalAlign": "start",
+            "block": {
+              "id": "blk_mwmpdekt_hfq5m",
+              "type": "title-text",
+              "data": {
+                "heading": {
+                  "text": "3) 🧏🏻 Deliver Your Unique Gifts",
+                  "align": "left"
+                },
+                "paragraphs": [
+                  {
+                    "text": "Continuously embracing and delivering your unique gifts can have a deeper impact on your team than you think. When you bring your distinct skills, perspectives, and talents to the table, you not only improve the overall morale of the group, but also inspire others to do the same. <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#CF5148;color:#CF5148\">Each point of view can lead to creative ideas on how to solve different problems</span>.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "Your unique contributions can fill gaps, introduce innovative ideas, and drive the project forward in ways that might not have been possible otherwise. This collaborative synergy not only leads to more successful outcomes, but also cultivates a <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#CF5148;color:#CF5148\">culture of mutual respect and appreciation</span>, where each member of the team feels valued and motivated to keep giving their best. As a special note, be careful with burnouts and don’t overdemand the team just because they are performing excellently. Allow them to breathe between ambitious and exhausting projects.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "Success isn’t a limited resource —there’s plenty for everyone. Adopting this mindset will promote a more positive and constructive approach to personal and professional development, ultimately leading to a greater fulfillment.",
+                    "align": "left"
+                  }
+                ],
+                "showText": true
+              }
+            }
+          },
+          {
+            "id": "grid_item_mwmpevyw_2q879",
+            "columnStart": 1,
+            "columnSpan": 4,
+            "rowStart": 4,
+            "rowSpan": 1,
+            "verticalAlign": "start",
+            "block": {
+              "id": "blk_mwmpevyw_487pc",
+              "type": "title-text",
+              "data": {
+                "heading": {
+                  "text": "4) ⏰ Acknowledge &amp; Value Everyone’s Objectives/Goals &amp; Timelines",
+                  "align": "left"
+                },
+                "paragraphs": [
+                  {
+                    "text": "Each team member may have different goals and aspirations. If someone achieves a significant milestone, celebrate their success without feeling pressured to match their pace. <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#CF5148;color:#CF5148\">Focus on your <u>own growth</u></span>, recognizing that everyone’s path to success is unique.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "Value the trust your team has placed in you, and prioritize building strong relationships with them, as these connections help you create a more harmonious and productive work environment. A person who feels <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#CF5148;color:#CF5148\"><u>valued</u></span> will always do <span class=\"article-text-custom-color\" style=\"--coven-custom-text-color:#CF5148;color:#CF5148\"><u>more</u></span> than what is expected.",
+                    "align": "left"
+                  }
+                ],
+                "showText": true
+              }
+            }
+          },
+          {
+            "id": "grid_item_mwmpgjt1_9c3k2",
+            "columnStart": 1,
+            "columnSpan": 4,
+            "rowStart": 5,
+            "rowSpan": 1,
+            "verticalAlign": "start",
+            "block": {
+              "id": "blk_mwmpgjt1_p8vbv",
+              "type": "title-text",
+              "data": {
+                "heading": {
+                  "text": "5) 🚀 Keep a Growth Mindset",
+                  "align": "left"
+                },
+                "paragraphs": [
+                  {
+                    "text": "This one will perhaps be the most complicated to address due to several reasons, nevertheless, the results are <span class=\"article-text-gold\"><u>golden</u></span>. Begin with the thought that <span class=\"article-text-purple\">all progress starts by identifying and reacting</span>. Identify the area of knowledge where you can improve, and then plan a strategy to slowly overcome that gap.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "Recognize that in any role in our lives there will always be somebody who is ahead of us, and also somebody who is behind. Instead of feeling discouraged or envious of those incredible individuals who have progressed further, see them as <span class=\"article-text-muted\"><u>role models</u></span> from whom you can learn and grow. Their different background experiences can offer valuable insights and inspiration for your own career growth, so rather than engaging in negative comparisons that may perhaps undermine your confidence, <span class=\"article-text-gold\"><u>focus on the lessons you can take from their achievements</u></span>.",
+                    "align": "left"
+                  }
+                ],
+                "showText": true
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "sec_mwmpimb8_91dfo",
+      "title": " To Sum-Up",
+      "kicker": "",
+      "heading": "",
+      "blocks": [],
+      "visualGrid": {
+        "columns": 4,
+        "rows": 3,
+        "columnGap": 16,
+        "rowGap": 16,
+        "layoutItems": [
+          {
+            "id": "grid_item_mwmpiy3v_l1q99",
+            "columnStart": 1,
+            "columnSpan": 4,
+            "rowStart": 1,
+            "rowSpan": 1,
+            "verticalAlign": "start",
+            "block": {
+              "id": "blk_mwmpiy3v_iz2fy",
+              "type": "solo-text",
+              "data": {
+                "paragraphs": [
+                  {
+                    "text": "I am completely sure there are even more strategies when it comes to nurturing relationships and connecting with your team. The ones listed above are usually what I put into practice.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "What I’d consider important to highlight is that <u><span class=\"article-text-gold\">each person is unique, contributes with their own perspectives, experiences and ideas</span></u>. It matters the respect, encouragement, and active listening that you perform with others. Always do so open to critiques, to feedback, to growth.",
+                    "align": "left"
+                  },
+                  {
+                    "text": "Congrats, you are set for success! 🥳🎉",
+                    "align": "left"
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

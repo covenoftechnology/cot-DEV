@@ -5,6 +5,17 @@ import ArticleTrial from './ArticleTrial.astro';
 import { canNestInCallout, MAX_NESTED_LIST_DEPTH, canAddNestedListChild } from '../../lib/article-block-registry';
 import { resolveCovenGlyph } from '../../lib/coven-icons';
 import { sanitizeEmbedUrl, parseVideoUrl, getIframePolicy } from '../../lib/article-grid/embed';
+import { resolveListMarker } from '../../lib/article-markers';
+import { normalizeMultilineText } from '../../lib/article-text';
+import { normalizeAccentColor, resolveAccentColor } from '../../lib/article-accents';
+import {
+  resolveTableForReader,
+  getTableClassList,
+  resolveEffectiveCellStyle,
+  buildCellInlineStyle,
+  getMergeOrigin,
+  isCellCovered,
+} from '../../lib/article-table';
 import type { ArticleDocument, ArticleBlock } from '../../types/article-document';
 
 interface Props {
@@ -24,14 +35,56 @@ function slugify(text: string): string {
     .replace(/(^-|-$)/g, '');
 }
 
+function sanitizeStyleContent(styleContent: string): string {
+  if (!styleContent || typeof styleContent !== 'string') return '';
+  const safeDeclarations: string[] = [];
+  const declarations = styleContent.split(';');
+  for (const decl of declarations) {
+    const colonIdx = decl.indexOf(':');
+    if (colonIdx === -1) continue;
+    const prop = decl.slice(0, colonIdx).trim().toLowerCase();
+    const val = decl.slice(colonIdx + 1).trim();
+
+    // Whitelist ONLY safe color properties
+    const isAllowedProp =
+      prop === 'color' ||
+      prop === 'background-color' ||
+      prop === '--coven-custom-text-color' ||
+      prop === '--coven-custom-bg';
+
+    if (!isAllowedProp) continue;
+
+    // Strict validation of safe color values
+    const isHex = /^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(val);
+    const isRgb = /^rgba?\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}(?:\s*,\s*[\d.]+%?\s*)?\)$/i.test(val);
+    const isHsl = /^hsla?\(\s*\d{1,3}\s*,\s*[\d.]+%?\s*,\s*[\d.]+%?(?:\s*,\s*[\d.]+%?\s*)?\)$/i.test(val);
+
+    if (isHex || isRgb || isHsl) {
+      safeDeclarations.push(`${prop}: ${val}`);
+    }
+  }
+  return safeDeclarations.join('; ');
+}
+
 function cleanHtml(input: string): string {
   if (!input || typeof input !== 'string') return '';
   let sanitized = input
     .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
     .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
     .replace(/\son\w+="[^"]*"/gi, '')
-    .replace(/\son\w+='[^']*'/gi, '')
-    .replace(/\sstyle="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '');
+
+  // Safely sanitize inline style attributes: allow only safe color properties, reject dangerous/layout styles
+  sanitized = sanitized.replace(/\sstyle="([^"]*)"/gi, (_match, styleContent) => {
+    const clean = sanitizeStyleContent(styleContent);
+    return clean ? ` style="${clean}"` : '';
+  });
+  sanitized = sanitized.replace(/\sstyle='([^']*)'/gi, (_match, styleContent) => {
+    const clean = sanitizeStyleContent(styleContent);
+    return clean ? ` style="${clean}"` : '';
+  });
+
+  sanitized = sanitized
     .replace(/javascript:/gi, '')
     .replace(/vbscript:/gi, '')
     .replace(/data:/gi, '');
@@ -112,7 +165,7 @@ function cleanHtml(input: string): string {
     return `<span class="${validClasses.join(' ')}"${styleStr}>${content}</span>`;
   });
 
-  return sanitized;
+  return normalizeMultilineText(sanitized);
 }
 
 function getPlainHeadingText(input: any): string {
@@ -336,22 +389,34 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                 return [];
               };
 
-              const renderNestedItems = (nodes: any[], depth: number): any => {
+              const renderNestedItems = (nodes: any[], depth: number, parentStyle?: string): any => {
                 if (!Array.isArray(nodes) || nodes.length === 0 || depth > MAX_NESTED_LIST_DEPTH) return null;
                 const isRoot = depth === 1;
                 return (
                   <ul class={isRoot ? 'nested-bullets-list' : 'sub-bullets-list'} data-depth={depth}>
-                    {nodes.map((node: any) => {
+                    {nodes.map((node: any, idx: number) => {
                       const itemData = extractNodeText(node);
                       const childNodes = canAddNestedListChild(depth) ? getNodeChildren(node) : [];
                       const alignClass = itemData.align && itemData.align !== 'left' ? ` rich-align-${itemData.align}` : '';
                       const alignStyle = itemData.align && itemData.align !== 'left' ? `text-align: ${itemData.align}; width: 100%;` : undefined;
+                      const resolvedMarker = resolveListMarker({
+                        customValue: node?.markerValue,
+                        itemStyle: node?.markerStyle,
+                        parentStyle: parentStyle,
+                        blockDefaultStyle: markerStyle,
+                        index: idx,
+                        depth: depth,
+                        isSteps: false,
+                      });
+                      const effectiveChildParentStyle = (node?.markerStyle && node.markerStyle !== 'auto') ? node.markerStyle : parentStyle;
+
                       return (
                         <li
                           class={isRoot ? 'nested-bullet-main' : `sub-bullet-item sub-bullet-level-${depth}${alignClass}`}
                           data-depth={depth}
                         >
                           <span class={`bullet-text${isRoot ? '' : ' sub-bullet-text'}${alignClass}`}>
+                            <span class="bullet-marker" aria-hidden="true">{resolvedMarker}</span>
                             <span
                               class={isRoot ? 'bullet-inner-text' : 'sub-bullet-inner-text'}
                               style={alignStyle}
@@ -359,7 +424,7 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                               <Fragment set:html={cleanHtml(itemData.text || '')} />
                             </span>
                           </span>
-                          {childNodes.length > 0 && renderNestedItems(childNodes, depth + 1)}
+                          {childNodes.length > 0 && renderNestedItems(childNodes, depth + 1, effectiveChildParentStyle)}
                         </li>
                       );
                     })}
@@ -372,6 +437,7 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                   class={`block-nested-bullets${layoutMode === 'horizontal' ? ` is-layout-horizontal items-count-${items.length}` : ''}`}
                   data-marker-style={markerStyle}
                   data-layout={layoutMode}
+                  data-marker-engine="resolved"
                 >
                   {titleData.text && (
                     <h3 class={`list-title${titleData.align && titleData.align !== 'left' ? ` rich-align-${titleData.align}` : ''}`}>
@@ -385,6 +451,7 @@ function migrateV1Unit(u: any): ArticleBlock | null {
 
             case 'numbered-steps': {
               const steps = Array.isArray(d.steps) ? d.steps : [];
+              const blockMarkerStyle = d.markerStyle;
               const titleData = typeof d.title === 'object' && d.title !== null
                 ? { text: d.title.text || d.title.content || '', align: d.title.align || 'left' }
                 : { text: typeof d.title === 'string' ? d.title : '', align: 'left' };
@@ -403,10 +470,19 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                       const stepText = typeof step.text === 'object' && step.text !== null
                         ? { text: step.text.text || step.text.content || '', align: step.text.align || 'left' }
                         : { text: typeof step.text === 'string' ? step.text : '', align: 'left' };
+                      const resolvedMarker = resolveListMarker({
+                        customValue: step?.markerValue,
+                        itemStyle: step?.markerStyle,
+                        blockDefaultStyle: blockMarkerStyle,
+                        index: idx,
+                        depth: 1,
+                        isSteps: true,
+                        legacyBadge: step?.badge,
+                      });
                       return (
                         <li class="step-item">
-                          <div class="step-badge">{step.badge || String(idx + 1).padStart(2, '0')}</div>
-                          <div class="step-content" style="flex:1">
+                          <div class="step-badge">{resolvedMarker}</div>
+                          <div class="step-content" style="flex:1; min-width:0;">
                             {stepTitle.text && (
                               <h4 class={stepTitle.align && stepTitle.align !== 'left' ? `rich-align-${stepTitle.align}` : undefined}>
                                 <Fragment set:html={cleanHtml(stepTitle.text)} />
@@ -647,23 +723,41 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               );
             }
 
-            case 'gallery-scroll':
+            case 'gallery-scroll': {
+              const validCards = (Array.isArray(d.cards) ? d.cards : []).filter((card: any) => Boolean(card && card.src));
               return (
-                <div class="horizontal-scroll-wrap">
+                <div class="horizontal-scroll-wrap" data-coven-gallery-carousel>
                   <div class="horizontal-scroll" role="region" aria-label="Horizontal image gallery" tabindex="0">
-                    {(Array.isArray(d.cards) ? d.cards : []).map((card: any) => {
-                      const cardCap = getRich(card.caption);
-                      return card.src ? (
-                        <figure class="gallery-card">
-                          <img src={card.src} alt={card.alt || ''} loading="lazy" />
-                          {cardCap.text && <figcaption class={cardCap.align !== 'left' ? `rich-align-${cardCap.align}` : undefined}><Fragment set:html={cleanHtml(cardCap.text)} /></figcaption>}
-                        </figure>
-                      ) : null;
-                    })}
+                    <div class="gallery-motion-track">
+                      {validCards.map((card: any) => {
+                        const cardCap = getRich(card.caption);
+                        const hasCap = cardCap.text && cardCap.text.trim().length > 0;
+                        return (
+                          <figure class="gallery-card">
+                            <img src={card.src} alt={card.alt || ''} draggable="false" loading="lazy" />
+                            {hasCap && <figcaption class={cardCap.align !== 'left' ? `rich-align-${cardCap.align}` : undefined}><Fragment set:html={cleanHtml(cardCap.text)} /></figcaption>}
+                          </figure>
+                        );
+                      })}
+                    </div>
                   </div>
-                  {d.hint && <div class="gallery-scroll-hint">{d.hint}</div>}
+                  {validCards.length >= 2 && (
+                    <div class="gallery-carousel-indicators" data-coven-gallery-indicators aria-label="Carousel pagination">
+                      {validCards.map((_: any, pIdx: number) => (
+                        <button
+                          type="button"
+                          class={`carousel-indicator-pill${pIdx === 0 ? ' is-active' : ''}`}
+                          aria-label={`Go to gallery image ${pIdx + 1} of ${validCards.length}`}
+                          aria-current={pIdx === 0 ? 'true' : 'false'}
+                          data-index={pIdx}
+                        />
+                      ))}
+                    </div>
+                  )}
+                  {d.hint && d.hint.trim().length > 0 && <div class="gallery-scroll-hint">{d.hint}</div>}
                 </div>
               );
+            }
 
             case 'embed': {
               const embedType = d.embedType || 'video';
@@ -673,6 +767,15 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               const titleData = getRich(d.title);
               const altText = d.alt || titleData.text || 'Embedded media';
               const aspect = d.aspectRatio || '16-9';
+              const rawHeight = typeof d.height === 'number'
+                ? d.height
+                : (typeof d.height === 'string' ? parseInt(d.height, 10) : NaN);
+              const explicitHeight = Number.isFinite(rawHeight) && rawHeight >= 160 && rawHeight <= 3200
+                ? rawHeight
+                : null;
+              const frameHeightStyle = explicitHeight
+                ? `height:${explicitHeight}px;aspect-ratio:auto;`
+                : undefined;
 
               if (!safeUrl) {
                 return (
@@ -686,21 +789,32 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               if (embedType === 'video') {
                 const vid = parseVideoUrl(safeUrl);
                 return (
-                  <div class={`embed-block-wrap embed-video-wrap aspect-${aspect}`}>
-                    {vid.type === 'direct' ? (
-                      <video src={vid.embedSrc} controls playsinline preload="metadata" class="embed-video-element">
-                        Your browser does not support HTML5 video playback.
-                      </video>
-                    ) : (
-                      <iframe
-                        src={vid.embedSrc}
-                        title={titleData.text || 'Embedded Video'}
-                        class="embed-iframe-element"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen
-                        loading="lazy"
-                      />
-                    )}
+                  <div
+                    class="embed-block-wrap coven-embed-shell coven-embed-shell--video"
+                    data-coven-embed-shell="true"
+                    data-embed-origin-kind={vid.type === 'direct' ? 'same-origin' : 'cross-origin'}
+                    data-embed-provider={vid.type}
+                    data-embed-has-fixed-height={explicitHeight ? 'true' : 'false'}
+                  >
+                    <div class={`coven-embed-frame embed-video-wrap aspect-${aspect}`} style={frameHeightStyle}>
+                      {vid.type === 'direct' ? (
+                        <video src={vid.embedSrc} controls playsinline preload="metadata" class="embed-video-element">
+                          Your browser does not support HTML5 video playback.
+                        </video>
+                      ) : (
+                        <>
+                          <div class="coven-embed-loading" aria-hidden="true"></div>
+                          <iframe
+                            src={vid.embedSrc}
+                            title={titleData.text || 'Embedded Video'}
+                            class="embed-iframe-element"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                            allowfullscreen
+                            loading="lazy"
+                          />
+                        </>
+                      )}
+                    </div>
                     {cap.text && <div class={`embed-caption${cap.align !== 'left' ? ` rich-align-${cap.align}` : ''}`}><Fragment set:html={cleanHtml(cap.text)} /></div>}
                   </div>
                 );
@@ -741,15 +855,26 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               if (embedType === 'iframe') {
                 const policy = getIframePolicy(safeUrl);
                 return (
-                  <div class={`embed-block-wrap embed-iframe-wrap aspect-${aspect}`}>
-                    <iframe
-                      src={safeUrl}
-                      title={titleData.text || 'Embedded Content'}
-                      class="embed-iframe-element"
-                      sandbox={policy.sandbox}
-                      loading="lazy"
-                      referrerpolicy="strict-origin-when-cross-origin"
-                    />
+                  <div
+                    class="embed-block-wrap coven-embed-shell"
+                    data-coven-embed-shell="true"
+                    data-embed-origin-kind={policy.isSameOrigin ? 'same-origin' : 'cross-origin'}
+                    data-embed-provider={policy.provider}
+                    data-embed-has-fixed-height={explicitHeight ? 'true' : 'false'}
+                  >
+                    <div class={`coven-embed-frame embed-iframe-wrap aspect-${aspect}`} style={frameHeightStyle}>
+                      <div class="coven-embed-loading" aria-hidden="true"></div>
+                      <iframe
+                        src={safeUrl}
+                        title={titleData.text || 'Embedded Content'}
+                        class="embed-iframe-element"
+                        sandbox={policy.sandbox}
+                        allow={policy.allow}
+                        loading="lazy"
+                        referrerpolicy="strict-origin-when-cross-origin"
+                        tabindex="0"
+                      />
+                    </div>
                     {cap.text && <div class={`embed-caption${cap.align !== 'left' ? ` rich-align-${cap.align}` : ''}`}><Fragment set:html={cleanHtml(cap.text)} /></div>}
                   </div>
                 );
@@ -829,15 +954,20 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               const h1 = getRich(d.col1Header);
               const h2 = getRich(d.col2Header);
               const col1Items = (Array.isArray(d.col1Items) ? d.col1Items : [])
-                .map((it: any) => getRich(it))
+                .map((it: any) => getRich(it && typeof it === 'object' && it.text !== undefined ? it.text : it))
                 .filter(it => it.text);
               const col2Items = (Array.isArray(d.col2Items) ? d.col2Items : [])
-                .map((it: any) => getRich(it))
+                .map((it: any) => getRich(it && typeof it === 'object' && it.text !== undefined ? it.text : it))
                 .filter(it => it.text);
+              const hasSideB = Boolean(
+                h2.text.trim().length > 0 ||
+                col2Items.length > 0 ||
+                (typeof d.col2Icon === 'string' && d.col2Icon.trim().length > 0)
+              );
               const icon1 = resolveCovenGlyph(d.col1Icon, '✉');
-              const icon2 = resolveCovenGlyph(d.col2Icon, '◈');
+              const icon2 = hasSideB ? resolveCovenGlyph(d.col2Icon, '◈') : '';
               return (
-                <div class="comparison-split">
+                <div class={`comparison-split${hasSideB ? '' : ' is-single-side'}`}>
                   <div class="comparison-column">
                     <div class="comparison-col-header">
                       {icon1 && <span class="comparison-col-icon">{icon1}</span>}
@@ -849,17 +979,19 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                       ))}
                     </ul>
                   </div>
-                  <div class="comparison-column">
-                    <div class="comparison-col-header">
-                      {icon2 && <span class="comparison-col-icon">{icon2}</span>}
-                      <span class={h2.align !== 'left' ? `rich-align-${h2.align}` : undefined}><Fragment set:html={cleanHtml(h2.text)} /></span>
+                  {hasSideB && (
+                    <div class="comparison-column">
+                      <div class="comparison-col-header">
+                        {icon2 && <span class="comparison-col-icon">{icon2}</span>}
+                        <span class={h2.align !== 'left' ? `rich-align-${h2.align}` : undefined}><Fragment set:html={cleanHtml(h2.text)} /></span>
+                      </div>
+                      <ul class="comparison-list">
+                        {col2Items.map((item: any) => (
+                          <li class={item.align !== 'left' ? `rich-align-${item.align}` : undefined}><Fragment set:html={cleanHtml(item.text)} /></li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul class="comparison-list">
-                      {col2Items.map((item: any) => (
-                        <li class={item.align !== 'left' ? `rich-align-${item.align}` : undefined}><Fragment set:html={cleanHtml(item.text)} /></li>
-                      ))}
-                    </ul>
-                  </div>
+                  )}
                 </div>
               );
             }
@@ -867,47 +999,67 @@ function migrateV1Unit(u: any): ArticleBlock | null {
             case 'stats-metrics': {
               const s1Label = getRich(d.stat1Label);
               const s1Sub = getRich(d.stat1Sub);
+              const s2Num = (typeof d.stat2Num === 'string' || typeof d.stat2Num === 'number') ? String(d.stat2Num).trim() : '';
               const s2Label = getRich(d.stat2Label);
               const s2Sub = getRich(d.stat2Sub);
+              const s3Num = (typeof d.stat3Num === 'string' || typeof d.stat3Num === 'number') ? String(d.stat3Num).trim() : '';
               const s3Label = getRich(d.stat3Label);
               const s3Sub = getRich(d.stat3Sub);
+              const hasMetric2 = Boolean(s2Num.length > 0 || s2Label.text.trim().length > 0 || s2Sub.text.trim().length > 0);
+              const hasMetric3 = Boolean(s3Num.length > 0 || s3Label.text.trim().length > 0 || s3Sub.text.trim().length > 0);
+              const isSingleMetric = !hasMetric2 && !hasMetric3;
+              const populatedCount = 1 + (hasMetric2 ? 1 : 0) + (hasMetric3 ? 1 : 0);
+              const statsGridClass = isSingleMetric
+                ? 'stats-grid is-single-metric'
+                : (populatedCount === 2 ? 'stats-grid is-two-metrics' : 'stats-grid');
               return (
-                <div class="stats-grid">
+                <div class={statsGridClass}>
                   <div class="stat-card">
                     <div class="stat-number">{d.stat1Num}</div>
                     <div class={`stat-label${s1Label.align !== 'left' ? ` rich-align-${s1Label.align}` : ''}`}><Fragment set:html={cleanHtml(s1Label.text)} /></div>
                     {s1Sub.text && <div class={`stat-sub${s1Sub.align !== 'left' ? ` rich-align-${s1Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s1Sub.text)} /></div>}
                   </div>
-                  <div class="stat-card">
-                    <div class="stat-number">{d.stat2Num}</div>
-                    <div class={`stat-label${s2Label.align !== 'left' ? ` rich-align-${s2Label.align}` : ''}`}><Fragment set:html={cleanHtml(s2Label.text)} /></div>
-                    {s2Sub.text && <div class={`stat-sub${s2Sub.align !== 'left' ? ` rich-align-${s2Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s2Sub.text)} /></div>}
-                  </div>
-                  <div class="stat-card">
-                    <div class="stat-number">{d.stat3Num}</div>
-                    <div class={`stat-label${s3Label.align !== 'left' ? ` rich-align-${s3Label.align}` : ''}`}><Fragment set:html={cleanHtml(s3Label.text)} /></div>
-                    {s3Sub.text && <div class={`stat-sub${s3Sub.align !== 'left' ? ` rich-align-${s3Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s3Sub.text)} /></div>}
-                  </div>
+                  {hasMetric2 && (
+                    <div class="stat-card">
+                      <div class="stat-number">{d.stat2Num}</div>
+                      <div class={`stat-label${s2Label.align !== 'left' ? ` rich-align-${s2Label.align}` : ''}`}><Fragment set:html={cleanHtml(s2Label.text)} /></div>
+                      {s2Sub.text && <div class={`stat-sub${s2Sub.align !== 'left' ? ` rich-align-${s2Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s2Sub.text)} /></div>}
+                    </div>
+                  )}
+                  {hasMetric3 && (
+                    <div class="stat-card">
+                      <div class="stat-number">{d.stat3Num}</div>
+                      <div class={`stat-label${s3Label.align !== 'left' ? ` rich-align-${s3Label.align}` : ''}`}><Fragment set:html={cleanHtml(s3Label.text)} /></div>
+                      {s3Sub.text && <div class={`stat-sub${s3Sub.align !== 'left' ? ` rich-align-${s3Sub.align}` : ''}`}><Fragment set:html={cleanHtml(s3Sub.text)} /></div>}
+                    </div>
+                  )}
                 </div>
               );
             }
 
             case 'technical-table': {
-              const hasStructuredCols = Array.isArray(d.columns) && d.columns.length > 0;
-              const columns = hasStructuredCols
-                ? d.columns
-                : (Array.isArray(d.headers) ? d.headers.map((h: string, i: number) => ({ id: `col_${i}`, label: h })) : []);
-              const rows = Array.isArray(d.rows) ? d.rows : [];
+              const { columns, rows, tableStyle, mergeRegions } = resolveTableForReader(d);
+              const tableClasses = getTableClassList(tableStyle, 'coven-table');
+              const wrapClasses = `table-wrap coven-table-scroll coven-table-wrap--${tableStyle.preset}`;
 
               return (
-                <div class="table-wrap">
-                  <table class="coven-table">
+                <div class={wrapClasses} data-table-preset={tableStyle.preset}>
+                  <table class={tableClasses} data-table-preset={tableStyle.preset}>
                     <thead>
                       <tr>
-                        {columns.map((col: any) => {
-                          const colData = getRich(col.label);
+                        {columns.map((col, cIdx) => {
+                          if (isCellCovered(mergeRegions, 0, cIdx, 'header')) return null;
+                          const origin = getMergeOrigin(mergeRegions, 0, cIdx, 'header');
+                          const colData = col.label;
+                          const effStyle = resolveEffectiveCellStyle(d, 'header', 0, cIdx, 'header', col.id);
+                          const finalAlign = effStyle.align || colData.align || 'left';
+                          const inlineStyle = buildCellInlineStyle({ ...effStyle, align: finalAlign !== 'left' ? finalAlign : undefined });
                           return (
-                            <th class={colData.align !== 'left' ? `rich-align-${colData.align}` : undefined}>
+                            <th
+                              colspan={origin && origin.columnSpan > 1 ? origin.columnSpan : undefined}
+                              class={finalAlign !== 'left' ? `rich-align-${finalAlign}` : undefined}
+                              style={inlineStyle || undefined}
+                            >
                               <Fragment set:html={cleanHtml(colData.text)} />
                             </th>
                           );
@@ -915,20 +1067,22 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                       </tr>
                     </thead>
                     <tbody>
-                      {rows.map((row: any) => (
+                      {rows.map((row, rIdx) => (
                         <tr>
-                          {columns.map((col: any, cIdx: number) => {
-                            let cellVal = '';
-                            if (row.cells && row.cells[col.id] !== undefined) {
-                              cellVal = row.cells[col.id];
-                            } else if (row[`col${cIdx + 1}`] !== undefined) {
-                              cellVal = row[`col${cIdx + 1}`];
-                            } else if (Array.isArray(row)) {
-                              cellVal = row[cIdx] || '';
-                            }
-                            const cellData = getRich(cellVal);
+                          {columns.map((col, cIdx) => {
+                            if (isCellCovered(mergeRegions, rIdx, cIdx, 'body')) return null;
+                            const origin = getMergeOrigin(mergeRegions, rIdx, cIdx, 'body');
+                            const cellData = row.cells[col.id] || { text: '', align: 'left' };
+                            const effStyle = resolveEffectiveCellStyle(d, 'body', rIdx, cIdx, row.id, col.id);
+                            const finalAlign = effStyle.align || cellData.align || 'left';
+                            const inlineStyle = buildCellInlineStyle({ ...effStyle, align: finalAlign !== 'left' ? finalAlign : undefined });
                             return (
-                              <td class={cellData.align !== 'left' ? `rich-align-${cellData.align}` : undefined}>
+                              <td
+                                rowspan={origin && origin.rowSpan > 1 ? origin.rowSpan : undefined}
+                                colspan={origin && origin.columnSpan > 1 ? origin.columnSpan : undefined}
+                                class={finalAlign !== 'left' ? `rich-align-${finalAlign}` : undefined}
+                                style={inlineStyle || undefined}
+                              >
                                 <Fragment set:html={cleanHtml(cellData.text)} />
                               </td>
                             );
@@ -952,10 +1106,14 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               const hasLegacyText = Boolean(cText.text && cText.text.trim().length > 0);
               return (
                 <Callout
-                  type={d.calloutType || 'info'}
+                  type={d.calloutType || 'grimoire'}
                   showTitle={showTitle}
                   title={cTitle && cTitle.text ? cleanHtml(cTitle.text) : undefined}
                   accentColor={d.accentColor}
+                  accentCustomColor={d.accentCustomColor}
+                  surfaceStyle={d.surfaceStyle}
+                  fadeDirection={d.fadeDirection}
+                  borderStyle={d.borderStyle}
                 >
                   {childBlocks.length > 0 ? (
                     <>
@@ -982,8 +1140,22 @@ function migrateV1Unit(u: any): ArticleBlock | null {
               const hasEndQuote = /["”'»]$/.test(plainQuote);
               const needsQuotes = plainQuote.length > 0 && !(hasStartQuote && hasEndQuote);
 
+              const customAccent = resolveAccentColor({
+                accentColor: d.accentColor,
+                accentCustomColor: d.accentCustomColor,
+              });
+              const accentVars = customAccent ? `
+                --pullquote-accent: ${customAccent.hex};
+                --pullquote-accent-soft: ${customAccent.softRgba};
+                --pullquote-accent-border: ${customAccent.borderRgba};
+                --pullquote-accent-glow: ${customAccent.glowRgba};
+              `.replace(/\s+/g, ' ').trim() : undefined;
+
               return (
-                <div class="pullquote">
+                <div
+                  class={`pullquote${customAccent ? ` pullquote-accent pullquote-accent-${customAccent.key}` : ''}`}
+                  style={accentVars}
+                >
                   <p class={`pullquote-text${qRich.align !== 'left' ? ` rich-align-${qRich.align}` : ''}`}>
                     {needsQuotes ? '"' : ''}<Fragment set:html={rawCleanedQuote} />{needsQuotes ? '"' : ''}
                   </p>
@@ -1078,11 +1250,15 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                   {(Array.isArray(d.items) ? d.items : []).map((item: any) => {
                     const href = item.url || (item.slug ? `/article/${item.slug}` : '#');
                     const isExt = item.type === 'external' || href.startsWith('http');
-                    const typeLabel = item.type === 'internal'
-                      ? 'COVEN SCROLL'
-                      : (item.type === 'external' ? 'EXTERNAL DOCUMENTATION' : (item.type || 'DOCUMENTATION'));
+                    const isInternal = item.type === 'internal' || (!isExt && item.type !== 'external');
+                    const typeLabel = isExt
+                      ? (item.type === 'external' ? 'EXTERNAL DOCUMENTATION' : (item.type || 'DOCUMENTATION'))
+                      : 'STUDY SCROLL';
                     const arrow = item.ctaArrow || (isExt ? '↗' : '→');
                     const itTitle = getRich(item.title);
+                    const ctaLabel = isInternal
+                      ? 'Coven Of Technology'
+                      : (item.ctaText || 'Official documentation');
 
                     return (
                       <a href={href} class="related-card" target={isExt ? '_blank' : undefined} rel={isExt ? 'noopener noreferrer' : undefined}>
@@ -1091,7 +1267,7 @@ function migrateV1Unit(u: any): ArticleBlock | null {
                           <h4 class={`related-title${itTitle.align !== 'left' ? ` rich-align-${itTitle.align}` : ''}`}><Fragment set:html={cleanHtml(itTitle.text)} /></h4>
                         </div>
                         <div class="related-cta">
-                          <span>{item.ctaText || (isExt ? 'Official documentation' : 'Study scroll')}</span>
+                          <span>{ctaLabel}</span>
                           <span>{arrow}</span>
                         </div>
                       </a>

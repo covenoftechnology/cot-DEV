@@ -1,6 +1,11 @@
 import type { Article, ArticleMeta, ArticleNavigation } from '../types/article';
 import type { ArticleDocument, ArticleBlock } from '../types/article-document';
 import { getActiveSectionBlocks } from './article-grid/geometry';
+import {
+  stripHtmlToPlainText,
+  truncateToExcerpt,
+  GENERIC_ARTICLE_FALLBACK_DESCRIPTION
+} from './seo';
 
 // Automatically discover all article metadata files using Vite's import.meta.glob
 const metaModules = import.meta.glob<{ default?: ArticleMeta; meta?: ArticleMeta }>(
@@ -368,4 +373,101 @@ export function getHomeStats(): HomeStatItem[] {
     { value: String(publishedScrollsCount), label: 'Scrolls' },
     { value: String(publishedTrialsCount), label: 'Trials' },
   ];
+}
+
+/**
+ * Retrieves the structured ArticleDocument for a slug, if available.
+ */
+export function getArticleDocument(slug: string): ArticleDocument | undefined {
+  return contentBySlug[slug];
+}
+
+/**
+ * Extracts a clean, plain-text excerpt from an article's structured content blocks.
+ * Bounded to 140–200 characters suitable for SEO and social sharing.
+ */
+export function extractArticleExcerpt(doc: ArticleDocument | undefined | null, maxLen = 180): string | undefined {
+  if (!doc || !Array.isArray(doc.sections)) return undefined;
+
+  let collectedText = '';
+
+  for (const section of doc.sections) {
+    const blocks = getActiveSectionBlocks(section);
+    traverseArticleBlocks(blocks, (block) => {
+      if (collectedText.length >= 200) return;
+
+      if (block.type === 'solo-text' && block.data?.paragraphs) {
+        for (const p of block.data.paragraphs) {
+          const raw = typeof p === 'string' ? p : p?.text;
+          if (typeof raw === 'string') {
+            const clean = stripHtmlToPlainText(raw);
+            if (clean) collectedText += (collectedText ? ' ' : '') + clean;
+          }
+          if (collectedText.length >= 200) break;
+        }
+      } else if (block.type === 'title-text' && block.data) {
+        if (Array.isArray(block.data.paragraphs)) {
+          for (const p of block.data.paragraphs) {
+            const raw = typeof p === 'string' ? p : p?.text;
+            if (typeof raw === 'string') {
+              const clean = stripHtmlToPlainText(raw);
+              if (clean) collectedText += (collectedText ? ' ' : '') + clean;
+            }
+            if (collectedText.length >= 200) break;
+          }
+        }
+        if (collectedText.length < 140 && block.data.heading) {
+          const clean = stripHtmlToPlainText(block.data.heading);
+          if (clean) collectedText += (collectedText ? ' — ' : '') + clean;
+        }
+      } else if (block.type === 'callout' && block.data?.text) {
+        const raw = typeof block.data.text === 'string' ? block.data.text : block.data.text?.text;
+        if (typeof raw === 'string') {
+          const clean = stripHtmlToPlainText(raw);
+          if (clean) collectedText += (collectedText ? ' ' : '') + clean;
+        }
+      } else if (block.type === 'pullquote' && block.data?.quote) {
+        const raw = typeof block.data.quote === 'string' ? block.data.quote : block.data.quote?.text;
+        if (typeof raw === 'string') {
+          const clean = stripHtmlToPlainText(raw);
+          if (clean) collectedText += (collectedText ? ' ' : '') + clean;
+        }
+      }
+    });
+
+    if (collectedText.length >= 140) break;
+  }
+
+  if (!collectedText) return undefined;
+  return truncateToExcerpt(collectedText, maxLen);
+}
+
+/**
+ * Returns a resolved social/SEO description for an article slug or document.
+ * Priority:
+ * 1. canonical non-empty meta.description
+ * 2. content-derived plain-text excerpt (140-200 chars)
+ * 3. canonical generic Coven fallback
+ */
+export function getArticleResolvedDescription(
+  slug: string,
+  metaDesc?: string | null,
+  doc?: ArticleDocument | null
+): string {
+  // 1. Author-provided canonical description
+  if (metaDesc && typeof metaDesc === 'string' && metaDesc.trim()) {
+    return metaDesc.trim();
+  }
+
+  // 2. Content-derived fallback from structured document
+  const targetDoc = doc || contentBySlug[slug];
+  if (targetDoc) {
+    const excerpt = extractArticleExcerpt(targetDoc);
+    if (excerpt && excerpt.trim()) {
+      return excerpt.trim();
+    }
+  }
+
+  // 3. Generic Coven fallback
+  return GENERIC_ARTICLE_FALLBACK_DESCRIPTION;
 }

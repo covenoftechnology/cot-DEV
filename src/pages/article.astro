@@ -14,6 +14,7 @@ const targetTitle = firstArticle ? firstArticle.meta.title : 'The Grimoire';
   <meta http-equiv="refresh" content={`0;url=${targetUrl}`} />
   <link rel="canonical" href={targetUrl} />
   <title>Redirecting...</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <script is:inline define:vars={{ targetUrl }}>
     window.location.replace(targetUrl);
   </script>

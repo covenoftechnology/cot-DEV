@@ -99,43 +99,31 @@
             transition: all 0.6s ease;
         }
 
-        /* === 5. LA LUNA PLANA EN EL CENTRO (ESTADO NORMAL) === */
+        /* === 5. LA LUNA EN EL CENTRO (ESTADO NORMAL — REUSA ARTE LUNAR DE COVEN) === */
         .moon {
             position: absolute;
             width: 500px;
             height: 500px;
-            background-color: #6d6e6e; 
+            background-color: #030105;
             border-radius: 50%;
             transform: scale(0.3); /* Escala perfecta para encajar a 150px */
-            box-shadow: inset -20px -20px 0 0 #4e4e4e;
+            box-shadow: 0 0 24px rgba(215, 220, 235, 0.16);
             overflow: hidden;
             z-index: 10;
             transition: background-color 0.8s ease, box-shadow 0.8s ease;
         }
 
-        .maria { position: absolute; background-color: #a8a8a8; opacity: 0.9; transition: opacity 0.8s ease; }
-        .patch-1 { width: 200px; height: 250px; top: 15%; left: 30%; border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; transform: rotate(15deg); }
-        .patch-2 { width: 160px; height: 140px; top: 60%; left: 45%; border-radius: 60% 40% 30% 70% / 50% 60% 40% 50%; transform: rotate(-10deg); }
-        .patch-3 { width: 120px; height: 100px; top: 35%; left: 15%; border-radius: 50% 50% 40% 60% / 60% 40% 50% 50%; }
-        .patch-4 { width: 80px; height: 120px; top: 25%; left: 65%; border-radius: 30% 70% 50% 50% / 40% 40% 60% 60%; transform: rotate(30deg); }
-
-        .crater { position: absolute; background-color: #BCBCBC; border-radius: 50%; box-shadow: inset 4px 4px 0 var(--bg-light_moon); transition: opacity 0.8s ease; }
-        .c1 { width: 85px; height: 85px; top: 40%; left: 5%; box-shadow: inset 6px 6px 0 var(--bg-light_moon); }
-        .c2 { width: 30px; height: 30px; top: 28%; left: 12%; }
-        .c3 { width: 20px; height: 20px; top: 58%; left: 14%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
-        .c4 { width: 15px; height: 15px; top: 64%; left: 8%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
-        .c5 { width: 45px; height: 45px; top: 12%; left: 25%; box-shadow: inset 5px 5px 0 var(--bg-light_moon); }
-        .c6 { width: 20px; height: 20px; top: 8%; left: 40%; box-shadow: inset 3px 3px 0 var(--bg-light_moon); }
-        .c7 { width: 12px; height: 12px; top: 16%; left: 50%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
-        .c8 { width: 50px; height: 50px; top: 72%; left: 22%; box-shadow: inset 5px 5px 0 var(--bg-light_moon); }
-        .c9 { width: 40px; height: 40px; top: 80%; left: 45%; }
-        .c10 { width: 25px; height: 25px; top: 68%; left: 55%; box-shadow: inset 3px 3px 0 var(--bg-light_moon); }
-        .c11 { width: 60px; height: 60px; top: 35%; left: 78%; box-shadow: inset 5px 5px 0 var(--bg-light_moon); }
-        .c12 { width: 25px; height: 25px; top: 48%; left: 82%; }
-        .c13 { width: 18px; height: 18px; top: 28%; left: 70%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
-        .c14 { width: 35px; height: 35px; top: 65%; left: 75%; }
-        .c15 { width: 15px; height: 15px; top: 45%; left: 40%; box-shadow: inset 2px 2px 0 var(--bg-light_moon); }
-        .c16 { width: 10px; height: 10px; top: 52%; left: 35%; box-shadow: inset 1px 1px 0 var(--bg-light_moon); }
+        .coven-moon-canvas {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 50%;
+            opacity: 1;
+            transition: opacity 0.8s ease;
+            pointer-events: none;
+        }
 
         /* === 6. LA LUNA AMARILLA CRECIENTE (CORREGIDA HACIA ADENTRO) === */
         .crescent-moon {
@@ -156,15 +144,14 @@
         /* ✨ MAGIA INTERACTIVA (HOVER) ✨ */
         /* ======================================================== */
 
-        /* 1. La Luna plana se oscurece */
+        /* 1. La Luna se oscurece */
         .ritual-container:hover .moon {
             background-color: #030105;
             box-shadow: inset -60px 60px 120px rgba(0,0,0,1), inset 0 0 50px rgba(142, 45, 226, 0.4);
         }
 
-        /* 2. Los cráteres desaparecen */
-        .ritual-container:hover .maria, 
-        .ritual-container:hover .crater {
+        /* 2. La superficie lunar se eclipsa */
+        .ritual-container:hover .coven-moon-canvas {
             opacity: 0;
         }
 
@@ -240,33 +227,241 @@
         <div class="rune-ring"></div>
         <div class="summoning-ring"></div>
         
-        <!-- Tu Luna Plana (Se oscurece al hacer Hover) -->
+        <!-- Arte Lunar de Coven (Se eclipsa al hacer Hover) -->
         <div class="moon">
-            <div class="maria patch-1"></div>
-            <div class="maria patch-2"></div>
-            <div class="maria patch-3"></div>
-            <div class="maria patch-4"></div>
-            <div class="crater c1"></div>
-            <div class="crater c2"></div>
-            <div class="crater c3"></div>
-            <div class="crater c4"></div>
-            <div class="crater c5"></div>
-            <div class="crater c6"></div>
-            <div class="crater c7"></div>
-            <div class="crater c8"></div>
-            <div class="crater c9"></div>
-            <div class="crater c10"></div>
-            <div class="crater c11"></div>
-            <div class="crater c12"></div>
-            <div class="crater c13"></div>
-            <div class="crater c14"></div>
-            <div class="crater c15"></div>
-            <div class="crater c16"></div>
+            <canvas class="coven-moon-canvas" id="coven-about-moon-canvas" width="500" height="500" aria-hidden="true"></canvas>
         </div>
         
         <!-- La luz amarilla creciente (Con INSET para dibujar por dentro del límite) -->
         <div class="crescent-moon"></div>
     </div>
+
+    <script>
+        /* Static visual-only render of the canonical Coven Moon artwork (matches CovenAmbientBackground lunar surface) */
+        (function () {
+            var targetCanvas = document.getElementById('coven-about-moon-canvas');
+            if (!targetCanvas) return;
+
+            function buildCovenLunarMaps() {
+                var w = 1024;
+                var h = 512;
+
+                var albedoCanvas = document.createElement('canvas');
+                albedoCanvas.width = w;
+                albedoCanvas.height = h;
+                var aCtx = albedoCanvas.getContext('2d');
+
+                var bumpCanvas = document.createElement('canvas');
+                bumpCanvas.width = w;
+                bumpCanvas.height = h;
+                var bCtx = bumpCanvas.getContext('2d');
+
+                aCtx.fillStyle = '#c4bfca';
+                aCtx.fillRect(0, 0, w, h);
+
+                bCtx.fillStyle = '#808080';
+                bCtx.fillRect(0, 0, w, h);
+
+                var seed = 90210;
+                function rand() {
+                    seed = (seed * 1664525 + 1013904223) % 4294967296;
+                    return seed / 4294967296;
+                }
+
+                for (var i = 0; i < 320; i++) {
+                    var x = rand() * w;
+                    var y = rand() * h;
+                    var r = 18 + rand() * 75;
+                    var shade = Math.floor(175 + rand() * 45);
+                    var grad = aCtx.createRadialGradient(x, y, 0, x, y, r);
+                    grad.addColorStop(0, 'rgba(' + shade + ',' + (shade - 3) + ',' + (shade + 4) + ', 0.14)');
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    aCtx.fillStyle = grad;
+                    aCtx.beginPath();
+                    aCtx.arc(x, y, r, 0, Math.PI * 2);
+                    aCtx.fill();
+                }
+
+                var mariaList = [
+                    { x: 0.34, y: 0.36, r: 95, dark: 96 },
+                    { x: 0.48, y: 0.40, r: 80, dark: 102 },
+                    { x: 0.60, y: 0.48, r: 85, dark: 94 },
+                    { x: 0.24, y: 0.54, r: 105, dark: 105 },
+                    { x: 0.75, y: 0.42, r: 65, dark: 100 },
+                    { x: 0.12, y: 0.38, r: 60, dark: 108 },
+                    { x: 0.86, y: 0.54, r: 72, dark: 102 }
+                ];
+
+                mariaList.forEach(function (m) {
+                    var cx = m.x * w;
+                    var cy = m.y * h;
+                    for (var j = 0; j < 15; j++) {
+                        var ox = cx + (rand() - 0.5) * m.r * 0.85;
+                        var oy = cy + (rand() - 0.5) * m.r * 0.85;
+                        var rad = m.r * (0.4 + rand() * 0.55);
+
+                        var g = aCtx.createRadialGradient(ox, oy, rad * 0.1, ox, oy, rad);
+                        g.addColorStop(0, 'rgba(' + m.dark + ',' + (m.dark - 4) + ',' + (m.dark + 6) + ', 0.28)');
+                        g.addColorStop(0.7, 'rgba(' + (m.dark + 10) + ',' + (m.dark + 8) + ',' + (m.dark + 15) + ', 0.12)');
+                        g.addColorStop(1, 'rgba(0,0,0,0)');
+                        aCtx.fillStyle = g;
+                        aCtx.beginPath();
+                        aCtx.arc(ox, oy, rad, 0, Math.PI * 2);
+                        aCtx.fill();
+                    }
+                });
+
+                for (var k = 0; k < 850; k++) {
+                    var kx = rand() * w;
+                    var ky = (0.07 + rand() * 0.86) * h;
+                    var kr = 1.4 + Math.pow(rand(), 3.2) * 32;
+
+                    var bg = bCtx.createRadialGradient(kx, ky, kr * 0.1, kx, ky, kr * 1.2);
+                    bg.addColorStop(0, 'rgba(35, 35, 35, 0.75)');
+                    bg.addColorStop(0.7, 'rgba(60, 60, 60, 0.6)');
+                    bg.addColorStop(0.86, 'rgba(235, 235, 235, 0.72)');
+                    bg.addColorStop(1, 'rgba(128, 128, 128, 0)');
+                    bCtx.fillStyle = bg;
+                    bCtx.beginPath();
+                    bCtx.arc(kx, ky, kr * 1.2, 0, Math.PI * 2);
+                    bCtx.fill();
+
+                    var ag = aCtx.createRadialGradient(kx, ky, kr * 0.2, kx, ky, kr * 1.1);
+                    ag.addColorStop(0, 'rgba(130, 126, 138, 0.32)');
+                    ag.addColorStop(0.8, 'rgba(225, 222, 232, 0.36)');
+                    ag.addColorStop(1, 'rgba(0,0,0,0)');
+                    aCtx.fillStyle = ag;
+                    aCtx.beginPath();
+                    aCtx.arc(kx, ky, kr * 1.1, 0, Math.PI * 2);
+                    aCtx.fill();
+                }
+
+                return { albedoCanvas: albedoCanvas, bumpCanvas: bumpCanvas };
+            }
+
+            function drawFallback2DMoon(maps) {
+                var ctx = targetCanvas.getContext('2d');
+                if (!ctx) return;
+                var size = targetCanvas.width;
+                var half = size / 2;
+                ctx.clearRect(0, 0, size, size);
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(half, half, half, 0, Math.PI * 2);
+                ctx.clip();
+                ctx.drawImage(maps.albedoCanvas, 180, 0, 512, 512, 0, 0, size, size);
+                var shade = ctx.createRadialGradient(half * 0.78, half * 0.72, half * 0.15, half, half, half);
+                shade.addColorStop(0, 'rgba(247, 238, 220, 0.22)');
+                shade.addColorStop(0.68, 'rgba(247, 238, 220, 0.04)');
+                shade.addColorStop(0.92, 'rgba(40, 30, 58, 0.42)');
+                shade.addColorStop(1, 'rgba(18, 12, 30, 0.72)');
+                ctx.fillStyle = shade;
+                ctx.fillRect(0, 0, size, size);
+                ctx.restore();
+            }
+
+            function getThree() {
+                try {
+                    if (window.THREE) return window.THREE;
+                    if (window.parent && window.parent.THREE) return window.parent.THREE;
+                } catch (_) {}
+                return null;
+            }
+
+            function renderExactCovenMoonFrame(THREE, maps) {
+                try {
+                    var size = targetCanvas.width;
+                    var scene = new THREE.Scene();
+                    var camera = new THREE.PerspectiveCamera(36, 1, 0.1, 100);
+                    camera.position.set(0, 0, 4.95);
+
+                    var renderer = new THREE.WebGLRenderer({
+                        antialias: true,
+                        alpha: true,
+                        preserveDrawingBuffer: true
+                    });
+                    renderer.setSize(size, size);
+                    renderer.setPixelRatio(1);
+                    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+                    renderer.toneMappingExposure = 1.08;
+
+                    var colorTex = new THREE.CanvasTexture(maps.albedoCanvas);
+                    colorTex.wrapS = THREE.RepeatWrapping;
+                    colorTex.wrapT = THREE.ClampToEdgeWrapping;
+
+                    var bumpTex = new THREE.CanvasTexture(maps.bumpCanvas);
+                    bumpTex.wrapS = THREE.RepeatWrapping;
+                    bumpTex.wrapT = THREE.ClampToEdgeWrapping;
+
+                    var geometry = new THREE.SphereGeometry(1.52, 64, 64);
+                    var material = new THREE.MeshStandardMaterial({
+                        map: colorTex,
+                        bumpMap: bumpTex,
+                        bumpScale: 0.048,
+                        roughness: 0.86,
+                        metalness: 0.05
+                    });
+
+                    var mesh = new THREE.Mesh(geometry, material);
+                    mesh.rotation.z = THREE.MathUtils.degToRad(11);
+                    mesh.rotation.x = THREE.MathUtils.degToRad(6);
+                    scene.add(mesh);
+
+                    // Full-moon illumination matching CovenAmbientBackground full-moon phase
+                    var fullRad = THREE.MathUtils.degToRad(170);
+                    var sunLight = new THREE.DirectionalLight(0xf7eedc, 2.55);
+                    sunLight.position.set(Math.sin(fullRad) * 15, Math.cos(fullRad * 0.8) * 3.2, -Math.cos(fullRad) * 15);
+                    scene.add(sunLight);
+
+                    var earthshine = new THREE.AmbientLight(0x281e3a, 0.42);
+                    scene.add(earthshine);
+
+                    var mysticRim = new THREE.DirectionalLight(0x9a75f0, 0.28);
+                    mysticRim.position.set(-4, 3, -6);
+                    scene.add(mysticRim);
+
+                    renderer.render(scene, camera);
+
+                    var ctx = targetCanvas.getContext('2d');
+                    if (ctx) {
+                        ctx.clearRect(0, 0, size, size);
+                        ctx.drawImage(renderer.domElement, 0, 0, size, size);
+                    }
+
+                    // Release WebGL context immediately — this is a static visual-only artwork
+                    geometry.dispose();
+                    material.dispose();
+                    colorTex.dispose();
+                    bumpTex.dispose();
+                    renderer.dispose();
+                    if (renderer.forceContextLoss) renderer.forceContextLoss();
+                    return true;
+                } catch (_) {
+                    return false;
+                }
+            }
+
+            var maps = buildCovenLunarMaps();
+            drawFallback2DMoon(maps);
+
+            var THREE = getThree();
+            if (THREE) {
+                renderExactCovenMoonFrame(THREE, maps);
+            } else {
+                var tries = 0;
+                var timer = setInterval(function () {
+                    tries += 1;
+                    var t = getThree();
+                    if (t) {
+                        clearInterval(timer);
+                        renderExactCovenMoonFrame(t, maps);
+                    } else if (tries >= 40) {
+                        clearInterval(timer);
+                    }
+                }, 75);
+            }
+        })();
+    </script>
 
     <script>
         (function () {

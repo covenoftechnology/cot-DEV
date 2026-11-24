@@ -18,6 +18,7 @@ import type {
 } from '../../types/article-document';
 import { isRegisteredBlockType } from '../article-block-registry';
 import { validateEmbedBlockData } from './embed';
+import { isValidSlug } from '../article-taxonomy';
 import type { GridGeometryValidationResult, PlacementResolution } from './types';
 
 export const DEFAULT_GRID_COLUMNS = 4;
@@ -845,6 +846,245 @@ export function getSectionBlocksForTraversal(section: unknown): ArticleBlock[] {
   return getActiveSectionBlocks(section);
 }
 
+/**
+ * Helper to determine if a string has non-whitespace content.
+ * Strips HTML tags (e.g. <br>, <p>) and entity placeholders so that
+ * newlines, blank breaks, or whitespace alone do not count as meaningful content.
+ */
+function isNonEmptyString(val: unknown): val is string {
+  if (typeof val !== 'string') return false;
+  const stripped = val.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim();
+  return stripped.length > 0;
+}
+
+/**
+ * Helper to determine if a text field or rich-text object contains content.
+ */
+function hasTextContent(obj: unknown): boolean {
+  if (!obj) return false;
+  if (typeof obj === 'string') return isNonEmptyString(obj);
+  if (typeof obj === 'object') {
+    const o = obj as Record<string, any>;
+    return isNonEmptyString(o.text) || isNonEmptyString(o.content);
+  }
+  return false;
+}
+
+/**
+ * Helper to determine if an array contains at least one non-empty text element.
+ */
+function hasAnyTextContent(arr: unknown): boolean {
+  if (!Array.isArray(arr)) return false;
+  return arr.some(hasTextContent);
+}
+
+/**
+ * Determines whether a single ArticleBlock contains actual author-created content
+ * beyond schema defaults and empty placeholders.
+ */
+export function hasMeaningfulBlockContent(block: unknown): boolean {
+  if (!isValidBlockObject(block)) return false;
+  const blk = block as ArticleBlock;
+  const d = (blk.data || {}) as Record<string, any>;
+  const type = blk.type;
+
+  switch (type) {
+    case 'title-text':
+      if (hasTextContent(d.heading)) return true;
+      if (isNonEmptyString(d.kicker)) return true;
+      if (hasAnyTextContent(d.paragraphs)) return true;
+      if (hasTextContent(d.paragraph) || hasTextContent(d.text)) return true;
+      return false;
+
+    case 'text-title':
+      if (hasTextContent(d.intro)) return true;
+      if (hasTextContent(d.heading)) return true;
+      if (hasTextContent(d.paragraph) || hasTextContent(d.text)) return true;
+      if (isNonEmptyString(d.kicker)) return true;
+      return false;
+
+    case 'solo-text':
+      if (hasAnyTextContent(d.paragraphs)) return true;
+      if (hasTextContent(d.paragraph) || hasTextContent(d.text) || hasTextContent(d.content)) return true;
+      return false;
+
+    case 'single-image':
+    case 'full-image':
+      if (isNonEmptyString(d.src) || isNonEmptyString(d.imageSrc) || isNonEmptyString(d.url)) return true;
+      if (isNonEmptyString(d.caption) || isNonEmptyString(d.alt)) return true;
+      return false;
+
+    case 'two-images':
+    case 'three-images':
+      if (isNonEmptyString(d.image1Src) || isNonEmptyString(d.image2Src) || isNonEmptyString(d.image3Src)) return true;
+      if (isNonEmptyString(d.img1Src) || isNonEmptyString(d.img2Src) || isNonEmptyString(d.img3Src)) return true;
+      if (Array.isArray(d.images) && d.images.some((img: any) => isNonEmptyString(img?.src) || isNonEmptyString(img?.url))) return true;
+      return false;
+
+    case 'gallery-scroll':
+      if (Array.isArray(d.items) && d.items.some((it: any) => isNonEmptyString(it?.src) || isNonEmptyString(it?.url))) return true;
+      if (Array.isArray(d.images) && d.images.some((it: any) => isNonEmptyString(it?.src) || isNonEmptyString(it?.url))) return true;
+      return false;
+
+    case 'single-card':
+      if (isNonEmptyString(d.cardTitle) || isNonEmptyString(d.title)) return true;
+      if (isNonEmptyString(d.cardDescription) || isNonEmptyString(d.desc) || isNonEmptyString(d.description)) return true;
+      return false;
+
+    case 'card-grid-2':
+    case 'card-grid-3':
+      if (isNonEmptyString(d.card1Title) || isNonEmptyString(d.card1Desc) || isNonEmptyString(d.card2Title) || isNonEmptyString(d.card2Desc) || isNonEmptyString(d.card3Title) || isNonEmptyString(d.card3Desc)) return true;
+      if (Array.isArray(d.cards) && d.cards.some((c: any) => isNonEmptyString(c?.title) || isNonEmptyString(c?.desc) || isNonEmptyString(c?.description))) return true;
+      return false;
+
+    case 'comparison': {
+      const h1Raw = typeof d.col1Header === 'string' ? d.col1Header : (d.col1Header?.text ?? d.col1Header?.content ?? '');
+      const h2Raw = typeof d.col2Header === 'string' ? d.col2Header : (d.col2Header?.text ?? d.col2Header?.content ?? '');
+      if (isNonEmptyString(h1Raw) && h1Raw.replace(/<[^>]*>/g, '').trim() !== 'SIDE A') return true;
+      if (isNonEmptyString(h2Raw) && h2Raw.replace(/<[^>]*>/g, '').trim() !== 'SIDE B') return true;
+      if (Array.isArray(d.col1Items) && d.col1Items.some((it: any) => hasTextContent(it?.text))) return true;
+      if (Array.isArray(d.col2Items) && d.col2Items.some((it: any) => hasTextContent(it?.text))) return true;
+      if (Array.isArray(d.items) && d.items.some((it: any) => hasTextContent(it?.text) || hasTextContent(it?.sideA) || hasTextContent(it?.sideB))) return true;
+      return false;
+    }
+
+    case 'callout':
+      if (hasTextContent(d.title)) return true;
+      if (hasTextContent(d.text) || hasTextContent(d.body)) return true;
+      if (Array.isArray(d.blocks) && d.blocks.some(hasMeaningfulBlockContent)) return true;
+      return false;
+
+    case 'pullquote':
+      if (hasTextContent(d.quote) || hasTextContent(d.text)) return true;
+      if (hasTextContent(d.author) || hasTextContent(d.cite)) return true;
+      return false;
+
+    case 'code-block':
+      if (isNonEmptyString(d.code)) return true;
+      if (isNonEmptyString(d.title)) return true;
+      return false;
+
+    case 'embed':
+      if (isNonEmptyString(d.url) || isNonEmptyString(d.embedUrl)) return true;
+      if (isNonEmptyString(d.title)) return true;
+      return false;
+
+    case 'bullet-list':
+    case 'nested-bullets':
+    case 'numbered-steps':
+      if (Array.isArray(d.items) && d.items.some((it: any) => isNonEmptyString(it?.text) || (Array.isArray(it?.children) && it.children.some((ch: any) => isNonEmptyString(ch?.text))))) return true;
+      if (Array.isArray(d.steps) && d.steps.some((st: any) => isNonEmptyString(st?.title) || isNonEmptyString(st?.desc) || isNonEmptyString(st?.text))) return true;
+      return false;
+
+    case 'stats-metrics':
+      if (
+        isNonEmptyString(d.stat1Num) || hasTextContent(d.stat1Label) || hasTextContent(d.stat1Sub) ||
+        isNonEmptyString(d.stat2Num) || hasTextContent(d.stat2Label) || hasTextContent(d.stat2Sub) ||
+        isNonEmptyString(d.stat3Num) || hasTextContent(d.stat3Label) || hasTextContent(d.stat3Sub)
+      ) return true;
+      if (Array.isArray(d.stats) && d.stats.some((s: any) => isNonEmptyString(s?.value) || hasTextContent(s?.label))) return true;
+      if (Array.isArray(d.items) && d.items.some((s: any) => isNonEmptyString(s?.value) || hasTextContent(s?.label))) return true;
+      return false;
+
+    case 'technical-table':
+      if (isNonEmptyString(d.title)) return true;
+      if (Array.isArray(d.rows) && d.rows.some((r: any) => {
+        if (!r || !r.cells || typeof r.cells !== 'object') return false;
+        return Object.values(r.cells).some(hasTextContent);
+      })) return true;
+      if (Array.isArray(d.columns) && d.columns.length > 0) {
+        const defaultCols = ['Feature', 'Status', 'Column 1', 'Column 2', 'Column 3'];
+        if (d.columns.some((col: any) => {
+          if (!col) return false;
+          const rawLabel = typeof col.label === 'string' ? col.label : (col.label?.text ?? col.label?.content ?? '');
+          const cleanLabel = typeof rawLabel === 'string' ? rawLabel.replace(/<[^>]*>/g, '').replace(/&nbsp;/gi, ' ').trim() : '';
+          return cleanLabel.length > 0 && !defaultCols.includes(cleanLabel);
+        })) return true;
+      }
+      return false;
+
+    case 'faq':
+      if (Array.isArray(d.items) && d.items.some((it: any) => isNonEmptyString(it?.q) || isNonEmptyString(it?.a) || isNonEmptyString(it?.question) || isNonEmptyString(it?.answer))) return true;
+      return false;
+
+    case 'exercise':
+      if (isNonEmptyString(d.title) || isNonEmptyString(d.prompt) || isNonEmptyString(d.solution)) return true;
+      return false;
+
+    case 'article-trial':
+      if (isNonEmptyString(d.title) || isNonEmptyString(d.intro)) return true;
+      if (Array.isArray(d.questions) && d.questions.some((q: any) => isNonEmptyString(q?.question) || isNonEmptyString(q?.prompt))) return true;
+      return false;
+
+    case 'key-takeaways':
+      if (Array.isArray(d.items) && d.items.some((it: any) => isNonEmptyString(it?.text) || isNonEmptyString(it?.title))) return true;
+      return false;
+
+    case 'related-docs':
+      if (Array.isArray(d.links) && d.links.some((l: any) => isNonEmptyString(l?.title) || isNonEmptyString(l?.url))) return true;
+      return false;
+
+    case 'two-columns':
+    case 'three-columns':
+    case 'flex-layout':
+      if (Array.isArray(d.columns)) {
+        return d.columns.some((col: any) => Array.isArray(col?.blocks) && col.blocks.some(hasMeaningfulBlockContent));
+      }
+      return false;
+
+    default:
+      for (const k of Object.keys(d)) {
+        const val = d[k];
+        if (isNonEmptyString(val)) {
+          if (!['icon', 'type', 'aspectRatio', 'language', 'calloutType', 'accentColor', 'accentCustomColor', 'embedType', 'status', 'category', 'difficulty', 'align', 'verticalAlign'].includes(k)) {
+            return true;
+          }
+        }
+      }
+      return false;
+  }
+}
+
+/**
+ * Determines whether an ArticleDocument contains at least one active block
+ * with meaningful author content across any Grid or Legacy section.
+ */
+export function hasMeaningfulArticleContent(document: unknown): boolean {
+  if (!document || typeof document !== 'object') return false;
+  const doc = document as Record<string, any>;
+  if (!Array.isArray(doc.sections) || doc.sections.length === 0) return false;
+
+  for (const sec of doc.sections) {
+    const activeBlocks = getActiveSectionBlocks(sec);
+    for (const blk of activeBlocks) {
+      if (hasMeaningfulBlockContent(blk)) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
+ * Authoritative first-save eligibility gate:
+ * A brand new article may create its first persisted Working Draft ONLY when:
+ * 1. Title is non-empty after trimming.
+ * 2. Slug is non-empty after trimming and passes canonical slug validation.
+ * 3. Article contains at least one meaningful author-created content Block.
+ */
+export function isFirstSaveEligible(document: unknown): boolean {
+  if (!document || typeof document !== 'object') return false;
+  const doc = document as Record<string, any>;
+
+  const title = (doc.meta && typeof doc.meta.title === 'string') ? doc.meta.title.trim() : '';
+  if (!title) return false;
+
+  const slug = (typeof doc.slug === 'string') ? doc.slug.trim() : '';
+  if (!slug || !isValidSlug(slug)) return false;
+
+  return hasMeaningfulArticleContent(doc);
+}
+
 export interface PublishValidationResult {
   valid: boolean;
   error?: string;
@@ -1150,9 +1390,36 @@ function regenerateBlockAndNestedIds(block: ArticleBlock): void {
       if (it && typeof it === 'object') it.id = generateFreshId('faq');
     });
   } else if (block.type === 'technical-table' && Array.isArray(d.rows)) {
+    const rowIdMap: Record<string, string> = {};
     d.rows.forEach((r: any) => {
-      if (r && typeof r === 'object') r.id = generateFreshId('row');
+      if (r && typeof r === 'object') {
+        const oldId = r.id;
+        const newId = generateFreshId('row');
+        if (oldId) rowIdMap[oldId] = newId;
+        r.id = newId;
+      }
     });
+    if (d.rowStyles && typeof d.rowStyles === 'object') {
+      const remappedRows: Record<string, any> = {};
+      for (const [k, v] of Object.entries(d.rowStyles)) {
+        remappedRows[rowIdMap[k] || k] = v;
+      }
+      d.rowStyles = remappedRows;
+    }
+    if (d.cellStyles && typeof d.cellStyles === 'object') {
+      const remappedCells: Record<string, any> = {};
+      for (const [k, v] of Object.entries(d.cellStyles)) {
+        const sep = k.indexOf(':');
+        if (sep > 0) {
+          const rk = k.slice(0, sep);
+          const ck = k.slice(sep + 1);
+          remappedCells[`${rowIdMap[rk] || rk}:${ck}`] = v;
+        } else {
+          remappedCells[k] = v;
+        }
+      }
+      d.cellStyles = remappedCells;
+    }
   } else if (block.type === 'comparison') {
     if (Array.isArray(d.columns)) {
       d.columns.forEach((col: any) => {
@@ -1247,5 +1514,647 @@ export function isExternalResourceUrl(url: unknown): boolean {
  */
 export function isPublishCopyCandidateUrl(url: unknown): boolean {
   return isManagedDraftUploadUrl(url) && !isExternalResourceUrl(url);
+}
+
+// ── ADDITIVE BLOCK REORDERING (SWAP & INSERT-BETWEEN) ───────────────────────
+
+export type ReorderActionType = 'swap' | 'insert';
+export type ReorderAxis = 'horizontal' | 'vertical';
+export type ReorderInsertPosition = 'before' | 'after';
+export type ReorderInsertionMode = 'move-existing' | 'duplicate-new' | 'library-new';
+
+export interface NewCandidateItemSpec {
+  id?: string;
+  columnSpan: number;
+  rowSpan?: number;
+  verticalAlign?: GridVerticalAlign;
+  blockType?: string;
+  block?: ArticleBlock;
+}
+
+export interface ReorderCandidateResult {
+  valid: boolean;
+  isNoOp: boolean;
+  action: ReorderActionType;
+  mode?: ReorderInsertionMode;
+  axis?: ReorderAxis;
+  position?: ReorderInsertPosition;
+  sourceId: string;
+  targetId: string;
+  newCandidateItem?: GridLayoutItem;
+  layoutItems: GridLayoutItem[];
+  reason?: string;
+}
+
+function cloneItemsShallow(items: GridLayoutItem[]): GridLayoutItem[] {
+  return items.map((it) => ({
+    id: it.id,
+    columnStart: it.columnStart,
+    columnSpan: it.columnSpan,
+    rowStart: it.rowStart,
+    rowSpan: it.rowSpan || 1,
+    verticalAlign: resolveGridVerticalAlign(it.verticalAlign),
+    block: it.block,
+  }));
+}
+
+/**
+ * Validates a candidate `layoutItems` array after a proposed swap or insertion:
+ * - Preserves item count (or +1 when `options.allowNewItemId` is provided),
+ *   item IDs, block IDs, block types, columnSpan, rowSpan, verticalAlign
+ * - Validates 4-column bounds (`1..4`) and `1..MAX_GRID_ROWS` (`200`)
+ * - Validates zero pairwise 2D rectangle overlaps
+ */
+export function validateReorderCandidate(
+  originalItems: GridLayoutItem[],
+  candidateItems: GridLayoutItem[],
+  options?: { allowNewItemId?: string }
+): { valid: boolean; isNoOp: boolean; reason?: string } {
+  if (!Array.isArray(originalItems) || !Array.isArray(candidateItems)) {
+    return { valid: false, isNoOp: false, reason: 'Invalid items list' };
+  }
+  const allowNewId = options && options.allowNewItemId ? options.allowNewItemId : null;
+  const expectedLen = allowNewId ? originalItems.length + 1 : originalItems.length;
+  if (candidateItems.length !== expectedLen) {
+    return { valid: false, isNoOp: false, reason: 'Item count mismatch' };
+  }
+
+  const origMap = new Map<string, GridLayoutItem>();
+  for (const orig of originalItems) {
+    origMap.set(orig.id, orig);
+  }
+
+  const seenIds = new Set<string>();
+  let isNoOp = !allowNewId;
+
+  for (let i = 0; i < candidateItems.length; i++) {
+    const cand = candidateItems[i];
+    if (!cand || typeof cand.id !== 'string' || seenIds.has(cand.id)) {
+      return { valid: false, isNoOp: false, reason: 'Duplicate or invalid item ID' };
+    }
+    seenIds.add(cand.id);
+
+    const colStart = cand.columnStart;
+    const colSpan = cand.columnSpan;
+    const rowStart = cand.rowStart;
+    const rowSpan = cand.rowSpan || 1;
+
+    if (cand.id === allowNewId) {
+      isNoOp = false;
+    } else {
+      const orig = origMap.get(cand.id);
+      if (!orig) {
+        return { valid: false, isNoOp: false, reason: `Unknown item ID "${cand.id}"` };
+      }
+
+      if (!cand.block || !orig.block || cand.block.id !== orig.block.id || cand.block.type !== orig.block.type) {
+        return { valid: false, isNoOp: false, reason: 'Block identity mismatch' };
+      }
+
+      const origRowSpan = orig.rowSpan || 1;
+      if (colSpan !== orig.columnSpan || rowSpan !== origRowSpan) {
+        return { valid: false, isNoOp: false, reason: 'Block span footprint must be preserved' };
+      }
+
+      if (colStart !== orig.columnStart || rowStart !== orig.rowStart) {
+        isNoOp = false;
+      }
+    }
+
+    if (
+      !Number.isInteger(colStart) ||
+      colStart < 1 ||
+      colStart > DEFAULT_GRID_COLUMNS ||
+      !Number.isInteger(colSpan) ||
+      colSpan < 1 ||
+      colSpan > DEFAULT_GRID_COLUMNS ||
+      colStart + colSpan - 1 > DEFAULT_GRID_COLUMNS
+    ) {
+      return { valid: false, isNoOp: false, reason: 'Exceeds 4-column grid bounds' };
+    }
+
+    if (
+      !Number.isInteger(rowStart) ||
+      rowStart < 1 ||
+      rowStart > MAX_GRID_ROWS ||
+      !Number.isInteger(rowSpan) ||
+      rowSpan < 1 ||
+      rowSpan > MAX_GRID_ROWS ||
+      rowStart + rowSpan - 1 > MAX_GRID_ROWS
+    ) {
+      return { valid: false, isNoOp: false, reason: `Exceeds MAX_GRID_ROWS (${MAX_GRID_ROWS})` };
+    }
+  }
+
+  for (let i = 0; i < candidateItems.length; i++) {
+    for (let j = i + 1; j < candidateItems.length; j++) {
+      if (rectsOverlap(candidateItems[i], candidateItems[j])) {
+        return {
+          valid: false,
+          isNoOp: false,
+          reason: 'Space occupied — collides with neighboring block',
+        };
+      }
+    }
+  }
+
+  return { valid: true, isNoOp };
+}
+
+/**
+ * Computes an atomic SWAP candidate between `sourceId` and `targetId`.
+ * Preserves each block's ID, data, columnSpan, rowSpan, and verticalAlign.
+ */
+export function computeSwapCandidate(
+  items: GridLayoutItem[],
+  sourceId: string,
+  targetId: string
+): ReorderCandidateResult {
+  const candidateItems = cloneItemsShallow(items);
+  const candA = candidateItems.find((it) => it.id === sourceId);
+  const candB = candidateItems.find((it) => it.id === targetId);
+
+  if (!candA || !candB) {
+    return {
+      valid: false,
+      isNoOp: false,
+      action: 'swap',
+      sourceId,
+      targetId,
+      layoutItems: candidateItems,
+      reason: 'Target block not found',
+    };
+  }
+
+  if (sourceId === targetId) {
+    return {
+      valid: true,
+      isNoOp: true,
+      action: 'swap',
+      sourceId,
+      targetId,
+      layoutItems: candidateItems,
+    };
+  }
+
+  const sCol = candA.columnStart;
+  const sSpan = candA.columnSpan || 1;
+  const sRow = candA.rowStart;
+  const sRowSpan = candA.rowSpan || 1;
+
+  const tCol = candB.columnStart;
+  const tSpan = candB.columnSpan || 1;
+  const tRow = candB.rowStart;
+  const tRowSpan = candB.rowSpan || 1;
+
+  let newACol = tCol;
+  let newARow = tRow;
+  let newBCol = sCol;
+  let newBRow = sRow;
+
+  if (sRow === tRow && sRowSpan === tRowSpan) {
+    if (sSpan !== tSpan) {
+      if (sCol < tCol && sCol + sSpan === tCol) {
+        newBCol = sCol;
+        newACol = sCol + tSpan;
+      } else if (tCol < sCol && tCol + tSpan === sCol) {
+        newACol = tCol;
+        newBCol = tCol + sSpan;
+      }
+    }
+  } else {
+    const colsOverlap = Math.max(sCol, tCol) < Math.min(sCol + sSpan, tCol + tSpan);
+    if (colsOverlap && sRowSpan !== tRowSpan) {
+      if (sRow < tRow && sRow + sRowSpan === tRow) {
+        newBRow = sRow;
+        newARow = sRow + tRowSpan;
+      } else if (tRow < sRow && tRow + tRowSpan === sRow) {
+        newARow = tRow;
+        newBRow = tRow + sRowSpan;
+      }
+    }
+    if (newACol + sSpan - 1 > DEFAULT_GRID_COLUMNS) {
+      newACol = clamp(newACol, 1, DEFAULT_GRID_COLUMNS - sSpan + 1);
+    }
+    if (newBCol + tSpan - 1 > DEFAULT_GRID_COLUMNS) {
+      newBCol = clamp(newBCol, 1, DEFAULT_GRID_COLUMNS - tSpan + 1);
+    }
+  }
+
+  candA.columnStart = newACol;
+  candA.rowStart = newARow;
+  candB.columnStart = newBCol;
+  candB.rowStart = newBRow;
+
+  const check = validateReorderCandidate(items, candidateItems);
+  return {
+    valid: check.valid,
+    isNoOp: check.isNoOp,
+    action: 'swap',
+    sourceId,
+    targetId,
+    layoutItems: candidateItems,
+    reason: check.reason,
+  };
+}
+
+/**
+ * Shared local INSERT / REORDER candidate engine supporting:
+ * - `move-existing` (reordering an existing placed block)
+ * - `duplicate-new` (inserting a duplicate candidate between existing blocks)
+ * - `library-new` (inserting a new Block Library candidate between existing blocks)
+ */
+export function computeInsertionCandidate(
+  items: GridLayoutItem[],
+  sourceOrOptions:
+    | string
+    | {
+        mode?: ReorderInsertionMode;
+        sourceId?: string;
+        newItem?: NewCandidateItemSpec;
+      },
+  targetId: string,
+  axis: ReorderAxis,
+  position: ReorderInsertPosition
+): ReorderCandidateResult {
+  const candidateItems = cloneItemsShallow(items);
+  const isNewCandidate =
+    typeof sourceOrOptions === 'object' &&
+    sourceOrOptions !== null &&
+    (sourceOrOptions.mode === 'duplicate-new' ||
+      sourceOrOptions.mode === 'library-new' ||
+      Boolean(sourceOrOptions.newItem));
+
+  const mode: ReorderInsertionMode = isNewCandidate
+    ? (typeof sourceOrOptions === 'object' && sourceOrOptions.mode ? sourceOrOptions.mode : 'library-new')
+    : 'move-existing';
+
+  const sourceId =
+    typeof sourceOrOptions === 'string'
+      ? sourceOrOptions
+      : (sourceOrOptions && sourceOrOptions.sourceId) ||
+        (sourceOrOptions && sourceOrOptions.newItem && sourceOrOptions.newItem.id) ||
+        '__new_candidate__';
+
+  const candTarget = candidateItems.find((it) => it.id === targetId);
+  if (!candTarget) {
+    return {
+      valid: false,
+      isNoOp: false,
+      action: 'insert',
+      mode,
+      axis,
+      position,
+      sourceId,
+      targetId,
+      layoutItems: candidateItems,
+      reason: 'Target block not found',
+    };
+  }
+
+  if (isNewCandidate && typeof sourceOrOptions === 'object' && sourceOrOptions.newItem) {
+    const spec = sourceOrOptions.newItem;
+    const sSpan = clamp(spec.columnSpan || 1, 1, DEFAULT_GRID_COLUMNS);
+    const sRowSpan = clamp(spec.rowSpan || 1, 1, MAX_GRID_ROWS);
+    const candNew: GridLayoutItem = {
+      id: sourceId,
+      columnStart: candTarget.columnStart || 1,
+      columnSpan: sSpan,
+      rowStart: candTarget.rowStart || 1,
+      rowSpan: sRowSpan,
+      verticalAlign: resolveGridVerticalAlign(spec.verticalAlign),
+      block: spec.block || {
+        id: '__candidate_blk__',
+        type: spec.blockType || 'solo-text',
+        data: {},
+      },
+    };
+
+    if (axis === 'horizontal') {
+      const targetRow = candTarget.rowStart;
+      const rowItems = candidateItems
+        .filter((it) => it.rowStart === targetRow)
+        .sort((a, b) => a.columnStart - b.columnStart);
+
+      const totalSpan = rowItems.reduce((acc, it) => acc + (it.columnSpan || 1), 0) + sSpan;
+      if (totalSpan > DEFAULT_GRID_COLUMNS) {
+        return {
+          valid: false,
+          isNoOp: false,
+          action: 'insert',
+          mode,
+          axis,
+          position,
+          sourceId,
+          targetId,
+          layoutItems: candidateItems,
+          reason: `Target row full — cannot fit ${getSpanPercentageLabel(sSpan)} block`,
+        };
+      }
+
+      candNew.rowStart = targetRow;
+      const tIdx = rowItems.findIndex((it) => it.id === targetId);
+      const insIdx = position === 'before' ? tIdx : tIdx + 1;
+      const reordered = rowItems.slice();
+      reordered.splice(insIdx, 0, candNew);
+
+      const firstCol = rowItems.length > 0 ? rowItems[0].columnStart : 1;
+      let curCol = firstCol + totalSpan - 1 <= DEFAULT_GRID_COLUMNS ? firstCol : 1;
+      for (let i = 0; i < reordered.length; i++) {
+        reordered[i].columnStart = curCol;
+        curCol += reordered[i].columnSpan || 1;
+      }
+      candidateItems.push(candNew);
+    } else {
+      // axis === 'vertical' for new candidate
+      const tStart = candTarget.columnStart || 1;
+      const tSpan = candTarget.columnSpan || 1;
+      const tEnd = tStart + tSpan;
+
+      candNew.columnStart = clamp(tStart, 1, DEFAULT_GRID_COLUMNS - sSpan + 1);
+      const insRow =
+        position === 'before'
+          ? candTarget.rowStart
+          : candTarget.rowStart + (candTarget.rowSpan || 1);
+      candNew.rowStart = insRow;
+
+      for (let i = 0; i < candidateItems.length; i++) {
+        const it = candidateItems[i];
+        const cS = it.columnStart || 1;
+        const cE = cS + (it.columnSpan || 1);
+        const overlapsTargetLane = Math.max(cS, tStart) < Math.min(cE, tEnd);
+        if (overlapsTargetLane && it.rowStart >= insRow) {
+          it.rowStart += sRowSpan;
+        }
+      }
+      candidateItems.push(candNew);
+    }
+
+    const checkNew = validateReorderCandidate(items, candidateItems, {
+      allowNewItemId: candNew.id,
+    });
+    return {
+      valid: checkNew.valid,
+      isNoOp: false,
+      action: 'insert',
+      mode,
+      axis,
+      position,
+      sourceId: candNew.id,
+      targetId,
+      newCandidateItem: candNew,
+      layoutItems: candidateItems,
+      reason: checkNew.reason,
+    };
+  }
+
+  const candSource = candidateItems.find((it) => it.id === sourceId);
+  if (!candSource) {
+    return {
+      valid: false,
+      isNoOp: false,
+      action: 'insert',
+      mode,
+      axis,
+      position,
+      sourceId,
+      targetId,
+      layoutItems: candidateItems,
+      reason: 'Source block not found',
+    };
+  }
+
+  if (sourceId === targetId) {
+    return {
+      valid: true,
+      isNoOp: true,
+      action: 'insert',
+      mode,
+      axis,
+      position,
+      sourceId,
+      targetId,
+      layoutItems: candidateItems,
+    };
+  }
+
+  if (axis === 'horizontal') {
+    const sSpan = candSource.columnSpan || 1;
+    const tSpan = candTarget.columnSpan || 1;
+    if (sSpan + tSpan > DEFAULT_GRID_COLUMNS) {
+      return {
+        valid: false,
+        isNoOp: false,
+        action: 'insert',
+        mode,
+        axis,
+        position,
+        sourceId,
+        targetId,
+        layoutItems: candidateItems,
+        reason: 'Combined block widths exceed 100% (4 columns)',
+      };
+    }
+
+    const targetRow = candTarget.rowStart;
+
+    if (candSource.rowStart === targetRow) {
+      const rowItems = candidateItems
+        .filter((it) => it.rowStart === targetRow)
+        .sort((a, b) => a.columnStart - b.columnStart);
+
+      const withoutSource = rowItems.filter((it) => it.id !== sourceId);
+      const tIdx = withoutSource.findIndex((it) => it.id === targetId);
+      if (tIdx === -1) {
+        return {
+          valid: false,
+          isNoOp: false,
+          action: 'insert',
+          mode,
+          axis,
+          position,
+          sourceId,
+          targetId,
+          layoutItems: candidateItems,
+          reason: 'Target block not in horizontal sequence',
+        };
+      }
+
+      const insIdx = position === 'before' ? tIdx : tIdx + 1;
+      const reordered = withoutSource.slice();
+      reordered.splice(insIdx, 0, candSource);
+
+      let sameOrder = true;
+      let iMin = -1;
+      let iMax = -1;
+      for (let i = 0; i < rowItems.length; i++) {
+        if (rowItems[i].id !== reordered[i].id) {
+          sameOrder = false;
+          if (iMin === -1) iMin = i;
+          iMax = i;
+        }
+      }
+
+      if (sameOrder) {
+        return {
+          valid: true,
+          isNoOp: true,
+          action: 'insert',
+          mode,
+          axis,
+          position,
+          sourceId,
+          targetId,
+          layoutItems: candidateItems,
+        };
+      }
+
+      let curCol = rowItems[iMin].columnStart;
+      for (let i = iMin; i <= iMax; i++) {
+        reordered[i].columnStart = curCol;
+        curCol += reordered[i].columnSpan || 1;
+      }
+    } else {
+      const rowItems = candidateItems
+        .filter((it) => it.id !== sourceId && it.rowStart === targetRow)
+        .sort((a, b) => a.columnStart - b.columnStart);
+
+      const totalSpan = rowItems.reduce((acc, it) => acc + (it.columnSpan || 1), 0) + sSpan;
+      if (totalSpan > DEFAULT_GRID_COLUMNS) {
+        return {
+          valid: false,
+          isNoOp: false,
+          action: 'insert',
+          mode,
+          axis,
+          position,
+          sourceId,
+          targetId,
+          layoutItems: candidateItems,
+          reason: `Target row full — cannot fit ${getSpanPercentageLabel(sSpan)} block`,
+        };
+      }
+
+      candSource.rowStart = targetRow;
+      const tIdx = rowItems.findIndex((it) => it.id === targetId);
+      const insIdx = position === 'before' ? tIdx : tIdx + 1;
+      const reordered = rowItems.slice();
+      reordered.splice(insIdx, 0, candSource);
+
+      const firstCol = rowItems.length > 0 ? rowItems[0].columnStart : 1;
+      let curCol = firstCol + totalSpan - 1 <= DEFAULT_GRID_COLUMNS ? firstCol : 1;
+      for (let i = 0; i < reordered.length; i++) {
+        reordered[i].columnStart = curCol;
+        curCol += reordered[i].columnSpan || 1;
+      }
+    }
+  } else {
+    // axis === 'vertical'
+    let sStart = candSource.columnStart || 1;
+    const sSpan = candSource.columnSpan || 1;
+    let sEnd = sStart + sSpan;
+
+    const tStart = candTarget.columnStart || 1;
+    const tSpan = candTarget.columnSpan || 1;
+    const tEnd = tStart + tSpan;
+
+    const colsOverlap = Math.max(sStart, tStart) < Math.min(sEnd, tEnd);
+
+    if (!colsOverlap) {
+      const newSourceColStart = clamp(tStart, 1, DEFAULT_GRID_COLUMNS - sSpan + 1);
+      candSource.columnStart = newSourceColStart;
+      sStart = newSourceColStart;
+      sEnd = sStart + sSpan;
+    }
+
+    const laneColStart = Math.max(sStart, tStart);
+    const laneColEnd = Math.min(sEnd, tEnd);
+
+    const laneItems = candidateItems
+      .filter((it) => {
+        const cS = it.columnStart || 1;
+        const cE = cS + (it.columnSpan || 1);
+        return Math.max(cS, laneColStart) < Math.min(cE, laneColEnd);
+      })
+      .sort((a, b) => (a.rowStart - b.rowStart) || (a.columnStart - b.columnStart));
+
+    const withoutSource = laneItems.filter((it) => it.id !== sourceId);
+    const tIdx = withoutSource.findIndex((it) => it.id === targetId);
+    if (tIdx === -1) {
+      return {
+        valid: false,
+        isNoOp: false,
+        action: 'insert',
+        mode,
+        axis,
+        position,
+        sourceId,
+        targetId,
+        layoutItems: candidateItems,
+        reason: 'Target block not in vertical lane',
+      };
+    }
+
+    const insIdx = position === 'before' ? tIdx : tIdx + 1;
+    const reordered = withoutSource.slice();
+    reordered.splice(insIdx, 0, candSource);
+
+    if (colsOverlap && reordered.length === laneItems.length) {
+      let sameOrder = true;
+      let iMin = -1;
+      let iMax = -1;
+      for (let i = 0; i < laneItems.length; i++) {
+        if (laneItems[i].id !== reordered[i].id) {
+          sameOrder = false;
+          if (iMin === -1) iMin = i;
+          iMax = i;
+        }
+      }
+
+      if (sameOrder) {
+        return {
+          valid: true,
+          isNoOp: true,
+          action: 'insert',
+          mode,
+          axis,
+          position,
+          sourceId,
+          targetId,
+          layoutItems: candidateItems,
+        };
+      }
+
+      let curRow = laneItems[iMin].rowStart;
+      for (let i = iMin; i <= iMax; i++) {
+        reordered[i].rowStart = curRow;
+        curRow += reordered[i].rowSpan || 1;
+      }
+    } else {
+      let curRow = reordered[0].rowStart;
+      for (let i = 0; i < reordered.length; i++) {
+        if (i < insIdx) {
+          curRow = Math.max(curRow, reordered[i].rowStart + (reordered[i].rowSpan || 1));
+        } else {
+          reordered[i].rowStart = curRow;
+          curRow += reordered[i].rowSpan || 1;
+        }
+      }
+    }
+  }
+
+  const check = validateReorderCandidate(items, candidateItems);
+  return {
+    valid: check.valid,
+    isNoOp: check.isNoOp,
+    action: 'insert',
+    mode,
+    axis,
+    position,
+    sourceId,
+    targetId,
+    layoutItems: candidateItems,
+    reason: check.reason,
+  };
 }
 

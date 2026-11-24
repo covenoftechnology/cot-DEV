@@ -798,11 +798,11 @@ Visual patterns library for authoring articles in Coven of Technology (`src/arti
 
   <a href="/article/apex-triggers-without-tears" class="related-card">
     <div>
-      <div class="related-type">COVEN SCROLL · APEX</div>
+      <div class="related-type">STUDY SCROLL</div>
       <h4 class="related-title">The Apex Incantation: Triggers Without Tears</h4>
     </div>
     <div class="related-cta">
-      <span>Study scroll</span>
+      <span>Coven Of Technology</span>
       <span>→</span>
     </div>
   </a>

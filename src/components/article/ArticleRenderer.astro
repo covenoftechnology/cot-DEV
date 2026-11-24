@@ -153,39 +153,97 @@ function slugify(text: string): string {
     text-underline-offset: 3px;
   }
 
-  /* ── Canonical 4-Column Grid Reader & Scoped Desktop Breakout ── */
+  /* ── Rich Text Foreground Colors in Reader ── */
+  .article-template .article-text-gold {
+    color: #e8cf95 !important;
+  }
+  .article-template .article-text-purple {
+    color: #b98fd8 !important;
+  }
+  .article-template .article-text-muted {
+    color: #8f857a !important;
+  }
+  .article-template .article-text-custom-color {
+    color: var(--coven-custom-text-color, inherit) !important;
+  }
+
+  /* ── Rich Text Background Highlights in Reader ── */
+  .article-template .article-text-bg-neutral {
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(216, 181, 107, 0.18);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .article-template .article-text-bg-purple {
+    background: rgba(185, 143, 216, 0.18);
+    border: 1px solid rgba(185, 143, 216, 0.35);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .article-template .article-text-bg-gold {
+    background: rgba(216, 181, 107, 0.16);
+    border: 1px solid rgba(216, 181, 107, 0.38);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .article-template .article-text-bg-green {
+    background: rgba(129, 199, 132, 0.16);
+    border: 1px solid rgba(129, 199, 132, 0.35);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .article-template .article-text-bg-red {
+    background: rgba(229, 115, 115, 0.18);
+    border: 1px solid rgba(229, 115, 115, 0.38);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+  .article-template .article-text-custom-bg {
+    background: var(--coven-custom-bg, transparent);
+    border-radius: 3px;
+    padding: 2px 5px;
+    display: inline;
+    box-decoration-break: clone;
+    -webkit-box-decoration-break: clone;
+  }
+
+  /* ── Canonical 4-Column Grid Reader — Canonical Article Lane Containment ── */
   .article-template .article-section--grid {
     position: relative;
     width: 100%;
+    max-width: 100%;
   }
 
+  /* The Grid occupies the SAME canonical editorial content lane as the section heading.
+     Zero breakout beyond main content lane; strictly stops before the right TOC sidebar. */
   .article-template .section-reader-grid-breakout {
     width: 100%;
+    max-width: 100%;
     box-sizing: border-box;
     position: relative;
-  }
-
-  @media (min-width: 1024px) {
-    .article-template .section-reader-grid-breakout {
-      width: min(1360px, calc(100vw - 64px));
-      max-width: 1360px;
-      left: 50%;
-      transform: translateX(-50%);
-    }
-  }
-
-  @media (max-width: 1023px) {
-    .article-template .section-reader-grid-breakout {
-      width: 100% !important;
-      max-width: 100% !important;
-      left: auto !important;
-      transform: none !important;
-    }
+    left: auto;
+    transform: none;
   }
 
   .article-template .section-reader-grid {
     box-sizing: border-box;
     width: 100%;
+    max-width: 100%;
     position: relative;
     margin: 24px 0;
   }
@@ -193,15 +251,46 @@ function slugify(text: string): string {
   .article-template .section-reader-grid .reader-grid-item {
     box-sizing: border-box;
     min-width: 0;
+    max-width: 100%;
     position: relative;
     display: flex;
     flex-direction: column;
+    overflow-wrap: break-word;
+    word-break: break-word;
   }
 
   /* Scoped margin normalization: only direct children of Grid items */
   .article-template .section-reader-grid .reader-grid-item > * {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Safe typography text wrapping in Grid */
+  .article-template .section-reader-grid .reader-grid-item p,
+  .article-template .section-reader-grid .reader-grid-item h1,
+  .article-template .section-reader-grid .reader-grid-item h2,
+  .article-template .section-reader-grid .reader-grid-item h3,
+  .article-template .section-reader-grid .reader-grid-item h4,
+  .article-template .section-reader-grid .reader-grid-item li {
+    overflow-wrap: break-word;
+    word-break: break-word;
+  }
+
+  /* Safe media containment in Grid */
+  .article-template .section-reader-grid .reader-grid-item img,
+  .article-template .section-reader-grid .reader-grid-item iframe,
+  .article-template .section-reader-grid .reader-grid-item video {
+    max-width: 100%;
+  }
+
+  /* Controlled internal horizontal scrolling exceptions */
+  .article-template .section-reader-grid .reader-grid-item .tech-table-wrap,
+  .article-template .section-reader-grid .reader-grid-item pre,
+  .article-template .section-reader-grid .reader-grid-item .code-block-wrap {
+    max-width: 100%;
+    overflow-x: auto;
   }
 
   /* Mobile Responsive Stacking (<= 768px): clean 1-column stack */
@@ -232,9 +321,212 @@ function slugify(text: string): string {
     box-sizing: border-box;
   }
 
+  .article-template .comparison-split.is-single-side {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .article-template .comparison-split.is-single-side .comparison-column:first-child {
+    border-right: none;
+  }
+
   .article-template .comparison-column {
     min-width: 0;
     box-sizing: border-box;
+  }
+
+  /* ── Stats & Metrics Single-Metric Fix ── */
+  .article-template .stats-grid {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .article-template .stats-grid.is-single-metric {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .article-template .stats-grid.is-two-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .article-template .stat-card {
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  /* ── Technical Table V2 — Presets, Options & Merges (scrollbar via coven-scroll.css) ── */
+  .article-template .table-wrap.coven-table-scroll {
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: visible;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .article-template .coven-table[data-table-preset] {
+    width: 100%;
+    min-width: 0;
+    border-collapse: collapse;
+    table-layout: auto;
+  }
+
+  .article-template .coven-table[data-table-preset] th,
+  .article-template .coven-table[data-table-preset] td {
+    width: auto !important;
+    min-width: 120px;
+    box-sizing: border-box;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+    vertical-align: middle;
+  }
+
+  .article-template .coven-table[data-table-preset] td[rowspan],
+  .article-template .coven-table[data-table-preset] td[colspan] {
+    vertical-align: middle;
+  }
+
+  /* Preset 1: Coven Grid (Default) */
+  .article-template .coven-table--preset-coven-grid th,
+  .article-template .coven-table--preset-coven-grid td {
+    border: 1px solid rgba(216, 181, 107, 0.16);
+  }
+  .article-template .coven-table--preset-coven-grid thead th {
+    background: rgba(216, 181, 107, 0.1);
+    border-bottom: 1px solid rgba(216, 181, 107, 0.28);
+  }
+
+  /* Preset 2: Aether Header */
+  .article-template .coven-table-wrap--aether-header {
+    border-color: rgba(185, 143, 216, 0.36);
+    box-shadow: 0 6px 24px rgba(108, 66, 178, 0.14);
+  }
+  .article-template .coven-table--preset-aether-header thead th {
+    background: linear-gradient(135deg, rgba(145, 96, 214, 0.34), rgba(216, 181, 107, 0.22));
+    color: #f6efe3;
+    border-bottom: 2px solid rgba(216, 181, 107, 0.48);
+  }
+  .article-template .coven-table--preset-aether-header td {
+    border-bottom: 1px solid rgba(185, 143, 216, 0.14);
+  }
+
+  /* Preset 3: Banded Rows */
+  .article-template .coven-table--preset-banded-rows thead th {
+    background: rgba(216, 181, 107, 0.11);
+    border-bottom: 1px solid rgba(216, 181, 107, 0.26);
+  }
+  .article-template .coven-table--preset-banded-rows tbody tr:nth-child(even) td {
+    background: rgba(185, 143, 216, 0.08);
+  }
+
+  /* Preset 4: Banded Columns */
+  .article-template .coven-table--preset-banded-columns thead th {
+    background: rgba(185, 143, 216, 0.16);
+    border-bottom: 1px solid rgba(185, 143, 216, 0.3);
+  }
+  .article-template .coven-table--preset-banded-columns td:nth-child(even),
+  .article-template .coven-table--preset-banded-columns th:nth-child(even) {
+    background: rgba(216, 181, 107, 0.06);
+  }
+
+  /* Preset 5: Arcane Minimal */
+  .article-template .coven-table-wrap--arcane-minimal {
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+  .article-template .coven-table--preset-arcane-minimal thead th {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid rgba(216, 181, 107, 0.34);
+  }
+  .article-template .coven-table--preset-arcane-minimal td {
+    border: none;
+    border-bottom: 1px solid rgba(216, 181, 107, 0.12);
+  }
+
+  /* Preset 6: Grimoire */
+  .article-template .coven-table-wrap--grimoire {
+    border: 1px solid rgba(216, 181, 107, 0.38);
+    background: #17121b;
+    box-shadow: inset 0 0 24px rgba(216, 181, 107, 0.05);
+  }
+  .article-template .coven-table--preset-grimoire thead th {
+    background: rgba(196, 154, 78, 0.18);
+    color: #f4dca6;
+    border-bottom: 3px double rgba(216, 181, 107, 0.5);
+  }
+  .article-template .coven-table--preset-grimoire td {
+    border-bottom: 1px solid rgba(216, 181, 107, 0.14);
+  }
+
+  /* Preset 7: Moonlight */
+  .article-template .coven-table-wrap--moonlight {
+    border: 1px solid rgba(154, 180, 232, 0.32);
+    background: #101320;
+  }
+  .article-template .coven-table--preset-moonlight thead th {
+    background: rgba(154, 180, 232, 0.15);
+    color: #dce9ff;
+    border-bottom: 1px solid rgba(154, 180, 232, 0.38);
+  }
+  .article-template .coven-table--preset-moonlight td {
+    border: 1px solid rgba(154, 180, 232, 0.12);
+    color: #d0d7e8;
+  }
+
+  /* Preset 8: Void */
+  .article-template .coven-table-wrap--void {
+    border: 1px solid rgba(145, 113, 199, 0.24);
+    background: #07050c;
+  }
+  .article-template .coven-table--preset-void thead th {
+    background: #0d0a15;
+    color: #c9a4ea;
+    border-bottom: 1px solid rgba(145, 113, 199, 0.32);
+  }
+  .article-template .coven-table--preset-void td {
+    border-bottom: 1px solid rgba(145, 113, 199, 0.12);
+  }
+
+  /* Table Style Options (Presentation-Only) */
+  .article-template .coven-table--no-header thead th {
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 15px;
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    color: var(--cov-text-body, #cdc3b6);
+    background: transparent;
+    border-bottom: 1px solid rgba(216, 181, 107, 0.08);
+  }
+
+  .article-template .coven-table--banded-rows tbody tr:nth-child(even) td {
+    background: rgba(185, 143, 216, 0.085);
+  }
+
+  .article-template .coven-table--banded-cols td:nth-child(even),
+  .article-template .coven-table--banded-cols th:nth-child(even) {
+    background: rgba(216, 181, 107, 0.065);
+  }
+
+  .article-template .coven-table--emph-first-col tbody td:first-child {
+    font-weight: 600;
+    color: #ece6dd;
+    background: rgba(216, 181, 107, 0.06);
+  }
+
+  .article-template .coven-table--emph-last-col tbody td:last-child {
+    font-weight: 600;
+    color: #e8cf95;
+    background: rgba(185, 143, 216, 0.07);
+  }
+
+  @media (max-width: 768px) {
+    .article-template .coven-table[data-table-preset] th,
+    .article-template .coven-table[data-table-preset] td {
+      min-width: 115px;
+      padding: 10px 11px;
+      font-size: 14px;
+    }
   }
 
   @media (max-width: 768px) {
@@ -399,3 +691,945 @@ function slugify(text: string): string {
     color: #d8b56b;
   }
 </style>
+
+<script is:inline>
+  (function () {
+    const AMBIENT_VELOCITY = 20; // px/sec: calm, slow, magical ambient drift
+    const MAX_HOVER_SPEED = 180; // px/sec: maximum hover speed (smooth fast drift)
+    const DEAD_ZONE_LEFT = 0.40; // 40% width
+    const DEAD_ZONE_RIGHT = 0.60; // 60% width
+    const EASING_DAMPING = 5.0;  // smoothing factor for velocity transition
+    const MANUAL_PAUSE_MS = 800; // pause duration on manual interaction
+
+    function initSingleGalleryCarousel(wrap) {
+      if (!wrap || wrap.dataset.covenCarouselReady === 'true') return;
+
+      const scroller = wrap.querySelector('.horizontal-scroll');
+      if (!scroller) return;
+
+      // Ensure internal motion track exists for subpixel visual residual
+      let motionTrack = scroller.querySelector('.gallery-motion-track');
+      if (!motionTrack) {
+        motionTrack = document.createElement('div');
+        motionTrack.className = 'gallery-motion-track';
+        while (scroller.firstChild) {
+          motionTrack.appendChild(scroller.firstChild);
+        }
+        scroller.appendChild(motionTrack);
+      }
+
+      // Query only original authored cards (not clones)
+      const originals = Array.from(motionTrack.querySelectorAll('.gallery-card:not(.carousel-clone)'));
+      if (originals.length === 0) return;
+
+      // Prevent native ghost dragging on original images
+      originals.forEach((card) => {
+        const img = card.querySelector('img');
+        if (img) {
+          img.setAttribute('draggable', 'false');
+        }
+      });
+
+      // Edge case: single card does not loop, does not auto-scroll, no indicators
+      if (originals.length < 2) {
+        wrap.dataset.covenCarouselReady = 'true';
+        return;
+      }
+
+      // Remove any existing clones (idempotent initialization)
+      motionTrack.querySelectorAll('.carousel-clone').forEach((el) => el.remove());
+
+      // Generate 4 clone sets (1 original set + 4 clone sets = 5 sets total)
+      for (let s = 0; s < 4; s++) {
+        for (let i = 0; i < originals.length; i++) {
+          const clone = originals[i].cloneNode(true);
+          clone.className = 'gallery-card carousel-clone';
+          clone.setAttribute('aria-hidden', 'true');
+
+          // Prevent cloned interactive elements from entering the accessibility tree
+          clone.querySelectorAll('a, button, input, select, textarea, [tabindex]').forEach((el) => {
+            el.setAttribute('tabindex', '-1');
+          });
+
+          // Cloned images should have empty alt to avoid screen reader clutter
+          clone.querySelectorAll('img').forEach((img) => {
+            img.setAttribute('alt', '');
+            img.setAttribute('draggable', 'false');
+            img.setAttribute('loading', 'lazy');
+          });
+
+          motionTrack.appendChild(clone);
+        }
+      }
+
+      // ── SUBPIXEL SCROLL ACCUMULATOR & COMPOSITOR RESIDUAL ENGINE ──────────
+      let virtualScrollLeft = 0;
+      let lastWrittenNativePos = -1;
+      let isProgrammaticScroll = false;
+      let isTeleporting = false;
+      let singleSetWidth = 0;
+      let cachedCardCenters = [];
+      let currentActiveIndicator = 0;
+
+      // Zero-Jump Direction-Preserving Stop Normalization state
+      let isSettlingToStop = false;
+      let targetStopPos = 0;
+      let stopResolveCallback = null;
+      let lastMotionDirection = 1;
+      let settleSpringRate = 15;
+      let settleMaxSpeed = 6.0;
+
+      // Indicator smooth navigation state
+      let isNavigatingToSlide = false;
+      let navStartScroll = 0;
+      let navTargetScroll = 0;
+      let navStartTime = 0;
+      const NAV_DURATION = 400; // ms
+
+      // In-engine RAF and loop boundary trace collectors
+      let rafTraceActive = false;
+      let rafTraceTargetCount = 0;
+      let rafTraceBuffer = [];
+
+      let loopTraceActive = false;
+      let loopTraceBeforeFrames = [];
+      let loopTeleportRecord = null;
+      let loopTraceAfterFrames = [];
+      let loopTraceFinished = false;
+
+      // ── RECTANGULAR INDICATORS SYSTEM (Coven Pills) ────────────────────────
+      let indicatorsContainer = wrap.querySelector('[data-coven-gallery-indicators]');
+      if (!indicatorsContainer && originals.length >= 2) {
+        indicatorsContainer = document.createElement('div');
+        indicatorsContainer.className = 'gallery-carousel-indicators';
+        indicatorsContainer.setAttribute('data-coven-gallery-indicators', '');
+        indicatorsContainer.setAttribute('aria-label', 'Carousel pagination');
+        const hint = wrap.querySelector('.gallery-scroll-hint');
+        if (hint) wrap.insertBefore(indicatorsContainer, hint);
+        else wrap.appendChild(indicatorsContainer);
+      }
+
+      let pills = Array.from(indicatorsContainer ? indicatorsContainer.querySelectorAll('.carousel-indicator-pill') : []);
+      if (indicatorsContainer && pills.length !== originals.length) {
+        indicatorsContainer.innerHTML = '';
+        pills = [];
+        for (let p = 0; p < originals.length; p++) {
+          const pill = document.createElement('button');
+          pill.type = 'button';
+          pill.className = 'carousel-indicator-pill' + (p === 0 ? ' is-active' : '');
+          pill.setAttribute('aria-label', `Go to gallery image ${p + 1} of ${originals.length}`);
+          pill.setAttribute('aria-current', p === 0 ? 'true' : 'false');
+          pill.dataset.index = String(p);
+          indicatorsContainer.appendChild(pill);
+          pills.push(pill);
+        }
+      }
+
+      pills.forEach((pill, idx) => {
+        pill.addEventListener('click', (e) => {
+          e.preventDefault();
+          navigateToSlide(idx);
+        });
+        pill.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            navigateToSlide(idx);
+          }
+        });
+      });
+
+      function measureCardCenters() {
+        const allCards = scroller.querySelectorAll('.gallery-card');
+        cachedCardCenters = [];
+        for (let k = 0; k < allCards.length; k++) {
+          cachedCardCenters.push(allCards[k].offsetLeft + allCards[k].offsetWidth / 2);
+        }
+      }
+
+      function updateActiveIndicator() {
+        if (pills.length === 0 || cachedCardCenters.length === 0) return;
+        const viewportCenter = virtualScrollLeft + scroller.clientWidth / 2;
+        let minDist = Infinity;
+        let activeIdx = 0;
+
+        for (let k = 0; k < cachedCardCenters.length; k++) {
+          const dist = Math.abs(cachedCardCenters[k] - viewportCenter);
+          if (dist < minDist) {
+            minDist = dist;
+            activeIdx = k % originals.length;
+          }
+        }
+
+        if (activeIdx !== currentActiveIndicator) {
+          if (pills[currentActiveIndicator]) {
+            pills[currentActiveIndicator].classList.remove('is-active');
+            pills[currentActiveIndicator].setAttribute('aria-current', 'false');
+          }
+          if (pills[activeIdx]) {
+            pills[activeIdx].classList.add('is-active');
+            pills[activeIdx].setAttribute('aria-current', 'true');
+          }
+          currentActiveIndicator = activeIdx;
+        }
+      }
+
+      function navigateToSlide(idx) {
+        if (idx < 0 || idx >= originals.length) return;
+        if (cachedCardCenters.length === 0) measureCardCenters();
+        const baseSet = 2; // Center set
+        const targetCenter = cachedCardCenters[baseSet * originals.length + idx];
+        if (targetCenter === undefined) return;
+        const targetScroll = Math.round(Math.max(0, targetCenter - scroller.clientWidth / 2));
+
+        triggerManualPause();
+        isNavigatingToSlide = true;
+        navStartScroll = virtualScrollLeft;
+        navTargetScroll = targetScroll;
+        navStartTime = performance.now();
+      }
+
+      // ── GEOMETRY MEASUREMENT ──────────────────────────────────────────────
+      function measureSingleSet() {
+        if (originals.length < 2) return 0;
+        const first = originals[0];
+        const last = originals[originals.length - 1];
+        const span = last.offsetLeft - first.offsetLeft;
+        if (span > 0 && originals.length > 1) {
+          const pitch = span / (originals.length - 1);
+          return pitch * originals.length;
+        }
+
+        const rFirst = first.getBoundingClientRect();
+        const rLast = last.getBoundingClientRect();
+        const rSpan = rLast.left - rFirst.left;
+        if (rSpan > 0 && originals.length > 1) {
+          const pitch = rSpan / (originals.length - 1);
+          return pitch * originals.length;
+        }
+
+        return originals.length * 298;
+      }
+
+      function applyInitialCenter() {
+        singleSetWidth = measureSingleSet();
+        if (singleSetWidth > 0) {
+          virtualScrollLeft = singleSetWidth * 2;
+          const nativePos = Math.floor(virtualScrollLeft);
+          const residual = virtualScrollLeft - nativePos;
+          isProgrammaticScroll = true;
+          scroller.scrollLeft = nativePos;
+          lastWrittenNativePos = nativePos;
+          motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+        }
+        measureCardCenters();
+        updateActiveIndicator();
+      }
+
+      // Re-measure when original images load asynchronously
+      originals.forEach((card) => {
+        const img = card.querySelector('img');
+        if (img && !img.complete) {
+          img.addEventListener(
+            'load',
+            function () {
+              const newWidth = measureSingleSet();
+              if (newWidth > 0 && Math.abs(newWidth - singleSetWidth) > 2) {
+                singleSetWidth = newWidth;
+                measureCardCenters();
+                updateActiveIndicator();
+              }
+            },
+            { once: true }
+          );
+        }
+      });
+
+      // Loop teleportation on native scroll
+      function teleport(delta) {
+        isTeleporting = true;
+        virtualScrollLeft += delta;
+        const nativePos = Math.floor(virtualScrollLeft);
+        const residual = virtualScrollLeft - nativePos;
+        isProgrammaticScroll = true;
+        scroller.scrollLeft = nativePos;
+        lastWrittenNativePos = nativePos;
+        motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+
+        if (loopTraceActive && !loopTeleportRecord) {
+          loopTeleportRecord = {
+            step: 'teleport',
+            delta,
+            virtualScrollLeft,
+            nativeScrollLeft: scroller.scrollLeft,
+            residual,
+            currentVelocity,
+            targetVelocity,
+            activeIndicator: currentActiveIndicator
+          };
+        }
+        isTeleporting = false;
+      }
+
+      scroller.addEventListener(
+        'scroll',
+        function () {
+          if (isProgrammaticScroll) {
+            isProgrammaticScroll = false;
+            return;
+          }
+
+          if (isTeleporting || singleSetWidth <= 0) return;
+
+          // Genuine user manual scrolling (wheel, touch, drag, trackpad)
+          // Maintain logical virtualScrollLeft aligned with native scroll plus active residual
+          const currentResidual = virtualScrollLeft - Math.floor(virtualScrollLeft);
+          virtualScrollLeft = scroller.scrollLeft + currentResidual;
+          lastWrittenNativePos = scroller.scrollLeft;
+          triggerManualPause();
+
+          if (virtualScrollLeft < singleSetWidth) {
+            teleport(singleSetWidth * 2);
+          } else if (virtualScrollLeft > singleSetWidth * 3) {
+            teleport(-singleSetWidth * 2);
+          }
+
+          updateActiveIndicator();
+        },
+        { passive: true }
+      );
+
+      // Handle viewport or container resize
+      let resizeTimer = null;
+      window.addEventListener(
+        'resize',
+        function () {
+          cachedRect = null;
+          if (resizeTimer) clearTimeout(resizeTimer);
+          resizeTimer = setTimeout(function () {
+            const oldWidth = singleSetWidth;
+            const newWidth = measureSingleSet();
+            if (newWidth > 0 && oldWidth > 0) {
+              const ratio = newWidth / oldWidth;
+              singleSetWidth = newWidth;
+              virtualScrollLeft = virtualScrollLeft * ratio;
+              const nativePos = Math.floor(virtualScrollLeft);
+              const residual = virtualScrollLeft - nativePos;
+              isProgrammaticScroll = true;
+              scroller.scrollLeft = nativePos;
+              lastWrittenNativePos = nativePos;
+              motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+            } else if (newWidth > 0) {
+              singleSetWidth = newWidth;
+              virtualScrollLeft = singleSetWidth * 2;
+              const nativePos = Math.floor(virtualScrollLeft);
+              const residual = virtualScrollLeft - nativePos;
+              isProgrammaticScroll = true;
+              scroller.scrollLeft = nativePos;
+              lastWrittenNativePos = nativePos;
+              motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+            }
+            measureCardCenters();
+            updateActiveIndicator();
+          }, 100);
+        },
+        { passive: true }
+      );
+
+      // ── MOTION CONTROLLER (AMBIENT & POINTER-DRIVEN) ──────────────────────────
+      let targetVelocity = AMBIENT_VELOCITY;
+      let currentVelocity = AMBIENT_VELOCITY;
+      let isPointerInside = false;
+      let isManualInteracting = false;
+      let manualPauseTimeout = null;
+      let lastTimestamp = 0;
+      let isVisible = document.visibilityState === 'visible';
+      let isIntersecting = true;
+      let cachedRect = null;
+
+      const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      let reducedMotion = motionQuery.matches;
+      motionQuery.addEventListener('change', (e) => {
+        reducedMotion = e.matches;
+        if (reducedMotion) {
+          targetVelocity = 0;
+          currentVelocity = 0;
+          isSettlingToStop = false;
+        } else {
+          targetVelocity = isPointerInside ? 0 : AMBIENT_VELOCITY;
+        }
+      });
+
+      const hoverQuery = window.matchMedia('(hover: hover) and (pointer: fine)');
+      let hasFinePointer = hoverQuery.matches;
+      hoverQuery.addEventListener('change', (e) => {
+        hasFinePointer = e.matches;
+      });
+
+      function triggerManualPause() {
+        isManualInteracting = true;
+        isProgrammaticScroll = false;
+        isNavigatingToSlide = false;
+        isSettlingToStop = false;
+
+        // ZERO-JUMP MANUAL CONTRACT:
+        // Do NOT wipe motionTrack.style.transform during manual interaction.
+        // Preserving the residual transform guarantees 0px twitch during ownership transfer.
+
+        if (manualPauseTimeout) clearTimeout(manualPauseTimeout);
+        manualPauseTimeout = setTimeout(() => {
+          isManualInteracting = false;
+          lastTimestamp = 0;
+          if (isPointerInside && hasFinePointer) {
+            // retain pointer-determined velocity
+          } else {
+            targetVelocity = AMBIENT_VELOCITY;
+          }
+        }, MANUAL_PAUSE_MS);
+      }
+
+      scroller.addEventListener('wheel', triggerManualPause, { passive: true });
+      scroller.addEventListener('touchstart', triggerManualPause, { passive: true });
+      scroller.addEventListener('touchmove', triggerManualPause, { passive: true });
+      scroller.addEventListener('pointerdown', (e) => {
+        if (e.pointerType === 'mouse' && e.button === 0) {
+          triggerManualPause();
+        }
+      }, { passive: true });
+
+      function updateVelocityFromPointer(e) {
+        if (!cachedRect || cachedRect.width <= 0) {
+          cachedRect = wrap.getBoundingClientRect();
+        }
+        const relX = Math.max(0, Math.min(1, (e.clientX - cachedRect.left) / cachedRect.width));
+
+        if (relX >= DEAD_ZONE_LEFT && relX <= DEAD_ZONE_RIGHT) {
+          targetVelocity = 0;
+        } else {
+          isSettlingToStop = false;
+          if (relX > DEAD_ZONE_RIGHT) {
+            const u = (relX - DEAD_ZONE_RIGHT) / (1 - DEAD_ZONE_RIGHT);
+            targetVelocity = u * u * MAX_HOVER_SPEED;
+          } else {
+            const u = (DEAD_ZONE_LEFT - relX) / DEAD_ZONE_LEFT;
+            targetVelocity = -(u * u * MAX_HOVER_SPEED);
+          }
+        }
+      }
+
+      wrap.addEventListener('pointerenter', (e) => {
+        if (e.pointerType === 'touch' || !hasFinePointer) return;
+        isPointerInside = true;
+        cachedRect = wrap.getBoundingClientRect();
+        updateVelocityFromPointer(e);
+      });
+
+      wrap.addEventListener('pointermove', (e) => {
+        if (e.pointerType === 'touch' || !hasFinePointer) return;
+        isPointerInside = true;
+        if (!cachedRect) cachedRect = wrap.getBoundingClientRect();
+        updateVelocityFromPointer(e);
+      });
+
+      wrap.addEventListener('pointerleave', (e) => {
+        if (e.pointerType === 'touch') return;
+        isPointerInside = false;
+        isSettlingToStop = false;
+        cachedRect = null;
+        targetVelocity = AMBIENT_VELOCITY;
+      });
+
+      document.addEventListener('visibilitychange', () => {
+        isVisible = document.visibilityState === 'visible';
+        if (!isVisible) {
+          lastTimestamp = 0;
+        }
+      });
+
+      if ('IntersectionObserver' in window) {
+        const observer = new IntersectionObserver((entries) => {
+          entries.forEach((entry) => {
+            isIntersecting = entry.isIntersecting;
+            if (!isIntersecting) {
+              lastTimestamp = 0;
+            }
+          });
+        }, { rootMargin: '100px 0px' });
+        observer.observe(wrap);
+      }
+
+      function computeDirectionPreservingStopTarget(vScroll, direction) {
+        const ceilTarget = Math.ceil(vScroll);
+        const floorTarget = Math.floor(vScroll);
+        if (Math.abs(ceilTarget - vScroll) < 0.001 || Math.abs(vScroll - floorTarget) < 0.001) {
+          return Math.round(vScroll);
+        }
+        return direction >= 0 ? ceilTarget : floorTarget;
+      }
+
+      function startSettling(target, entryVel) {
+        targetStopPos = target;
+        const initialDist = Math.abs(targetStopPos - virtualScrollLeft);
+        if (initialDist < 0.001) {
+          virtualScrollLeft = targetStopPos;
+          const nativePos = targetStopPos;
+          isProgrammaticScroll = true;
+          scroller.scrollLeft = nativePos;
+          lastWrittenNativePos = nativePos;
+          motionTrack.style.transform = '';
+          currentVelocity = 0;
+          targetVelocity = 0;
+          isSettlingToStop = false;
+          return;
+        }
+
+        isSettlingToStop = true;
+        const entrySpeed = Math.abs(entryVel);
+        settleMaxSpeed = entrySpeed > 0.5 ? entrySpeed : 6.0;
+        const nominalSpeed = Math.max(2.5, settleMaxSpeed);
+        settleSpringRate = Math.min(15, Math.max(3, nominalSpeed / initialDist));
+      }
+
+      function initiateStopNormalization(callback, forcedDirection) {
+        stopResolveCallback = callback || null;
+        const dir = typeof forcedDirection === 'number' ? forcedDirection : lastMotionDirection;
+        const target = computeDirectionPreservingStopTarget(virtualScrollLeft, dir);
+        startSettling(target, currentVelocity);
+        if (!isSettlingToStop && stopResolveCallback) {
+          const cb = stopResolveCallback;
+          stopResolveCallback = null;
+          cb({
+            targetStopPos,
+            visualBeforeClear: targetStopPos,
+            visualAfterClear: targetStopPos,
+            delta: 0
+          });
+        }
+      }
+
+      function tick(timestamp) {
+        if (!lastTimestamp) {
+          lastTimestamp = timestamp;
+          requestAnimationFrame(tick);
+          return;
+        }
+
+        const dt = Math.min(0.1, (timestamp - lastTimestamp) / 1000);
+        lastTimestamp = timestamp;
+
+        // 1. Smooth slide navigation via indicator click
+        if (isNavigatingToSlide) {
+          const elapsed = timestamp - navStartTime;
+          const progress = Math.min(1, elapsed / NAV_DURATION);
+          // Ease-out cubic: 1 - Math.pow(1 - progress, 3)
+          const ease = 1 - Math.pow(1 - progress, 3);
+          virtualScrollLeft = navStartScroll + (navTargetScroll - navStartScroll) * ease;
+
+          if (progress >= 1) {
+            virtualScrollLeft = navTargetScroll;
+            const nativePos = navTargetScroll;
+            isProgrammaticScroll = true;
+            scroller.scrollLeft = nativePos;
+            lastWrittenNativePos = nativePos;
+            motionTrack.style.transform = ''; // navTargetScroll is an integer: residual is 0!
+            isNavigatingToSlide = false;
+            lastTimestamp = 0;
+            updateActiveIndicator();
+            requestAnimationFrame(tick);
+            return;
+          }
+
+          const nativePos = Math.floor(virtualScrollLeft);
+          const residual = virtualScrollLeft - nativePos;
+          if (nativePos !== lastWrittenNativePos) {
+            isProgrammaticScroll = true;
+            scroller.scrollLeft = nativePos;
+            lastWrittenNativePos = nativePos;
+          }
+          motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+          updateActiveIndicator();
+          requestAnimationFrame(tick);
+          return;
+        }
+
+        // 2. Zero-Jump Direction-Preserving Stop Normalization
+        if (isSettlingToStop) {
+          const diff = targetStopPos - virtualScrollLeft;
+          if (Math.abs(diff) < 0.005) {
+            virtualScrollLeft = targetStopPos;
+            const nativePos = targetStopPos;
+
+            if (nativePos !== lastWrittenNativePos) {
+              isProgrammaticScroll = true;
+              scroller.scrollLeft = nativePos;
+              lastWrittenNativePos = nativePos;
+            }
+
+            const residualBeforeClear = virtualScrollLeft - nativePos;
+            const visualBefore = scroller.scrollLeft + residualBeforeClear;
+
+            motionTrack.style.transform = ''; // exact integer: residual is 0!
+
+            const visualAfter = scroller.scrollLeft;
+            currentVelocity = 0;
+            targetVelocity = 0;
+            isSettlingToStop = false;
+
+            if (stopResolveCallback) {
+              const cb = stopResolveCallback;
+              stopResolveCallback = null;
+              cb({
+                targetStopPos,
+                visualBeforeClear: visualBefore,
+                visualAfterClear: visualAfter,
+                delta: Math.abs(visualAfter - visualBefore)
+              });
+            }
+          } else {
+            const rawStep = diff * Math.min(1, settleSpringRate * dt);
+            const maxStep = settleMaxSpeed * dt;
+            let step = rawStep;
+            if (Math.abs(rawStep) > maxStep) {
+              step = Math.sign(rawStep) * maxStep;
+            }
+            virtualScrollLeft += step;
+            currentVelocity = dt > 0 ? step / dt : 0;
+            settleMaxSpeed = Math.abs(currentVelocity); // Monotonic decay guarantee
+
+            const nativePos = Math.floor(virtualScrollLeft);
+            const residual = virtualScrollLeft - nativePos;
+            if (nativePos !== lastWrittenNativePos) {
+              isProgrammaticScroll = true;
+              scroller.scrollLeft = nativePos;
+              lastWrittenNativePos = nativePos;
+            }
+            motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+            updateActiveIndicator();
+          }
+          requestAnimationFrame(tick);
+          return;
+        }
+
+        // 3. Continuous ambient and pointer-driven motion
+        const shouldRun = !reducedMotion && isVisible && isIntersecting && !isManualInteracting && !isTeleporting;
+
+        if (shouldRun) {
+          const blend = 1 - Math.exp(-EASING_DAMPING * dt);
+          currentVelocity += (targetVelocity - currentVelocity) * blend;
+
+          // Track motion direction
+          if (currentVelocity > 0.01) {
+            lastMotionDirection = 1;
+          } else if (currentVelocity < -0.01) {
+            lastMotionDirection = -1;
+          }
+
+          // When decelerating to stop in center dead zone:
+          if (Math.abs(targetVelocity) < 0.01 && Math.abs(currentVelocity) < 6.0) {
+            const target = computeDirectionPreservingStopTarget(virtualScrollLeft, lastMotionDirection);
+            startSettling(target, currentVelocity);
+          } else if (Math.abs(currentVelocity) > 0.01) {
+            virtualScrollLeft += currentVelocity * dt;
+
+            if (singleSetWidth > 0) {
+              if (virtualScrollLeft < singleSetWidth) {
+                teleport(singleSetWidth * 2);
+              } else if (virtualScrollLeft > singleSetWidth * 3) {
+                teleport(-singleSetWidth * 2);
+              }
+            }
+
+            const nativePos = Math.floor(virtualScrollLeft);
+            const residual = virtualScrollLeft - nativePos;
+            if (nativePos !== lastWrittenNativePos) {
+              isProgrammaticScroll = true;
+              scroller.scrollLeft = nativePos;
+              lastWrittenNativePos = nativePos;
+            }
+            motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+
+            updateActiveIndicator();
+          }
+        }
+
+        // 3. Diagnostics: record inside actual RAF callback
+        if (rafTraceActive && rafTraceBuffer.length < rafTraceTargetCount) {
+          const nativePos = Math.floor(virtualScrollLeft);
+          const residual = virtualScrollLeft - nativePos;
+          rafTraceBuffer.push({
+            frame: rafTraceBuffer.length,
+            timestamp: timestamp,
+            deltaTime: dt * 1000,
+            virtualScrollLeft: virtualScrollLeft,
+            nativeScrollLeft: scroller.scrollLeft,
+            residual: residual,
+            trackTransform: motionTrack.style.transform,
+            currentVelocity: currentVelocity,
+            targetVelocity: targetVelocity
+          });
+        }
+
+        if (loopTraceActive && !loopTraceFinished) {
+          if (!loopTeleportRecord) {
+            loopTraceBeforeFrames.push({
+              step: 'before',
+              frame: loopTraceBeforeFrames.length,
+              timestamp,
+              virtualScrollLeft,
+              nativeScrollLeft: scroller.scrollLeft,
+              currentVelocity,
+              targetVelocity,
+              activeIndicator: currentActiveIndicator
+            });
+            if (loopTraceBeforeFrames.length > 5) {
+              loopTraceBeforeFrames.shift();
+            }
+          } else {
+            loopTraceAfterFrames.push({
+              step: 'after',
+              frame: loopTraceAfterFrames.length,
+              timestamp,
+              virtualScrollLeft,
+              nativeScrollLeft: scroller.scrollLeft,
+              currentVelocity,
+              targetVelocity,
+              activeIndicator: currentActiveIndicator
+            });
+            if (loopTraceAfterFrames.length >= 5) {
+              loopTraceFinished = true;
+              loopTraceActive = false;
+            }
+          }
+        }
+
+        requestAnimationFrame(tick);
+      }
+
+      applyInitialCenter();
+      wrap.dataset.covenCarouselReady = 'true';
+
+      // Test helper interface exposed on wrap
+      wrap._covenMotionController = {
+        getTargetVelocity: () => targetVelocity,
+        getCurrentVelocity: () => currentVelocity,
+        setSpeed: (v) => {
+          targetVelocity = v;
+          currentVelocity = v;
+        },
+        getVirtualScroll: () => virtualScrollLeft,
+        getNativeScroll: () => scroller.scrollLeft,
+        getResidual: () => (virtualScrollLeft - Math.floor(virtualScrollLeft)),
+        getTrackTransform: () => motionTrack.style.transform,
+        getLastWrittenNativePos: () => lastWrittenNativePos,
+        getActiveIndicator: () => currentActiveIndicator,
+        getIndicatorCount: () => pills.length,
+        navigateToSlide: (idx) => navigateToSlide(idx),
+        triggerManualPause: () => triggerManualPause(),
+        stopAndNormalize: (cb, dir) => initiateStopNormalization(cb, dir),
+        isSettlingToStop: () => isSettlingToStop,
+        getTargetStopPos: () => targetStopPos,
+        getLastMotionDirection: () => lastMotionDirection,
+        setLastMotionDirection: (dir) => { lastMotionDirection = dir; },
+        setPositionForLoopTest: (pos) => {
+          virtualScrollLeft = pos;
+          const nativePos = Math.floor(virtualScrollLeft);
+          const residual = virtualScrollLeft - nativePos;
+          isProgrammaticScroll = true;
+          scroller.scrollLeft = nativePos;
+          lastWrittenNativePos = nativePos;
+          motionTrack.style.transform = `translate3d(-${residual.toFixed(3)}px, 0, 0)`;
+        },
+        startRafTrace: (count) => {
+          rafTraceTargetCount = count;
+          rafTraceBuffer = [];
+          rafTraceActive = true;
+        },
+        getRafTrace: () => rafTraceBuffer,
+        isRafTraceDone: () => rafTraceBuffer.length >= rafTraceTargetCount,
+        startLoopTrace: () => {
+          loopTraceActive = true;
+          loopTraceBeforeFrames = [];
+          loopTeleportRecord = null;
+          loopTraceAfterFrames = [];
+          loopTraceFinished = false;
+        },
+        getLoopTrace: () => ({
+          before: loopTraceBeforeFrames,
+          teleport: loopTeleportRecord,
+          after: loopTraceAfterFrames,
+          isFinished: loopTraceFinished
+        }),
+        simulatePointer: (relX) => {
+          isPointerInside = true;
+          if (relX >= DEAD_ZONE_LEFT && relX <= DEAD_ZONE_RIGHT) {
+            targetVelocity = 0;
+          } else if (relX > DEAD_ZONE_RIGHT) {
+            const u = (relX - DEAD_ZONE_RIGHT) / (1 - DEAD_ZONE_RIGHT);
+            targetVelocity = u * u * MAX_HOVER_SPEED;
+          } else {
+            const u = (DEAD_ZONE_LEFT - relX) / DEAD_ZONE_LEFT;
+            targetVelocity = -(u * u * MAX_HOVER_SPEED);
+          }
+          return targetVelocity;
+        },
+        simulatePointerLeave: () => {
+          isPointerInside = false;
+          targetVelocity = AMBIENT_VELOCITY;
+          return targetVelocity;
+        },
+        getState: () => ({
+          targetVelocity,
+          currentVelocity,
+          virtualScrollLeft,
+          nativeScrollLeft: scroller.scrollLeft,
+          residual: virtualScrollLeft - Math.floor(virtualScrollLeft),
+          trackTransform: motionTrack.style.transform,
+          currentActiveIndicator,
+          indicatorCount: pills.length,
+          isPointerInside,
+          isManualInteracting,
+          reducedMotion,
+          isVisible,
+          isIntersecting
+        })
+      };
+
+      // Start the motion loop
+      requestAnimationFrame(tick);
+    }
+
+    function initAllCovenGalleryCarousels() {
+      const wraps = document.querySelectorAll('.horizontal-scroll-wrap[data-coven-gallery-carousel]');
+      wraps.forEach(initSingleGalleryCarousel);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initAllCovenGalleryCarousels);
+    } else {
+      initAllCovenGalleryCarousels();
+    }
+    window.addEventListener('load', initAllCovenGalleryCarousels);
+
+    window.initCovenGalleryCarousels = initAllCovenGalleryCarousels;
+  })();
+
+  // ── Canonical Coven Embed Shell Controller ──
+  // 1. Clears subtle loading shimmer on iframe load
+  // 2. Defensively applies canonical Coven scrollbar styling ONLY to legally accessible
+  //    same-origin iframes (never probes or throws on cross-origin or sandbox-opaque frames)
+  // 3. Supports optional origin-validated postMessage contentHeight resizing
+  (function () {
+    if (window.__covenEmbedShellInit) return;
+    window.__covenEmbedShellInit = true;
+
+    function buildCanonicalScrollCss() {
+      var cs = getComputedStyle(document.documentElement);
+      var size = (cs.getPropertyValue('--coven-scroll-size') || '8px').trim();
+      var track = (cs.getPropertyValue('--coven-scroll-track') || '#120d1e').trim();
+      var thumb = (cs.getPropertyValue('--coven-scroll-thumb') || 'rgba(155, 118, 214, 0.52)').trim();
+      var hover = (cs.getPropertyValue('--coven-scroll-thumb-hover') || 'rgba(216, 181, 107, 0.8)').trim();
+      var active = (cs.getPropertyValue('--coven-scroll-thumb-active') || 'rgba(232, 207, 149, 0.94)').trim();
+      var border = (cs.getPropertyValue('--coven-scroll-thumb-border') || '#120d1e').trim();
+      var radius = (cs.getPropertyValue('--coven-scroll-radius') || '999px').trim();
+      return (
+        '@supports not selector(::-webkit-scrollbar) { html, body { scrollbar-width: thin; scrollbar-color: ' + thumb + ' ' + track + '; } }' +
+        'html::-webkit-scrollbar, body::-webkit-scrollbar { width: ' + size + '; height: ' + size + '; }' +
+        'html::-webkit-scrollbar-track, body::-webkit-scrollbar-track { background: ' + track + '; }' +
+        'html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb { background: ' + thumb + '; border-radius: ' + radius + '; border: 2px solid ' + border + '; }' +
+        'html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover { background: ' + hover + '; }' +
+        'html::-webkit-scrollbar-thumb:active, body::-webkit-scrollbar-thumb:active { background: ' + active + '; }'
+      );
+    }
+
+    function canLegallyAccessSameOriginFrame(iframe) {
+      var src = iframe.getAttribute('src') || '';
+      if (!src) return false;
+      try {
+        var resolved = new URL(src, window.location.href);
+        if (resolved.origin !== window.location.origin) return false;
+      } catch (_e) {
+        return false;
+      }
+      // Respect iframe sandbox boundary: if sandboxed without allow-same-origin,
+      // the frame is an opaque origin — do NOT attempt DOM access.
+      if (iframe.hasAttribute('sandbox')) {
+        var tokens = (iframe.getAttribute('sandbox') || '').toLowerCase().split(/\s+/);
+        if (tokens.indexOf('allow-same-origin') === -1) return false;
+      }
+      return true;
+    }
+
+    function tryStyleAccessibleSameOriginIframe(iframe) {
+      if (!canLegallyAccessSameOriginFrame(iframe)) return;
+      try {
+        var doc = iframe.contentDocument;
+        if (!doc || !doc.head) return;
+        if (doc.documentElement) {
+          doc.documentElement.classList.add('coven-scroll');
+        }
+        if (!doc.head.querySelector('style[data-coven-embed-scroll="true"]')) {
+          var styleEl = doc.createElement('style');
+          styleEl.setAttribute('data-coven-embed-scroll', 'true');
+          styleEl.textContent = buildCanonicalScrollCss();
+          doc.head.appendChild(styleEl);
+        }
+      } catch (_e) {
+        // Defensive fallback: never throw if access is restricted
+      }
+    }
+
+    function initEmbedShells() {
+      var shells = document.querySelectorAll('.coven-embed-shell[data-coven-embed-shell="true"]');
+      shells.forEach(function (shell) {
+        if (shell.getAttribute('data-embed-bound') === 'true') return;
+        shell.setAttribute('data-embed-bound', 'true');
+        var iframe = shell.querySelector('iframe.embed-iframe-element');
+        if (!iframe) {
+          shell.setAttribute('data-embed-state', 'loaded');
+          return;
+        }
+        iframe.addEventListener('load', function () {
+          shell.setAttribute('data-embed-state', 'loaded');
+          tryStyleAccessibleSameOriginIframe(iframe);
+        });
+      });
+    }
+
+    // Optional, strictly origin-validated postMessage auto-height handler
+    window.addEventListener('message', function (event) {
+      if (!event || !event.origin || event.origin === 'null') return;
+      var payload = event.data;
+      if (!payload || typeof payload !== 'object') return;
+      if (payload.type !== 'coven:embed:resize') return;
+      var h = Number(payload.contentHeight);
+      if (!Number.isFinite(h) || h <= 0) return;
+
+      var shells = document.querySelectorAll('.coven-embed-shell[data-coven-embed-shell="true"]');
+      for (var i = 0; i < shells.length; i++) {
+        var shell = shells[i];
+        if (shell.getAttribute('data-embed-has-fixed-height') === 'true') continue;
+        var iframe = shell.querySelector('iframe.embed-iframe-element');
+        if (!iframe || iframe.contentWindow !== event.source) continue;
+        try {
+          var expectedOrigin = new URL(iframe.getAttribute('src') || '', window.location.href).origin;
+          if (expectedOrigin !== event.origin) continue;
+        } catch (_e) {
+          continue;
+        }
+        var frame = shell.querySelector('.coven-embed-frame');
+        if (frame) {
+          var clamped = Math.max(180, Math.min(2800, Math.round(h)));
+          frame.style.height = clamped + 'px';
+          frame.style.aspectRatio = 'auto';
+        }
+        break;
+      }
+    });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initEmbedShells);
+    } else {
+      initEmbedShells();
+    }
+    window.addEventListener('load', initEmbedShells);
+  })();
+</script>

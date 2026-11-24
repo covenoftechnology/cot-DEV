@@ -11,6 +11,7 @@ import {
   validateDocumentForPublish,
   isPublishCopyCandidateUrl,
   deepCloneAndRegenerateIds,
+  isFirstSaveEligible,
 } from '../lib/article-grid/geometry';
 import { getAdminCenterHtml } from './article-admin-html';
 import { handleMemeStudioRequest, copyMemeImagesToDist } from './meme-studio';
@@ -44,7 +45,9 @@ function readJsonBody(req: IncomingMessage): Promise<any> {
 function sendJson(res: ServerResponse, statusCode: number, data: any) {
   res.writeHead(statusCode, {
     'Content-Type': 'application/json',
-    'Cache-Control': 'no-cache',
+    'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+    'Pragma': 'no-cache',
+    'Expires': '0',
   });
   res.end(JSON.stringify(data));
 }
@@ -61,7 +64,7 @@ function sanitizeFilename(filename: string): string {
 function generateMetaTs(meta: any, slug: string): string {
   const safeTitle = JSON.stringify(meta.title || 'Untitled Scroll');
   const safeDesc = JSON.stringify(meta.description || '');
-  const safeAuthor = JSON.stringify(meta.author || 'Oracle of Orgs');
+  const safeAuthor = JSON.stringify(meta.author || 'Mich Alvarez');
   const safeCat = JSON.stringify(meta.category || 'Salesforce');
   const safeDifficulty = JSON.stringify(meta.difficulty || 'Lv. 1 - Incantation');
   const safeTags = JSON.stringify(Array.isArray(meta.tags) ? meta.tags : []);
@@ -147,7 +150,9 @@ export default function articleStudioIntegration(): AstroIntegration {
                     if (pathname === '/template-preview/articles' || pathname === '/template-preview/admin') {
                       res.writeHead(200, {
                         'Content-Type': 'text/html; charset=utf-8',
-                        'Cache-Control': 'no-cache',
+                        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+                        'Pragma': 'no-cache',
+                        'Expires': '0',
                       });
                       return res.end(getAdminCenterHtml());
                     }
@@ -473,6 +478,17 @@ export default function articleStudioIntegration(): AstroIntegration {
                         const safeId = sanitizeFilename(doc.studioId);
                         doc.studioId = safeId;
                         const targetFile = path.join(draftsDir, `${safeId}.json`);
+
+                        // Server defense: Distinguish new draft creation from updating existing draft.
+                        // Existing persisted drafts are ALWAYS permitted to save updates (no data loss!).
+                        // Brand new drafts require title, valid slug, and meaningful content before their first file creation.
+                        const isExistingDraft = fs.existsSync(targetFile);
+                        if (!isExistingDraft && !isFirstSaveEligible(doc)) {
+                          return sendJson(res, 400, {
+                            error: 'Cannot create empty draft. Title, valid slug, and meaningful content are required for initial persistence.',
+                          });
+                        }
+
                         await fsp.writeFile(targetFile, JSON.stringify(doc, null, 2), 'utf-8');
                         return sendJson(res, 200, { success: true, studioId: safeId });
                       }

@@ -1,85 +1,217 @@
 ---
+import {
+  CALLOUT_STYLES,
+  CANONICAL_ACCENTS,
+  getCalloutBorderRuntimeClass,
+  normalizeCalloutBorderStyle,
+  normalizeCalloutFadeDirection,
+  normalizeCalloutStyle,
+  normalizeCalloutSurfaceStyle,
+  resolveAccentColor,
+} from '../../lib/article-accents';
+
 interface Props {
-  type?: 'info' | 'warning' | 'note' | 'tip';
+  type?: string;
   title?: string;
   showTitle?: boolean;
   accentColor?: string;
+  accentCustomColor?: string;
+  surfaceStyle?: string;
+  fadeDirection?: string;
+  borderStyle?: string;
 }
 
-const { type = 'info', title, showTitle = true, accentColor } = Astro.props;
+const {
+  type = 'grimoire',
+  title,
+  showTitle = true,
+  accentColor,
+  accentCustomColor,
+  surfaceStyle,
+  fadeDirection,
+  borderStyle,
+} = Astro.props;
 
-function hexToRgba(hex: string, alpha: number): string {
-  let h = hex.replace('#', '');
-  if (h.length === 3) h = h.split('').map(c => c + c).join('');
-  const num = parseInt(h, 16);
-  const r = (num >> 16) & 255;
-  const g = (num >> 8) & 255;
-  const b = num & 255;
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
+const styleKey = normalizeCalloutStyle(type);
+const styleDef = CALLOUT_STYLES[styleKey] || CALLOUT_STYLES.grimoire;
 
-const isValidHex = typeof accentColor === 'string' && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.test(accentColor.trim());
-const normalizedAccent = isValidHex ? (accentColor.trim().length === 4 ? '#' + accentColor.trim()[1] + accentColor.trim()[1] + accentColor.trim()[2] + accentColor.trim()[2] + accentColor.trim()[3] + accentColor.trim()[3] : accentColor.trim()) : null;
+// Determine effective accent using shared resolver:
+// 1. Valid Custom color -> 2. Preset accent -> 3. Style default accent
+const authorAccent = resolveAccentColor({ accentColor, accentCustomColor });
+const defaultAccentDef = CANONICAL_ACCENTS[styleDef.defaultAccent] || CANONICAL_ACCENTS.gold;
+const effectiveAccent = authorAccent || defaultAccentDef;
 
-const baseConfig = {
-  info: {
-    borderColor: 'rgba(185, 143, 216, 0.35)',
-    bgColor: 'linear-gradient(90deg, rgba(185, 143, 216, 0.08) 0%, rgba(185, 143, 216, 0.02) 100%)',
-    glyphColor: '#b98fd8',
-    glyph: '✦',
-    defaultTitle: 'Incantation Note'
-  },
-  warning: {
-    borderColor: 'rgba(216, 181, 107, 0.4)',
-    bgColor: 'linear-gradient(90deg, rgba(216, 181, 107, 0.09) 0%, rgba(216, 181, 107, 0.02) 100%)',
-    glyphColor: '#e8cf95',
-    glyph: '⚠',
-    defaultTitle: 'Ward of Caution'
-  },
-  note: {
-    borderColor: 'rgba(216, 181, 107, 0.25)',
-    bgColor: 'linear-gradient(90deg, rgba(216, 181, 107, 0.05) 0%, transparent 100%)',
-    glyphColor: '#d8b56b',
-    glyph: '☽',
-    defaultTitle: 'Grimoire Note'
-  },
-  tip: {
-    borderColor: 'rgba(169, 224, 154, 0.35)',
-    bgColor: 'linear-gradient(90deg, rgba(123, 191, 106, 0.08) 0%, rgba(123, 191, 106, 0.02) 100%)',
-    glyphColor: '#a9e09a',
-    glyph: '✧',
-    defaultTitle: 'Craft Mastery Tip'
-  }
-}[type];
+// Composable surface, fade direction, and border modifiers (backward compatible)
+const resolvedSurface = normalizeCalloutSurfaceStyle(surfaceStyle);
+const resolvedFadeDir = normalizeCalloutFadeDirection(fadeDirection);
+const resolvedBorder = normalizeCalloutBorderStyle(borderStyle);
+const borderClass = getCalloutBorderRuntimeClass(resolvedBorder);
 
-const config = {
-  ...baseConfig,
-  glyphColor: normalizedAccent || baseConfig.glyphColor,
-  borderColor: normalizedAccent ? hexToRgba(normalizedAccent, 0.35) : baseConfig.borderColor,
-  bgColor: normalizedAccent ? `linear-gradient(90deg, ${hexToRgba(normalizedAccent, 0.08)} 0%, ${hexToRgba(normalizedAccent, 0.02)} 100%)` : baseConfig.bgColor
-};
+const displayTitle = title ?? styleDef.defaultTitle;
 
-const displayTitle = title ?? config.defaultTitle;
+const cssVars = `
+  --callout-accent: ${effectiveAccent.hex};
+  --callout-accent-rgb: ${effectiveAccent.rgb};
+  --callout-accent-soft: ${effectiveAccent.softRgba};
+  --callout-accent-border: ${effectiveAccent.borderRgba};
+  --callout-accent-glow: ${effectiveAccent.glowRgba};
+`.replace(/\s+/g, ' ').trim();
+
+const modifierClasses = [
+  `callout-surface-${resolvedSurface}`,
+  resolvedSurface === 'faded' ? `callout-fade-${resolvedFadeDir}` : '',
+  borderClass,
+]
+  .filter(Boolean)
+  .join(' ');
 ---
 
-<div class={`cov-callout cov-callout-${type}`} style={`border-left: 3px solid ${config.glyphColor}; border-top: 1px solid ${config.borderColor}; border-right: 1px solid ${config.borderColor}; border-bottom: 1px solid ${config.borderColor}; background: ${config.bgColor}; border-radius: 4px; padding: 18px 22px; margin: 28px 0; position: relative;`}>
-  {showTitle && (
-    <div style="display: flex; align-items: center; gap: 9px; margin-bottom: 8px;">
-      <span style={`color: ${config.glyphColor}; font-size: 14px;`}>{config.glyph}</span>
-      <span style={`font-family: var(--font-display, 'Metamorphous', serif); font-size: 13px; font-weight: 600; letter-spacing: 1px; color: ${config.glyphColor}; text-transform: uppercase;`}><Fragment set:html={displayTitle} /></span>
-    </div>
+<div
+  class={`cov-callout cov-callout-${styleKey} ${type && type !== styleKey ? `cov-callout-${type}` : ''} ${authorAccent ? `cov-accent-custom cov-accent-${authorAccent.key}` : ''} ${modifierClasses}`}
+  style={cssVars}
+>
+  {/* Celestial Watermark */}
+  {styleKey === 'celestial' && (
+    <div class="cov-callout-celestial-watermark" aria-hidden="true">✦</div>
   )}
-  <div class="cov-callout-content" style="font-family: var(--font-body, 'Helvetica Neue Roman', serif); font-size: 17px; line-height: 1.6; color: #cdc3b6;">
-    <slot />
-  </div>
+
+  {/* Alchemist 2-column layout */}
+  {styleKey === 'alchemist' ? (
+    <div class="cov-callout-alchemist-inner">
+      <div class="cov-callout-alchemist-icon" aria-hidden="true">⚗</div>
+      <div class="cov-callout-alchemist-body">
+        {showTitle && (
+          <div class="cov-callout-header">
+            <span class="cov-callout-title"><Fragment set:html={displayTitle} /></span>
+          </div>
+        )}
+        <div class="cov-callout-content">
+          <slot />
+        </div>
+      </div>
+    </div>
+  ) : (
+    <>
+      {showTitle && (
+        <div class={`cov-callout-header cov-callout-header-${styleKey}`}>
+          {styleKey === 'oracle' && (
+            <>
+              <span class="cov-callout-quote-glyph" aria-hidden="true">“</span>
+              <span class="cov-callout-title cov-callout-title-italic"><Fragment set:html={displayTitle} /></span>
+            </>
+          )}
+
+          {styleKey === 'insight' && (
+            <>
+              <span class="cov-callout-badge-ring" aria-hidden="true">
+                <span class="cov-callout-badge-sigil">✦</span>
+              </span>
+              <span class="cov-callout-title"><Fragment set:html={displayTitle} /></span>
+            </>
+          )}
+
+          {styleKey === 'archive' && (
+            <>
+              <span class="cov-callout-sigil" aria-hidden="true">⌜</span>
+              <span class="cov-callout-title cov-callout-title-mono"><Fragment set:html={displayTitle} /></span>
+              <span class="cov-callout-archive-rune" aria-hidden="true">ᚱ</span>
+            </>
+          )}
+
+          {styleKey === 'celestial' && (
+            <>
+              <span class="cov-callout-sigil cov-callout-sigil-glow" aria-hidden="true">✦</span>
+              <span class="cov-callout-title cov-callout-title-celestial"><Fragment set:html={displayTitle} /></span>
+            </>
+          )}
+
+          {styleKey === 'verdict' && (
+            <>
+              <span class="cov-callout-verdict-ornament" aria-hidden="true">◆</span>
+              <span class="cov-callout-title cov-callout-title-verdict"><Fragment set:html={displayTitle} /></span>
+              <span class="cov-callout-verdict-ornament" aria-hidden="true">◆</span>
+            </>
+          )}
+
+          {styleKey === 'warning' && (
+            <>
+              <span class="cov-callout-sigil" aria-hidden="true">⚠</span>
+              <span class="cov-callout-title"><Fragment set:html={displayTitle} /></span>
+            </>
+          )}
+
+          {styleKey === 'forbidden' && (
+            <>
+              <span class="cov-callout-sigil" aria-hidden="true">☿</span>
+              <span class="cov-callout-title"><Fragment set:html={displayTitle} /></span>
+            </>
+          )}
+
+          {styleKey === 'moonlit' && (
+            <>
+              <span class="cov-callout-sigil" aria-hidden="true">☾</span>
+              <span class="cov-callout-title"><Fragment set:html={displayTitle} /></span>
+              <span class="cov-callout-moonlit-star" aria-hidden="true">✧</span>
+            </>
+          )}
+
+          {styleKey === 'grimoire' && (
+            <>
+              <span class="cov-callout-sigil" aria-hidden="true">☽</span>
+              <span class="cov-callout-title"><Fragment set:html={displayTitle} /></span>
+            </>
+          )}
+        </div>
+      )}
+
+      <div class="cov-callout-content">
+        <slot />
+      </div>
+    </>
+  )}
 </div>
 
 <style is:global>
+  /* ── Base Callout Container ── */
   .cov-callout {
     box-sizing: border-box;
     max-width: 100%;
     min-width: 0;
+    position: relative;
+    border-radius: 4px;
+    padding: 18px 22px;
+    margin: 28px 0;
+    overflow: hidden;
+    transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
   }
+
+  /* ── Headers & Typography ── */
+  .cov-callout-header {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin-bottom: 10px;
+    min-width: 0;
+  }
+
+  .cov-callout-title {
+    font-family: var(--font-display, 'Metamorphous', serif);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    color: var(--callout-accent);
+    text-transform: uppercase;
+    line-height: 1.3;
+  }
+
+  .cov-callout-sigil {
+    color: var(--callout-accent);
+    font-size: 14px;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  /* ── Content Area & Children Containment ── */
   .cov-callout-content {
     display: flex;
     flex-direction: column;
@@ -87,31 +219,403 @@ const displayTitle = title ?? config.defaultTitle;
     width: 100%;
     max-width: 100%;
     min-width: 0;
+    font-family: var(--font-body, 'Helvetica Neue Roman', serif);
+    font-size: 17px;
+    line-height: 1.6;
+    color: #cdc3b6;
   }
+
   .cov-callout-content > * {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
     min-width: 0;
     max-width: 100%;
   }
+
   .cov-callout-content > * > :first-child {
     margin-top: 0 !important;
   }
+
   .cov-callout-content > * > :last-child {
     margin-bottom: 0 !important;
   }
+
   .cov-callout-content p {
     margin: 0 0 10px !important;
+    white-space: pre-line;
   }
+
   .cov-callout-content p:last-child,
   .cov-callout-content > * p:last-child {
     margin-bottom: 0 !important;
   }
+
   .cov-callout-content .nested-bullets-list {
     margin-bottom: 0;
   }
+
   .cov-callout-content figure.figure-single {
     margin-left: 0;
     margin-right: 0;
+  }
+
+  /* ── 1. GRIMOIRE NOTE ── */
+  .cov-callout-grimoire {
+    border-left: 3px solid var(--callout-accent);
+    border-top: 1px solid var(--callout-accent-border);
+    border-right: 1px solid var(--callout-accent-border);
+    border-bottom: 1px solid var(--callout-accent-border);
+    background: linear-gradient(90deg, var(--callout-accent-soft) 0%, rgba(13, 10, 20, 0.85) 100%);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+
+  /* ── 2. ORACLE WHISPER ── */
+  .cov-callout-oracle {
+    border-left: 3px solid var(--callout-accent);
+    border-top: 1px solid rgba(185, 143, 216, 0.12);
+    border-right: 1px solid rgba(185, 143, 216, 0.12);
+    border-bottom: 1px solid rgba(185, 143, 216, 0.12);
+    background: linear-gradient(90deg, var(--callout-accent-soft) 0%, rgba(18, 12, 28, 0.8) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+  .cov-callout-quote-glyph {
+    font-family: var(--font-display, 'Metamorphous', serif);
+    font-size: 24px;
+    line-height: 1;
+    color: var(--callout-accent);
+    margin-right: 2px;
+    flex-shrink: 0;
+  }
+  .cov-callout-title-italic {
+    font-style: italic;
+    letter-spacing: 0.8px;
+  }
+
+  /* ── 3. ARCANE INSIGHT ── */
+  .cov-callout-insight {
+    border: 1px solid var(--callout-accent-border);
+    background: rgba(18, 14, 26, 0.85);
+    backdrop-filter: blur(4px);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), inset 0 0 20px var(--callout-accent-glow);
+  }
+  .cov-callout-badge-ring {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 1px solid var(--callout-accent);
+    background: var(--callout-accent-soft);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 8px var(--callout-accent-glow);
+    flex-shrink: 0;
+  }
+  .cov-callout-badge-sigil {
+    font-size: 11px;
+    color: var(--callout-accent);
+    line-height: 1;
+  }
+
+  /* ── 4. RITUAL WARNING ── */
+  .cov-callout-warning {
+    border-left: 4px solid var(--callout-accent);
+    border-top: 1px solid var(--callout-accent-border);
+    border-right: 1px solid var(--callout-accent-border);
+    border-bottom: 1px solid var(--callout-accent-border);
+    background: linear-gradient(90deg, var(--callout-accent-soft) 0%, rgba(24, 10, 14, 0.9) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  }
+
+  /* ── 5. RUNIC ARCHIVE ── */
+  .cov-callout-archive {
+    border: 1px dashed var(--callout-accent-border);
+    border-left: 3px solid var(--callout-accent);
+    background: repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(216, 181, 107, 0.03) 20px), rgba(10, 11, 16, 0.9);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+  }
+  .cov-callout-title-mono {
+    font-family: var(--font-mono, Consolas, monospace);
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+  .cov-callout-archive-rune {
+    margin-left: auto;
+    font-size: 13px;
+    color: var(--callout-accent);
+    opacity: 0.6;
+    flex-shrink: 0;
+  }
+
+  /* ── 6. CELESTIAL REVELATION ── */
+  .cov-callout-celestial {
+    border: 1px solid var(--callout-accent-border);
+    background: linear-gradient(135deg, var(--callout-accent-soft) 0%, rgba(26, 16, 42, 0.75) 45%, rgba(10, 7, 16, 0.95) 100%);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 20px var(--callout-accent-glow);
+  }
+  .cov-callout-celestial-watermark {
+    position: absolute;
+    right: 14px;
+    top: 4px;
+    font-size: 88px;
+    color: var(--callout-accent);
+    opacity: 0.06;
+    pointer-events: none;
+    line-height: 1;
+    user-select: none;
+  }
+  .cov-callout-sigil-glow {
+    text-shadow: 0 0 8px var(--callout-accent-glow);
+  }
+  .cov-callout-title-celestial {
+    letter-spacing: 1.5px;
+  }
+
+  /* ── 7. ALCHEMIST FORMULA ── */
+  .cov-callout-alchemist {
+    border: 1px solid var(--callout-accent-border);
+    background: linear-gradient(90deg, var(--callout-accent-soft) 0%, rgba(10, 18, 14, 0.9) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  }
+  .cov-callout-alchemist-inner {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    width: 100%;
+    min-width: 0;
+  }
+  .cov-callout-alchemist-icon {
+    width: 38px;
+    height: 38px;
+    border-radius: 6px;
+    border: 1px solid var(--callout-accent);
+    background: var(--callout-accent-soft);
+    color: var(--callout-accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    line-height: 1;
+    box-shadow: 0 0 10px var(--callout-accent-glow);
+    flex-shrink: 0;
+  }
+  .cov-callout-alchemist-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* ── 8. FORBIDDEN KNOWLEDGE ── */
+  .cov-callout-forbidden {
+    border-left: 3px solid var(--callout-accent);
+    border-top: 1px solid var(--callout-accent-border);
+    border-right: 1px solid var(--callout-accent-border);
+    border-bottom: 1px solid var(--callout-accent-border);
+    background: linear-gradient(90deg, var(--callout-accent-soft) 0%, rgba(22, 7, 18, 0.92) 100%);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45);
+  }
+
+  /* ── 9. MOONLIT GUIDANCE ── */
+  .cov-callout-moonlit {
+    border-left: 3px solid var(--callout-accent);
+    border-top: 1px solid var(--callout-accent-border);
+    border-right: 1px solid var(--callout-accent-border);
+    border-bottom: 1px solid var(--callout-accent-border);
+    background: linear-gradient(90deg, var(--callout-accent-soft) 0%, rgba(11, 15, 28, 0.9) 100%);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  }
+  .cov-callout-moonlit-star {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--callout-accent);
+    opacity: 0.7;
+    flex-shrink: 0;
+  }
+
+  /* ── 10. SEALED VERDICT ── */
+  .cov-callout-verdict {
+    border-top: 2px solid var(--callout-accent);
+    border-bottom: 2px solid var(--callout-accent);
+    border-left: 1px solid var(--callout-accent-border);
+    border-right: 1px solid var(--callout-accent-border);
+    background: linear-gradient(180deg, var(--callout-accent-soft) 0%, rgba(16, 13, 22, 0.92) 100%);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+  }
+  .cov-callout-header-verdict {
+    justify-content: center;
+  }
+  .cov-callout-title-verdict {
+    letter-spacing: 2px;
+    text-align: center;
+  }
+  .cov-callout-verdict-ornament {
+    font-size: 10px;
+    color: var(--callout-accent);
+    flex-shrink: 0;
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     ORTHOGONAL COMPOSABLE MODIFIERS (Surface + Fade Direction + Border)
+     Higher specificity (.article-template .cov-callout.callout-*) cleanly
+     layers over variant base classes without combinatorial CSS or !important.
+     ══════════════════════════════════════════════════════════════ */
+
+  /* ── Surface: Solid (preserves existing variant base surface & elevation) ── */
+  .article-template .cov-callout.callout-surface-solid,
+  .cov-callout.callout-surface-solid {
+    --callout-outer-shadow: 0 4px 18px rgba(0, 0, 0, 0.36);
+  }
+
+  /* ── Surface: Faded (dynamic accent multi-stop editorial fade) ── */
+  .article-template .cov-callout.callout-surface-faded,
+  .cov-callout.callout-surface-faded {
+    --callout-fade-angle: 90deg;
+    --callout-outer-shadow: 0 0 0 0 transparent;
+    background:
+      linear-gradient(
+        var(--callout-fade-angle),
+        rgba(var(--callout-accent-rgb, 216, 181, 107), 0.22) 0%,
+        rgba(var(--callout-accent-rgb, 216, 181, 107), 0.14) 24%,
+        rgba(var(--callout-accent-rgb, 216, 181, 107), 0.065) 54%,
+        rgba(var(--callout-accent-rgb, 216, 181, 107), 0.018) 80%,
+        rgba(var(--callout-accent-rgb, 216, 181, 107), 0) 100%
+      ),
+      linear-gradient(
+        var(--callout-fade-angle),
+        rgba(14, 10, 22, 0.62) 0%,
+        rgba(14, 10, 22, 0.38) 46%,
+        rgba(14, 10, 22, 0.16) 80%,
+        rgba(14, 10, 22, 0.04) 100%
+      );
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  /* ── Fade Direction Modifiers ── */
+  .article-template .cov-callout.callout-fade-ltr,
+  .cov-callout.callout-fade-ltr {
+    --callout-fade-angle: 90deg;
+  }
+  .article-template .cov-callout.callout-fade-rtl,
+  .cov-callout.callout-fade-rtl {
+    --callout-fade-angle: 270deg;
+  }
+  .article-template .cov-callout.callout-fade-ttb,
+  .cov-callout.callout-fade-ttb {
+    --callout-fade-angle: 180deg;
+  }
+  .article-template .cov-callout.callout-fade-btt,
+  .cov-callout.callout-fade-btt {
+    --callout-fade-angle: 0deg;
+  }
+
+  /* ── Surface: Transparent (open cosmic surface with subtle legibility veil) ── */
+  .article-template .cov-callout.callout-surface-transparent,
+  .cov-callout.callout-surface-transparent {
+    --callout-outer-shadow: 0 0 0 0 transparent;
+    background: rgba(12, 9, 20, 0.16);
+    box-shadow: none;
+    backdrop-filter: none;
+  }
+
+  /* ── Border Modifiers (zero-shift inset & pseudo-element geometry) ── */
+  .article-template .cov-callout.callout-border-none,
+  .cov-callout.callout-border-none {
+    border: none;
+    border-radius: 4px;
+    box-shadow: var(--callout-outer-shadow, 0 0 0 0 transparent);
+  }
+
+  .article-template .cov-callout.callout-border-frame,
+  .cov-callout.callout-border-frame {
+    border: none;
+    border-radius: 4px;
+    box-shadow:
+      inset 0 0 0 1px rgba(var(--callout-accent-rgb, 216, 181, 107), 0.44),
+      var(--callout-outer-shadow, 0 0 0 0 transparent);
+  }
+
+  .article-template .cov-callout.callout-border-left,
+  .cov-callout.callout-border-left {
+    border: none;
+    border-radius: 2px 4px 4px 2px;
+    box-shadow:
+      inset 3px 0 0 0 var(--callout-accent),
+      var(--callout-outer-shadow, 0 0 0 0 transparent);
+  }
+
+  .article-template .cov-callout.callout-border-right,
+  .cov-callout.callout-border-right {
+    border: none;
+    border-radius: 4px 2px 2px 4px;
+    box-shadow:
+      inset -3px 0 0 0 var(--callout-accent),
+      var(--callout-outer-shadow, 0 0 0 0 transparent);
+  }
+
+  .article-template .cov-callout.callout-border-top-bottom,
+  .cov-callout.callout-border-top-bottom {
+    border: none;
+    border-radius: 0;
+    box-shadow:
+      inset 0 1.5px 0 0 rgba(var(--callout-accent-rgb, 216, 181, 107), 0.74),
+      inset 0 -1.5px 0 0 rgba(var(--callout-accent-rgb, 216, 181, 107), 0.74),
+      var(--callout-outer-shadow, 0 0 0 0 transparent);
+  }
+
+  .article-template .cov-callout.callout-border-corners,
+  .cov-callout.callout-border-corners {
+    border: none;
+    border-radius: 2px;
+    box-shadow: var(--callout-outer-shadow, 0 0 0 0 transparent);
+  }
+
+  .article-template .cov-callout.callout-border-corners::before,
+  .cov-callout.callout-border-corners::before,
+  .article-template .cov-callout.callout-border-corners::after,
+  .cov-callout.callout-border-corners::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 16px;
+    pointer-events: none;
+    z-index: 2;
+    opacity: 0.84;
+  }
+
+  .article-template .cov-callout.callout-border-corners::before,
+  .cov-callout.callout-border-corners::before {
+    top: 0;
+    background:
+      linear-gradient(var(--callout-accent), var(--callout-accent)) left top / 16px 2px no-repeat,
+      linear-gradient(var(--callout-accent), var(--callout-accent)) left top / 2px 16px no-repeat,
+      linear-gradient(var(--callout-accent), var(--callout-accent)) right top / 16px 2px no-repeat,
+      linear-gradient(var(--callout-accent), var(--callout-accent)) right top / 2px 16px no-repeat;
+  }
+
+  .article-template .cov-callout.callout-border-corners::after,
+  .cov-callout.callout-border-corners::after {
+    bottom: 0;
+    background:
+      linear-gradient(var(--callout-accent), var(--callout-accent)) left bottom / 16px 2px no-repeat,
+      linear-gradient(var(--callout-accent), var(--callout-accent)) left bottom / 2px 16px no-repeat,
+      linear-gradient(var(--callout-accent), var(--callout-accent)) right bottom / 16px 2px no-repeat,
+      linear-gradient(var(--callout-accent), var(--callout-accent)) right bottom / 2px 16px no-repeat;
+  }
+
+  /* ── Responsive Compactness ── */
+  @media (max-width: 600px) {
+    .cov-callout {
+      padding: 14px 16px;
+      margin: 20px 0;
+    }
+    .cov-callout-alchemist-inner {
+      flex-direction: column;
+      gap: 10px;
+    }
+    .cov-callout-celestial-watermark {
+      font-size: 56px;
+      right: 8px;
+    }
   }
 </style>
