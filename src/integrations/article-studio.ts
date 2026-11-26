@@ -6,23 +6,27 @@ import type { IncomingMessage, ServerResponse } from 'node:http';
 import type { ArticleDocument } from '../types/article-document';
 import { normalizeSlug, isValidSlug } from '../lib/article-taxonomy';
 import {
-  getActiveSectionBlocks,
   normalizeCanonicalDocument,
   validateDocumentForPublish,
-  isPublishCopyCandidateUrl,
   deepCloneAndRegenerateIds,
   isFirstSaveEligible,
 } from '../lib/article-grid/geometry';
+import {
+  ALLOWED_ARTICLE_IMAGE_EXTENSIONS,
+  ArticleAssetError,
+  isSafeArticleSlugPath,
+  sanitizeAssetFilename,
+  prepareDuplicateArticleAssets,
+  migrateArticleAssetsForPublish,
+  rollbackCreatedAssetFiles,
+} from '../lib/article-assets';
 import { getAdminCenterHtml } from './article-admin-html';
 import { handleMemeStudioRequest, copyMemeImagesToDist } from './meme-studio';
 
 const activePublishLocks = new Set<string>();
 
 function isSafeSlugPath(baseDir: string, slug: string): boolean {
-  if (!isValidSlug(slug)) return false;
-  const target = path.resolve(baseDir, slug);
-  const rel = path.relative(baseDir, target);
-  return !rel.startsWith('..') && !path.isAbsolute(rel) && !rel.includes(path.sep + '..');
+  return isSafeArticleSlugPath(baseDir, slug);
 }
 
 function readJsonBody(req: IncomingMessage): Promise<any> {
@@ -57,8 +61,7 @@ function validateSlug(slug: string): boolean {
 }
 
 function sanitizeFilename(filename: string): string {
-  const base = path.basename(filename);
-  return base.replace(/[^a-zA-Z0-9._-]/g, '_');
+  return sanitizeAssetFilename(filename);
 }
 
 function generateMetaTs(meta: any, slug: string): string {
@@ -176,8 +179,7 @@ export default function articleStudioIntegration(): AstroIntegration {
                         return res.end('Invalid image filename.');
                       }
                       const ext = path.extname(safeFile).toLowerCase();
-                      const allowedExts = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg']);
-                      if (!allowedExts.has(ext)) {
+                      if (!ALLOWED_ARTICLE_IMAGE_EXTENSIONS.has(ext)) {
                         res.writeHead(403);
                         return res.end('File type not permitted.');
                       }
@@ -387,7 +389,7 @@ export default function articleStudioIntegration(): AstroIntegration {
                           return sendJson(res, 404, { error: 'Persisted article not found.' });
                         }
 
-                        // Read content.json, set status: 'published', write back
+                        // Read content.json, set status: 'published', migrate any legacy cross-slug or upload assets, then write back
                         const contentDoc: ArticleDocument = JSON.parse(await fsp.readFile(contentJsonPath, 'utf-8'));
                         contentDoc.meta.status = 'published';
                         delete contentDoc.sourceArticleSlug;
@@ -397,11 +399,31 @@ export default function articleStudioIntegration(): AstroIntegration {
                           delete contentDoc.meta.cover;
                           delete contentDoc.meta.coverCaption;
                         }
-                        await fsp.writeFile(contentJsonPath, JSON.stringify(contentDoc, null, 2), 'utf-8');
+                        let quickPublishMigrated: string[] = [];
+                        try {
+                          const mig = await migrateArticleAssetsForPublish(contentDoc, {
+                            targetSlug: slug,
+                            articlesDir,
+                            uploadsDir,
+                          });
+                          quickPublishMigrated = mig.createdFiles;
+                          await fsp.writeFile(contentJsonPath, JSON.stringify(contentDoc, null, 2), 'utf-8');
 
-                        // Regenerate meta.ts with status: 'published'
-                        const metaTsContent = generateMetaTs(contentDoc.meta, slug);
-                        await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
+                          // Regenerate meta.ts with status: 'published'
+                          const metaTsContent = generateMetaTs(contentDoc.meta, slug);
+                          await fsp.writeFile(metaTsPath, metaTsContent, 'utf-8');
+                        } catch (repubErr: any) {
+                          if (quickPublishMigrated.length > 0) {
+                            await rollbackCreatedAssetFiles(quickPublishMigrated);
+                          }
+                          if (repubErr instanceof ArticleAssetError) {
+                            return sendJson(res, repubErr.statusCode, {
+                              error: repubErr.message,
+                              code: repubErr.code,
+                            });
+                          }
+                          throw repubErr;
+                        }
 
                         // If any working draft links to this article, update its status too
                         const draftFiles = await fsp.readdir(draftsDir);
@@ -658,6 +680,7 @@ export default function articleStudioIntegration(): AstroIntegration {
                         const articleFolder = path.join(articlesDir, slug);
                         const contentJsonPath = path.join(articleFolder, 'content.json');
                         const existedBefore = fs.existsSync(articleFolder);
+                        let migratedAssetFiles: string[] = [];
 
                         try {
                           // Collision check before writing anything
@@ -694,75 +717,19 @@ export default function articleStudioIntegration(): AstroIntegration {
                           delete processedDoc.meta.cover;
                           delete processedDoc.meta.coverCaption;
 
-                          // Create destination article folders after all validations pass
+                          // Atomically migrate all managed draft uploads AND cross-slug local article assets
+                          // BEFORE writing content.json, index.astro, or meta.ts.
+                          // External HTTP/HTTPS URLs are never fetched, copied, or rewritten.
+                          const migrationResult = await migrateArticleAssetsForPublish(processedDoc, {
+                            targetSlug: slug,
+                            articlesDir,
+                            uploadsDir,
+                          });
+                          migratedAssetFiles = migrationResult.createdFiles;
+
+                          // Ensure destination article folders exist after asset migration succeeds
                           const articleImagesDir = path.join(articleFolder, 'images');
                           await fsp.mkdir(articleImagesDir, { recursive: true });
-
-                          async function processImageString(srcVal: string): Promise<string> {
-                            if (srcVal && isPublishCopyCandidateUrl(srcVal)) {
-                              const rawBasename = path.basename(srcVal.trim());
-                              const filename = sanitizeFilename(rawBasename);
-                              if (!filename) return srcVal;
-                              const sourcePath = path.resolve(uploadsDir, filename);
-                              const relSource = path.relative(uploadsDir, sourcePath);
-                              if (relSource.startsWith('..') || path.isAbsolute(relSource)) {
-                                return srcVal;
-                              }
-                              if (fs.existsSync(sourcePath)) {
-                                const destPath = path.join(articleImagesDir, filename);
-                                await fsp.copyFile(sourcePath, destPath);
-                                return `/articles/${slug}/images/${filename}`;
-                              }
-                            }
-                            return srcVal;
-                          }
-
-                          // Cover rewrite (only if managed draft upload)
-                          if (processedDoc.meta.coverImageSrc) {
-                            processedDoc.meta.coverImageSrc = await processImageString(processedDoc.meta.coverImageSrc);
-                          }
-
-                          // Walk active blocks in each section (including nested container blocks) to migrate managed upload paths
-                          // External HTTP/HTTPS URLs (including remote Embed images/videos/links/iframes) are NEVER fetched or rewritten
-                          async function migrateBlockImages(blk: any) {
-                            if (!blk || !blk.data) return;
-                            const d = blk.data;
-                            if (d.imageSrc) d.imageSrc = await processImageString(d.imageSrc);
-                            if (d.src) d.src = await processImageString(d.src);
-                            if (d.img1Src) d.img1Src = await processImageString(d.img1Src);
-                            if (d.img2Src) d.img2Src = await processImageString(d.img2Src);
-                            if (d.img3Src) d.img3Src = await processImageString(d.img3Src);
-                            if (blk.type === 'embed' && d.embedType === 'image' && typeof d.url === 'string' && d.url) {
-                              d.url = await processImageString(d.url);
-                            }
-                            if (Array.isArray(d.cards)) {
-                              for (const c of d.cards) {
-                                if (c && c.src) c.src = await processImageString(c.src);
-                              }
-                            }
-                            if (Array.isArray(d.blocks)) {
-                              for (const childBlk of d.blocks) {
-                                await migrateBlockImages(childBlk);
-                              }
-                            }
-                            if (Array.isArray(d.columns)) {
-                              for (const col of d.columns) {
-                                if (col && Array.isArray(col.blocks)) {
-                                  for (const childBlk of col.blocks) {
-                                    await migrateBlockImages(childBlk);
-                                  }
-                                }
-                              }
-                            }
-                          }
-
-                          // One per-section active content rule via getActiveSectionBlocks(sec)
-                          for (const sec of processedDoc.sections) {
-                            const activeBlocks = getActiveSectionBlocks(sec);
-                            for (const blk of activeBlocks) {
-                              await migrateBlockImages(blk);
-                            }
-                          }
 
                           // Write content.json (persisted copy must NOT contain local authoring sourceArticleSlug)
                           const persistedDoc: ArticleDocument = JSON.parse(JSON.stringify(processedDoc));
@@ -797,10 +764,19 @@ import content from './content.json';
                             libraryUrl: '/library',
                           });
                         } catch (publishErr: any) {
+                          if (migratedAssetFiles.length > 0) {
+                            await rollbackCreatedAssetFiles(migratedAssetFiles);
+                          }
                           if (!existedBefore && fs.existsSync(articleFolder)) {
                             try {
                               await fsp.rm(articleFolder, { recursive: true, force: true });
                             } catch {}
+                          }
+                          if (publishErr instanceof ArticleAssetError) {
+                            return sendJson(res, publishErr.statusCode, {
+                              error: publishErr.message,
+                              code: publishErr.code,
+                            });
                           }
                           throw publishErr;
                         } finally {
@@ -816,57 +792,112 @@ import content from './content.json';
                         if (!originalDoc) {
                           return sendJson(res, 400, { error: 'Document is required to duplicate.' });
                         }
-                        const newStudioId = `studio_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
+                        const preserveClientIdentity = Boolean(body.preserveClientIdentity);
+                        const requestedStudioId =
+                          preserveClientIdentity && typeof body.targetStudioId === 'string' && body.targetStudioId.trim()
+                            ? sanitizeFilename(body.targetStudioId.trim())
+                            : '';
+                        const newStudioId =
+                          requestedStudioId || `studio_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+
                         const duplicatedDoc: ArticleDocument = deepCloneAndRegenerateIds(originalDoc, newStudioId);
                         delete duplicatedDoc.sourceArticleSlug;
-
-                        // Intelligent title and slug duplication:
-                        const rawTitle = (originalDoc.meta?.title || 'Untitled').trim();
-                        const baseTitle = rawTitle
-                          .replace(/\s*[—–-]\s*Copy(?:\s+\d+)?$/i, '')
-                          .replace(/(?:\s*\(Copy\))+$/i, '')
-                          .trim();
-
-                        const rawSlug = (originalDoc.slug || 'article').trim();
-                        const baseSlug = normalizeSlug(rawSlug.replace(/(?:-copy)+(-\d+)?$/i, '')) || 'article';
-
-                        // Read all existing drafts to determine next copy index
-                        const files = await fsp.readdir(draftsDir);
-                        const existingTitles = new Set<string>();
-                        const existingSlugs = new Set<string>();
-
-                        for (const file of files) {
-                          if (file.endsWith('.json')) {
-                            try {
-                              const draftContent = await fsp.readFile(path.join(draftsDir, file), 'utf-8');
-                              const d = JSON.parse(draftContent);
-                              if (d.meta?.title) existingTitles.add(d.meta.title.toLowerCase());
-                              if (d.slug) existingSlugs.add(d.slug.toLowerCase());
-                            } catch (e) {}
+                        if (duplicatedDoc.meta) {
+                          if (!duplicatedDoc.meta.coverImageSrc && duplicatedDoc.meta.cover) {
+                            duplicatedDoc.meta.coverImageSrc = duplicatedDoc.meta.cover;
                           }
+                          if (!duplicatedDoc.meta.coverImageAlt && duplicatedDoc.meta.coverCaption) {
+                            duplicatedDoc.meta.coverImageAlt = duplicatedDoc.meta.coverCaption;
+                          }
+                          delete duplicatedDoc.meta.cover;
+                          delete duplicatedDoc.meta.coverCaption;
                         }
 
-                        let copyTitle = `${baseTitle} — Copy`;
-                        let copySlug = normalizeSlug(`${baseSlug}-copy`);
-                        let counter = 2;
+                        if (preserveClientIdentity) {
+                          const rawBase = (originalDoc.slug || 'untitled').replace(/-copy(-\d+)?$/i, '');
+                          const fallbackSlug = normalizeSlug(`${rawBase}-copy`) || 'article-copy';
+                          duplicatedDoc.slug =
+                            typeof body.targetSlug === 'string' && body.targetSlug.trim()
+                              ? normalizeSlug(body.targetSlug.trim()) || fallbackSlug
+                              : fallbackSlug;
+                          duplicatedDoc.meta.title =
+                            typeof body.targetTitle === 'string' && body.targetTitle.trim()
+                              ? body.targetTitle.trim()
+                              : `${(originalDoc.meta?.title || 'Untitled Scroll').trim()} (Copy)`;
+                        } else {
+                          // Intelligent title and slug duplication:
+                          const rawTitle = (originalDoc.meta?.title || 'Untitled').trim();
+                          const baseTitle = rawTitle
+                            .replace(/\s*[—–-]\s*Copy(?:\s+\d+)?$/i, '')
+                            .replace(/(?:\s*\(Copy\))+$/i, '')
+                            .trim();
 
-                        while (existingTitles.has(copyTitle.toLowerCase()) || existingSlugs.has(copySlug.toLowerCase())) {
-                          copyTitle = `${baseTitle} — Copy ${counter}`;
-                          copySlug = normalizeSlug(`${baseSlug}-copy-${counter}`);
-                          counter++;
+                          const rawSlug = (originalDoc.slug || 'article').trim();
+                          const baseSlug = normalizeSlug(rawSlug.replace(/(?:-copy)+(-\d+)?$/i, '')) || 'article';
+
+                          // Read all existing drafts to determine next copy index
+                          const files = await fsp.readdir(draftsDir);
+                          const existingTitles = new Set<string>();
+                          const existingSlugs = new Set<string>();
+
+                          for (const file of files) {
+                            if (file.endsWith('.json')) {
+                              try {
+                                const draftContent = await fsp.readFile(path.join(draftsDir, file), 'utf-8');
+                                const d = JSON.parse(draftContent);
+                                if (d.meta?.title) existingTitles.add(d.meta.title.toLowerCase());
+                                if (d.slug) existingSlugs.add(d.slug.toLowerCase());
+                              } catch (e) {}
+                            }
+                          }
+
+                          let copyTitle = `${baseTitle} — Copy`;
+                          let copySlug = normalizeSlug(`${baseSlug}-copy`);
+                          let counter = 2;
+
+                          while (existingTitles.has(copyTitle.toLowerCase()) || existingSlugs.has(copySlug.toLowerCase())) {
+                            copyTitle = `${baseTitle} — Copy ${counter}`;
+                            copySlug = normalizeSlug(`${baseSlug}-copy-${counter}`);
+                            counter++;
+                          }
+
+                          duplicatedDoc.meta.title = copyTitle;
+                          duplicatedDoc.slug = copySlug;
                         }
 
-                        duplicatedDoc.meta.title = copyTitle;
-                        duplicatedDoc.slug = copySlug;
                         duplicatedDoc.meta.status = 'draft';
 
-                        const targetFile = path.join(draftsDir, `${newStudioId}.json`);
-                        await fsp.writeFile(targetFile, JSON.stringify(duplicatedDoc, null, 2), 'utf-8');
+                        // LAYER 1: Copy all article-owned local images & managed draft uploads into independent
+                        // collision-free managed upload files BEFORE persisting the duplicate draft.
+                        let createdUploadFiles: string[] = [];
+                        try {
+                          const prepResult = await prepareDuplicateArticleAssets(duplicatedDoc, {
+                            articlesDir,
+                            uploadsDir,
+                          });
+                          createdUploadFiles = prepResult.createdFiles;
 
-                        return sendJson(res, 200, {
-                          success: true,
-                          draft: duplicatedDoc,
-                        });
+                          const targetFile = path.join(draftsDir, `${newStudioId}.json`);
+                          await fsp.writeFile(targetFile, JSON.stringify(duplicatedDoc, null, 2), 'utf-8');
+
+                          return sendJson(res, 200, {
+                            success: true,
+                            draft: duplicatedDoc,
+                            copiedAssets: prepResult.copiedCount,
+                          });
+                        } catch (dupErr: any) {
+                          if (createdUploadFiles.length > 0) {
+                            await rollbackCreatedAssetFiles(createdUploadFiles);
+                          }
+                          if (dupErr instanceof ArticleAssetError) {
+                            return sendJson(res, dupErr.statusCode, {
+                              error: dupErr.message,
+                              code: dupErr.code,
+                            });
+                          }
+                          throw dupErr;
+                        }
                       }
 
                       // 11. GET /__article-studio/published

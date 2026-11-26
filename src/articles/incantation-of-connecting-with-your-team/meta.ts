@@ -16,7 +16,7 @@ const meta: ArticleMeta = {
   featured: false,
   order: 10,
   wide: true,
-  coverImageSrc: "/articles/v2-title-mich/images/1795041852233_Incantation_of_Connecting_With_Your_Team.webp",
+  coverImageSrc: "/articles/incantation-of-connecting-with-your-team/images/1795041852233_Incantation_of_Connecting_With_Your_Team.webp",
   coverImageAlt: "Incantation of Connecting With Your Team",
   showCoverImageOnArticle: false,
   thumbBg: "repeating-linear-gradient(135deg,rgba(216,181,107,.08) 0 10px,rgba(216,181,107,.02) 10px 20px)",

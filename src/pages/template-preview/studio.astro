@@ -14945,55 +14945,80 @@ const maxNestedListDepth = MAX_NESTED_LIST_DEPTH;
 
       // ── Duplicate Article ───────────────────────────────
       document.getElementById('btn-duplicate-article').addEventListener('click', function() {
+        var dupBtn = document.getElementById('btn-duplicate-article');
+        if (dupBtn && dupBtn.disabled) return;
+
+        syncMetaStateFromInputs();
+        sanitizeDocumentGridContract(currentDoc);
+
         if (autosaveTimer) {
           clearTimeout(autosaveTimer);
           autosaveTimer = null;
         }
-        isDirty = false;
-        var newDraftId = uid('draft');
-        var copyDoc;
-        if (typeof window.deepCloneAndRegenerateIds === 'function') {
-          copyDoc = window.deepCloneAndRegenerateIds(currentDoc, newDraftId);
-        } else {
-          copyDoc = JSON.parse(JSON.stringify(currentDoc));
-          copyDoc.studioId = newDraftId;
-          (copyDoc.sections || []).forEach(function(sec) {
-            sec.id = uid('sec');
-            if (hasVisualGridSection(sec) && sec.visualGrid && Array.isArray(sec.visualGrid.layoutItems)) {
-              sec.blocks = [];
-              sec.visualGrid.layoutItems.forEach(function(it) {
-                if (it && typeof it === 'object') {
-                  it.id = uid('grid_item');
-                  if (it.block) {
-                    it.block.id = uid('blk');
-                    regenerateBlockNestedIds(it.block);
-                  }
-                }
-              });
-            } else if (Array.isArray(sec.blocks)) {
-              sec.blocks.forEach(function(blk) {
-                blk.id = uid('blk');
-                regenerateBlockNestedIds(blk);
-              });
-            }
-          });
-        }
-        delete copyDoc.sourceArticleSlug;
-        var rawBase = (copyDoc.slug || 'untitled').replace(/-copy(-\d+)?$/i, '');
-        copyDoc.slug = normalizeSlugClient(rawBase + '-copy', false);
-        copyDoc.meta.title = (copyDoc.meta.title || 'Untitled Scroll') + ' (Copy)';
-        copyDoc.meta.status = 'draft';
 
-        normalizeDocument(copyDoc);
-        currentDoc = copyDoc;
-        hasPersistedDraft = false;
-        isExistingPublished = false;
-        originalPublishedSlug = '';
-        activeSectionId = currentDoc.sections.length > 0 ? currentDoc.sections[0].id : null;
-        renderSections();
-        syncMetaInputsFromState();
-        saveDraft(false);
-        showToast('Article duplicated as new draft', 'success');
+        var newDraftId = uid('draft');
+        var rawBase = (currentDoc.slug || 'untitled').replace(/-copy(-\d+)?$/i, '');
+        var targetSlug = normalizeSlugClient(rawBase + '-copy', false);
+        var targetTitle = (currentDoc.meta.title || 'Untitled Scroll') + ' (Copy)';
+        var sourceSnapshot = JSON.parse(JSON.stringify(currentDoc));
+
+        if (dupBtn) dupBtn.disabled = true;
+        setStatus('Duplicating…', 'saving');
+
+        fetch('/__article-studio/duplicate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            document: sourceSnapshot,
+            preserveClientIdentity: true,
+            targetStudioId: newDraftId,
+            targetSlug: targetSlug,
+            targetTitle: targetTitle
+          })
+        })
+        .then(function(res) {
+          return res.json().then(function(data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function(result) {
+          if (!result.ok || !result.data || !result.data.success || !result.data.draft) {
+            var errMsg = (result.data && result.data.error) || 'Failed to duplicate article assets.';
+            setStatus('Duplicate failed', 'error');
+            showToast(errMsg, 'error');
+            return;
+          }
+
+          var copyDoc = result.data.draft;
+          normalizeDocument(copyDoc);
+          currentDoc = copyDoc;
+          hasPersistedDraft = true;
+          isDirty = false;
+          isExistingPublished = false;
+          originalPublishedSlug = '';
+          activeSectionId = currentDoc.sections.length > 0 ? currentDoc.sections[0].id : null;
+
+          try {
+            localStorage.setItem('covenArticleStudio:lastDraftId', currentDoc.studioId);
+          } catch (e) {}
+          var targetUrl = '/template-preview/studio?draft=' + encodeURIComponent(currentDoc.studioId);
+          if (window.location.search !== '?draft=' + encodeURIComponent(currentDoc.studioId)) {
+            history.replaceState(null, '', targetUrl);
+          }
+
+          renderSections();
+          syncMetaInputsFromState();
+          updateSaveEligibilityUi();
+          setStatus('Saved', 'saved');
+          showToast('Article duplicated as new draft', 'success');
+        })
+        .catch(function(err) {
+          setStatus('Duplicate failed', 'error');
+          showToast((err && err.message) || 'Network error while duplicating article.', 'error');
+        })
+        .finally(function() {
+          if (dupBtn) dupBtn.disabled = false;
+        });
       });
 
       // ── Focus Canvas Toggle ──────────────────────────────
